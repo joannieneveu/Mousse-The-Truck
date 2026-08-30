@@ -130,125 +130,44 @@ export const Navbar: React.FC<NavbarProps> = ({
         </div>
       </div>
 
-      {/* Main Navigation Bar */}
+      {/* Upper Brand & Action Header */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16 gap-4">
+        <div className="flex items-center justify-between py-3 sm:py-3.5 gap-4">
           
-          {/* Logo & Brand */}
+          {/* Logo & Brand Identity */}
           <div 
             onClick={() => setActiveTab('home')}
             className="flex items-center gap-3 cursor-pointer group shrink-0"
           >
-            <div className="w-10 h-10 rounded-2xl bg-blue-900 text-white flex items-center justify-center font-bold text-lg shadow-xs group-hover:scale-105 transition">
+            <div className="w-10 h-10 sm:w-11 sm:h-11 rounded-2xl bg-blue-900 text-white flex items-center justify-center font-bold text-lg sm:text-xl shadow-xs group-hover:scale-105 transition">
               M
             </div>
             <div>
               <div className="flex items-center gap-2">
-                <span className="font-bold text-slate-900 text-base sm:text-lg leading-tight tracking-tight">
+                <span className="font-bold text-slate-900 text-base sm:text-lg lg:text-xl leading-tight tracking-tight">
                   Mousse on the Loose
                 </span>
-                <span className="hidden sm:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
+                <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
                   Americas Expedition
                 </span>
               </div>
-              <div className="text-[11px] text-stone-500 font-sans flex items-center gap-1.5">
-                <span>Joannie, Barton & Baby Henri</span>
+              <div className="text-[11px] sm:text-xs text-stone-500 font-sans flex items-center gap-1.5 mt-0.5">
+                <span className="text-stone-700 font-medium">Joannie, Barton & Baby Henri</span>
                 <span className="text-stone-300">•</span>
-                <span className="text-emerald-800 font-medium">Rig: Mousse</span>
+                <span className="text-emerald-800 font-semibold">Rig: Mousse</span>
               </div>
             </div>
           </div>
 
-          {/* Nav Tabs */}
-          <nav className="hidden lg:flex items-center gap-1">
-            <button
-              id="nav-tab-home"
-              onClick={() => setActiveTab('home')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                activeTab === 'home'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Home className="w-4 h-4" />
-              <span>Home</span>
-            </button>
-
-            <button
-              id="nav-tab-map"
-              onClick={() => setActiveTab('map')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                activeTab === 'map'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Compass className="w-4 h-4" />
-              <span>Interactive Map</span>
-            </button>
-
-            <button
-              id="nav-tab-journal"
-              onClick={() => setActiveTab('journal')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                activeTab === 'journal'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <BookOpen className="w-4 h-4" />
-              <span>Expedition Journals</span>
-            </button>
-
-            <button
-              id="nav-tab-gallery"
-              onClick={() => setActiveTab('gallery')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                activeTab === 'gallery'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Camera className="w-4 h-4" />
-              <span>Photo & Video Gallery</span>
-            </button>
-
-            <button
-              id="nav-tab-rig"
-              onClick={() => setActiveTab('rig')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                activeTab === 'rig'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Truck className="w-4 h-4" />
-              <span>Mousse (The Rig)</span>
-            </button>
-
-            <button
-              id="nav-tab-live"
-              onClick={() => setActiveTab('live')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                activeTab === 'live'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Radio className="w-4 h-4" />
-              <span>GPS Tracking</span>
-            </button>
-          </nav>
-
-          {/* Action Buttons */}
-          <div className="flex items-center gap-2">
+          {/* Action Buttons & Profile */}
+          <div className="flex items-center gap-2 sm:gap-2.5">
             
             {/* Admin: Manage Subscribers */}
             {isAdmin && (
               <>
                 <button
                   onClick={onOpenAdminSubscribersModal}
-                  className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition"
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-3 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
                   title="Manage Subscribers & Review Pending Requests"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
@@ -263,11 +182,11 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {onOpenChangePassword && (
                   <button
                     onClick={onOpenChangePassword}
-                    className="bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+                    className="bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
                     title="Change Admin Password"
                   >
                     <Key className="w-3.5 h-3.5 text-blue-900" />
-                    <span className="hidden xl:inline">Security</span>
+                    <span className="hidden lg:inline">Security</span>
                   </button>
                 )}
               </>
@@ -278,18 +197,18 @@ export const Navbar: React.FC<NavbarProps> = ({
               href="https://www.instagram.com/moussethetruck/"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200/90 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+              className="bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200/90 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
               title="Follow @moussethetruck on Instagram"
             >
               <Instagram className="w-3.5 h-3.5 text-orange-700" />
-              <span className="hidden xl:inline">Instagram</span>
+              <span className="hidden md:inline">Instagram</span>
             </a>
 
             {/* Subscribe Button */}
             <button
               id="subscribe-nav-btn"
               onClick={onOpenSubscribeModal}
-              className="bg-blue-900 hover:bg-blue-950 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition"
+              className="bg-blue-900 hover:bg-blue-950 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
             >
               <Mail className="w-3.5 h-3.5" />
               <span>Subscribe</span>
@@ -299,14 +218,14 @@ export const Navbar: React.FC<NavbarProps> = ({
             <button
               id="auth-persona-btn"
               onClick={onOpenAuthModal}
-              className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 px-3 py-1.5 rounded-xl transition text-xs"
+              className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition text-xs"
               title={currentUser ? `Signed in as ${currentUser.name}` : "Sign In (Admins & Guests)"}
             >
               {currentUser?.avatar ? (
                 <img
                   src={currentUser.avatar}
                   alt={currentUser.name}
-                  className="w-6 h-6 rounded-full object-cover border border-stone-300"
+                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-stone-300"
                 />
               ) : (
                 <User className="w-4 h-4 text-stone-600" />
@@ -322,59 +241,93 @@ export const Navbar: React.FC<NavbarProps> = ({
           </div>
 
         </div>
+      </div>
 
-        {/* Mobile Sub-Navigation */}
-        <div className="lg:hidden flex items-center gap-1 overflow-x-auto py-2 border-t border-stone-200 scrollbar-none text-xs">
-          <button
-            onClick={() => setActiveTab('home')}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition ${
-              activeTab === 'home' ? 'bg-blue-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            Home
-          </button>
-          <button
-            onClick={() => setActiveTab('map')}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition ${
-              activeTab === 'map' ? 'bg-blue-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            Map
-          </button>
-          <button
-            onClick={() => setActiveTab('journal')}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition ${
-              activeTab === 'journal' ? 'bg-blue-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            Journals
-          </button>
-          <button
-            onClick={() => setActiveTab('gallery')}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition ${
-              activeTab === 'gallery' ? 'bg-blue-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            Gallery
-          </button>
-          <button
-            onClick={() => setActiveTab('rig')}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition ${
-              activeTab === 'rig' ? 'bg-blue-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            Mousse (Rig)
-          </button>
-          <button
-            onClick={() => setActiveTab('live')}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition ${
-              activeTab === 'live' ? 'bg-blue-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            GPS
-          </button>
+      {/* Dedicated Lower Navigation Tab Bar (Clean, Spacious & Fully Responsive) */}
+      <div className="border-t border-stone-200/80 bg-white/60 backdrop-blur-xs">
+        <div className="max-w-7xl mx-auto px-2 sm:px-6 lg:px-8">
+          <nav className="flex items-center gap-1 sm:gap-2 overflow-x-auto py-2 sm:py-2.5 scrollbar-none">
+            
+            <button
+              id="nav-tab-home"
+              onClick={() => setActiveTab('home')}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shrink-0 transition ${
+                activeTab === 'home'
+                  ? 'bg-blue-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
+              }`}
+            >
+              <Home className="w-4 h-4" />
+              <span>Home</span>
+            </button>
+
+            <button
+              id="nav-tab-map"
+              onClick={() => setActiveTab('map')}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shrink-0 transition ${
+                activeTab === 'map'
+                  ? 'bg-blue-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
+              }`}
+            >
+              <Compass className="w-4 h-4" />
+              <span>Interactive Map</span>
+            </button>
+
+            <button
+              id="nav-tab-journal"
+              onClick={() => setActiveTab('journal')}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shrink-0 transition ${
+                activeTab === 'journal'
+                  ? 'bg-blue-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
+              }`}
+            >
+              <BookOpen className="w-4 h-4" />
+              <span>Expedition Journals</span>
+            </button>
+
+            <button
+              id="nav-tab-gallery"
+              onClick={() => setActiveTab('gallery')}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shrink-0 transition ${
+                activeTab === 'gallery'
+                  ? 'bg-blue-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
+              }`}
+            >
+              <Camera className="w-4 h-4" />
+              <span>Photo & Video Gallery</span>
+            </button>
+
+            <button
+              id="nav-tab-rig"
+              onClick={() => setActiveTab('rig')}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shrink-0 transition ${
+                activeTab === 'rig'
+                  ? 'bg-blue-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
+              }`}
+            >
+              <Truck className="w-4 h-4" />
+              <span>Mousse (The Rig)</span>
+            </button>
+
+            <button
+              id="nav-tab-live"
+              onClick={() => setActiveTab('live')}
+              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shrink-0 transition ${
+                activeTab === 'live'
+                  ? 'bg-blue-900 text-white shadow-xs'
+                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
+              }`}
+            >
+              <Radio className="w-4 h-4" />
+              <span>GPS Tracking</span>
+            </button>
+
+          </nav>
         </div>
-
       </div>
     </header>
   );
