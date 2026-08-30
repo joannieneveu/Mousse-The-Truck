@@ -24,11 +24,11 @@ import { TravelLogList } from './components/TravelLogList';
 import { TravelLogDetail } from './components/TravelLogDetail';
 import { MediaGallery } from './components/MediaGallery';
 import { RigSpecs } from './components/RigSpecs';
-import { FamilyProfile } from './components/FamilyProfile';
 import { LiveLocationTracker } from './components/LiveLocationTracker';
 import { SubscribeModal } from './components/SubscribeModal';
 import { SubscriberAdminModal } from './components/SubscriberAdminModal';
 import { AuthModal } from './components/AuthModal';
+import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { 
   Compass, 
   MapPin, 
@@ -46,7 +46,7 @@ import {
 } from 'lucide-react';
 
 export default function App() {
-  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'family' | 'live'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live'>('home');
   const [waypoints, setWaypoints] = useState<Waypoint[]>(INITIAL_WAYPOINTS);
   const [liveLocation, setLiveLocation] = useState<LiveLocation>(INITIAL_LIVE_LOCATION);
   const [travelLogs, setTravelLogs] = useState<TravelLog[]>(INITIAL_TRAVEL_LOGS);
@@ -59,6 +59,7 @@ export default function App() {
   const [isSubscribeModalOpen, setIsSubscribeModalOpen] = useState<boolean>(false);
   const [isAdminSubscribersOpen, setIsAdminSubscribersOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
+  const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [isCheckinModalOpen, setIsCheckinModalOpen] = useState<boolean>(false);
 
   // Load state from backend on mount
@@ -134,6 +135,7 @@ export default function App() {
 
   // Create new travel log
   const handleCreateLog = async (newLog: Partial<TravelLog>) => {
+    let createdLog: TravelLog | null = null;
     try {
       const res = await fetch('/api/logs', {
         method: 'POST',
@@ -145,6 +147,7 @@ export default function App() {
       });
       const data = await res.json();
       if (data.log) {
+        createdLog = data.log;
         setTravelLogs(prev => [data.log, ...prev]);
         setSelectedLog(data.log);
       }
@@ -157,12 +160,39 @@ export default function App() {
         setLiveLocation(data.liveLocation);
       }
     } catch (err) {
-      console.error(err);
+      // Fallback for static hosting / GitHub Pages
+    }
+
+    if (!createdLog) {
+      const fallbackLog: TravelLog = {
+        id: `log-${Date.now()}`,
+        title: newLog.title || 'New Expedition Chronicle',
+        slug: (newLog.title || 'expedition-chronicle').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        locationName: newLog.locationName || 'En Route',
+        country: newLog.country || 'Canada',
+        coordinates: newLog.coordinates || liveLocation,
+        date: newLog.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        author: currentUser ? currentUser.name : 'Joannie & Barton',
+        readingTime: newLog.readingTime || '3 min read',
+        category: newLog.category || 'adventures_mba',
+        status: newLog.status || 'published',
+        excerpt: newLog.excerpt || ((newLog.content || '').slice(0, 140) + '...'),
+        content: newLog.content || '',
+        coverImage: newLog.coverImage || '/departure.jpeg',
+        gallery: newLog.gallery || [],
+        metrics: newLog.metrics || {},
+        tags: newLog.tags || ['Expedition', 'Mousse'],
+        likesCount: 0,
+        commentsCount: 0
+      };
+      setTravelLogs(prev => [fallbackLog, ...prev]);
+      setSelectedLog(fallbackLog);
     }
   };
 
   // Upload new media item
   const handleUploadMedia = async (newMedia: Partial<MediaItem>) => {
+    let createdMedia: MediaItem | null = null;
     try {
       const res = await fetch('/api/media', {
         method: 'POST',
@@ -171,15 +201,34 @@ export default function App() {
       });
       const data = await res.json();
       if (data.media) {
+        createdMedia = data.media;
         setMediaItems(prev => [data.media, ...prev]);
       }
     } catch (err) {
-      console.error(err);
+      // Fallback for static hosting / GitHub Pages
+    }
+
+    if (!createdMedia) {
+      const fallbackMedia: MediaItem = {
+        id: `media-${Date.now()}`,
+        type: newMedia.type || 'image',
+        url: newMedia.url || '/departure.jpeg',
+        title: newMedia.title || 'Expedition Photo',
+        locationName: newMedia.locationName || 'En Route',
+        date: newMedia.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        tags: newMedia.tags || ['Expedition'],
+        author: currentUser ? currentUser.name : 'Joannie & Barton',
+        caption: newMedia.caption || '',
+        likesCount: 0,
+        commentsCount: 0
+      };
+      setMediaItems(prev => [fallbackMedia, ...prev]);
     }
   };
 
   // Upload rig photo
   const handleUploadRigPhoto = async (newPhoto: { title: string; caption: string; url: string; category: RigPhoto['category'] }) => {
+    let createdPhoto: RigPhoto | null = null;
     try {
       const res = await fetch('/api/rig-photos', {
         method: 'POST',
@@ -188,10 +237,23 @@ export default function App() {
       });
       const data = await res.json();
       if (data.photo) {
+        createdPhoto = data.photo;
         setRigPhotos(prev => [data.photo, ...prev]);
       }
     } catch (err) {
-      console.error(err);
+      // Fallback for static hosting / GitHub Pages
+    }
+
+    if (!createdPhoto) {
+      const fallbackPhoto: RigPhoto = {
+        id: `rig-${Date.now()}`,
+        title: newPhoto.title,
+        caption: newPhoto.caption,
+        url: newPhoto.url,
+        category: newPhoto.category,
+        uploadedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })
+      };
+      setRigPhotos(prev => [fallbackPhoto, ...prev]);
     }
   };
 
@@ -209,7 +271,16 @@ export default function App() {
       }
       return { success: true, message: data.message || 'Subscription request submitted for Joannie & Barton to review.' };
     } catch (err) {
-      return { success: false, message: 'Could not submit request at this time.' };
+      const localSub = {
+        id: `sub-${Date.now()}`,
+        email: sub.email,
+        name: sub.name,
+        relationshipNote: sub.relationshipNote,
+        dateRequested: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'pending' as const
+      };
+      setSubscribers(prev => [localSub, ...prev]);
+      return { success: true, message: 'Subscription request submitted for Joannie & Barton to review.' };
     }
   };
 
@@ -220,23 +291,22 @@ export default function App() {
       const data = await res.json();
       if (data.success && data.subscriber) {
         setSubscribers(prev => prev.map(s => s.id === id ? data.subscriber : s));
+        return;
       }
     } catch (err) {
-      console.error(err);
+      // Static fallback
     }
+    setSubscribers(prev => prev.map(s => s.id === id ? { ...s, status: 'approved' } : s));
   };
 
   // Admin: Delete subscriber
   const handleDeleteSubscriber = async (id: string) => {
     try {
-      const res = await fetch(`/api/subscribers/${id}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setSubscribers(prev => prev.filter(s => s.id !== id));
-      }
+      await fetch(`/api/subscribers/${id}`, { method: 'DELETE' });
     } catch (err) {
-      console.error(err);
+      // Static fallback
     }
+    setSubscribers(prev => prev.filter(s => s.id !== id));
   };
 
   // Toggle Publish / Draft status of a log
@@ -249,25 +319,32 @@ export default function App() {
         if (selectedLog?.id === logId) {
           setSelectedLog(data.log);
         }
+        return;
       }
     } catch (err) {
-      console.error(err);
+      // Static fallback
     }
+    setTravelLogs(prev => prev.map(l => {
+      if (l.id === logId) {
+        const nextStatus = l.status === 'published' ? 'draft' : 'published';
+        const updated = { ...l, status: nextStatus };
+        if (selectedLog?.id === logId) setSelectedLog(updated);
+        return updated;
+      }
+      return l;
+    }));
   };
 
   // Delete a log
   const handleDeleteLog = async (logId: string) => {
     try {
-      const res = await fetch(`/api/logs/${logId}`, { method: 'DELETE' });
-      const data = await res.json();
-      if (data.success) {
-        setTravelLogs(prev => prev.filter(l => l.id !== logId));
-        if (selectedLog?.id === logId) {
-          setSelectedLog(null);
-        }
-      }
+      await fetch(`/api/logs/${logId}`, { method: 'DELETE' });
     } catch (err) {
-      console.error(err);
+      // Static fallback
+    }
+    setTravelLogs(prev => prev.filter(l => l.id !== logId));
+    if (selectedLog?.id === logId) {
+      setSelectedLog(null);
     }
   };
 
@@ -298,6 +375,7 @@ export default function App() {
         onOpenCheckinModal={() => setIsCheckinModalOpen(true)}
         onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
         onOpenAdminSubscribersModal={() => setIsAdminSubscribersOpen(true)}
+        onOpenChangePassword={() => setIsChangePasswordOpen(true)}
         onToggleLocationSharing={handleToggleLocationSharing}
       />
 
@@ -402,12 +480,7 @@ export default function App() {
           />
         )}
 
-        {/* VIEW 5: FAMILY PROFILE */}
-        {activeTab === 'family' && (
-          <FamilyProfile />
-        )}
-
-        {/* VIEW 6: LIVE GPS TRACKER */}
+        {/* VIEW 5: LIVE GPS TRACKER */}
         {activeTab === 'live' && (
           <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-300">
             <LiveLocationTracker
@@ -450,6 +523,11 @@ export default function App() {
             </div>
             <ul className="space-y-1.5 text-slate-400">
               <li>
+                <button onClick={() => { setActiveTab('home'); }} className="hover:text-blue-400 transition">
+                  Home & Family Story
+                </button>
+              </li>
+              <li>
                 <button onClick={() => { setActiveTab('map'); setSelectedLog(null); }} className="hover:text-blue-400 transition">
                   Interactive Route Map
                 </button>
@@ -467,11 +545,6 @@ export default function App() {
               <li>
                 <button onClick={() => { setActiveTab('rig'); }} className="hover:text-blue-400 transition">
                   Mousse (Rig Specs & Photos)
-                </button>
-              </li>
-              <li>
-                <button onClick={() => { setActiveTab('family'); }} className="hover:text-blue-400 transition">
-                  Our Blended Family
                 </button>
               </li>
             </ul>
@@ -539,6 +612,14 @@ export default function App() {
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
         onUserChange={(user) => setCurrentUser(user)}
+        onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+      />
+
+      {/* 3b. Admin Change Password Modal */}
+      <ChangePasswordModal
+        isOpen={isChangePasswordOpen}
+        onClose={() => setIsChangePasswordOpen(false)}
+        currentUser={currentUser}
       />
 
       {/* 4. GPS Check-in Modal */}

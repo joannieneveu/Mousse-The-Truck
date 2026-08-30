@@ -98,23 +98,22 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       const data = await res.json();
       if (data.success) {
         setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes: data.likes } : c));
+        return;
       }
     } catch (err) {
-      console.error(err);
+      // static fallback
     }
+    setComments(prev => prev.map(c => c.id === commentId ? { ...c, likes: c.likes + 1 } : c));
   };
 
   const handleDeleteComment = async (commentId: string) => {
     if (window.confirm('Remove this comment as administrator?')) {
       try {
-        const res = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          setComments(prev => prev.filter(c => c.id !== commentId));
-        }
+        await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
       } catch (err) {
-        console.error(err);
+        // static fallback
       }
+      setComments(prev => prev.filter(c => c.id !== commentId));
     }
   };
 
@@ -123,6 +122,9 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     if (!commentText.trim()) return;
 
     setIsSubmitting(true);
+    const author = currentUser ? currentUser.name : (authorName.trim() || 'Guest Follower');
+    const content = commentText.trim();
+
     try {
       const res = await fetch('/api/comments', {
         method: 'POST',
@@ -130,8 +132,8 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         body: JSON.stringify({
           targetId: log.id,
           targetType: 'log',
-          content: commentText.trim(),
-          authorName: currentUser ? currentUser.name : (authorName.trim() || 'Guest Follower')
+          content,
+          authorName: author
         })
       });
 
@@ -139,12 +141,24 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       if (data.success && data.comment) {
         setComments(prev => [data.comment, ...prev]);
         setCommentText('');
+        return;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
+      // static fallback
     }
+
+    const localComment: CommentItem = {
+      id: `comment-${Date.now()}`,
+      targetId: log.id,
+      targetType: 'log',
+      authorName: author,
+      content,
+      createdAt: new Date().toISOString(),
+      likes: 0
+    };
+    setComments(prev => [localComment, ...prev]);
+    setCommentText('');
+    setIsSubmitting(false);
   };
 
   const handleShare = () => {
@@ -290,14 +304,24 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </div>
       </header>
 
-      {/* Cover Image */}
-      <div className="rounded-3xl overflow-hidden shadow-xs border border-stone-200/90 aspect-video relative bg-stone-100">
-        <img
-          src={log.coverImage}
-          alt={log.title}
-          className="w-full h-full object-cover"
-          referrerPolicy="no-referrer"
-        />
+      {/* Cover Image - Rendered in fixed portrait format for Departure so Henri is not cut off */}
+      <div className="flex justify-center">
+        <div className={`rounded-3xl overflow-hidden shadow-sm border border-stone-200/90 relative bg-stone-900 w-full ${
+          log.coverImage.includes('departure.jpeg') || log.id === 'log-departure-mousse'
+            ? 'max-w-md aspect-[3/4] sm:aspect-[4/5]'
+            : 'aspect-video'
+        }`}>
+          <img
+            src={log.coverImage}
+            alt={log.title}
+            className={`w-full h-full ${
+              log.coverImage.includes('departure.jpeg') || log.id === 'log-departure-mousse'
+                ? 'object-cover object-[50%_15%]'
+                : 'object-cover'
+            }`}
+            referrerPolicy="no-referrer"
+          />
+        </div>
       </div>
 
       {/* Expedition Vitals Box */}
@@ -442,11 +466,13 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             {log.gallery.map((item, idx) => (
               <div key={idx} className="rounded-2xl overflow-hidden border border-stone-200/90 bg-white shadow-xs space-y-2">
-                <div className="bg-stone-900 w-full h-64 sm:h-72 flex items-center justify-center overflow-hidden">
+                <div className={`bg-stone-900 w-full flex items-center justify-center overflow-hidden ${
+                  item.url.includes('departure.jpeg') ? 'aspect-[3/4] sm:aspect-[4/5]' : 'h-64 sm:h-72'
+                }`}>
                   <img
                     src={item.url}
                     alt={item.caption || 'Expedition photo'}
-                    className={`w-full h-full ${item.url.includes('departure.jpeg') ? 'object-cover object-top' : 'object-cover'}`}
+                    className={`w-full h-full ${item.url.includes('departure.jpeg') ? 'object-cover object-[50%_15%]' : 'object-cover'}`}
                     referrerPolicy="no-referrer"
                   />
                 </div>

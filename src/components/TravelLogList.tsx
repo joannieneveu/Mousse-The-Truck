@@ -501,11 +501,13 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
           onClick={() => onSelectLog(featuredLog)}
           className="group relative bg-white border border-stone-200/90 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer grid grid-cols-1 lg:grid-cols-12 gap-0"
         >
-          <div className="lg:col-span-6 relative aspect-video lg:aspect-auto h-64 lg:h-full bg-stone-100 overflow-hidden">
+          <div className="lg:col-span-5 relative aspect-[3/4] sm:aspect-[4/5] lg:aspect-auto h-80 sm:h-96 lg:h-full bg-stone-900 overflow-hidden">
             <img
               src={featuredLog.coverImage}
               alt={featuredLog.title}
-              className="w-full h-full object-cover group-hover:scale-102 transition duration-500"
+              className={`w-full h-full ${
+                featuredLog.coverImage.includes('departure.jpeg') ? 'object-cover object-[50%_15%]' : 'object-cover'
+              } group-hover:scale-102 transition duration-500`}
             />
             <div className="absolute top-3 left-3 flex items-center gap-2 font-sans">
               <span className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xs ${getCategoryBadge(featuredLog.category).bg}`}>
@@ -519,7 +521,7 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
             </div>
           </div>
 
-          <div className="lg:col-span-6 p-6 sm:p-8 flex flex-col justify-between space-y-4">
+          <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-4">
             <div className="space-y-3">
               <div className="flex items-center gap-3 text-xs text-stone-500 font-sans">
                 <span className="flex items-center gap-1">
@@ -610,11 +612,13 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
                   className="group bg-white border border-stone-200/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition cursor-pointer flex flex-col justify-between"
                 >
                   <div className="space-y-3">
-                    <div className="relative aspect-video bg-stone-100 overflow-hidden">
+                    <div className="relative aspect-video bg-stone-900 overflow-hidden">
                       <img
                         src={log.coverImage}
                         alt={log.title}
-                        className="w-full h-full object-cover group-hover:scale-103 transition duration-500"
+                        className={`w-full h-full ${
+                          log.coverImage.includes('departure.jpeg') ? 'object-cover object-[50%_15%]' : 'object-cover'
+                        } group-hover:scale-103 transition duration-500`}
                         referrerPolicy="no-referrer"
                       />
                       <div className="absolute top-2.5 left-2.5 flex items-center gap-1.5 font-sans">

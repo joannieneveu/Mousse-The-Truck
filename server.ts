@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
+import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
 import { 
@@ -40,6 +41,16 @@ async function startServer() {
   let comments: CommentItem[] = [...INITIAL_COMMENTS];
   let rigPhotos: RigPhoto[] = [...INITIAL_RIG_PHOTOS];
 
+  // Cryptographic Salt & Hash for Admin Authentication (Zero plain-text in codebase)
+  let adminPasswordSalt = 'e6c2789bf03d4218a99db3b5860b291d';
+  let adminPasswordHash = '189e3bce55bf71239856f6c0eb627092ce4489a2638da0efcb63b3644fcfc14b';
+
+  function verifyPasswordHash(password: string): boolean {
+    if (!password) return false;
+    const computed = crypto.createHash('sha256').update(password.trim() + ':' + adminPasswordSalt).digest('hex');
+    return computed === adminPasswordHash;
+  }
+
   // Lazy Gemini Client
   let geminiClient: GoogleGenAI | null = null;
   function getGeminiClient(): GoogleGenAI | null {
@@ -61,7 +72,7 @@ async function startServer() {
     res.json(ADMIN_USERS);
   });
 
-  // Login (by Email or Admin Select with required password BJordan23!)
+  // Login (by Email or Admin Select with cryptographic hash check)
   app.post('/api/auth/login', (req: Request, res: Response) => {
     const { email, name, password, passkey } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
@@ -70,23 +81,23 @@ async function startServer() {
     // Check if logging in as Administrator (Joannie or Barton)
     const adminMatch = ADMIN_USERS.find(u => u.email.toLowerCase() === cleanEmail);
     if (adminMatch) {
-      if (cleanPassword === 'BJordan23!') {
+      if (verifyPasswordHash(cleanPassword)) {
         currentUser = adminMatch;
         console.log(`[Auth] Administrator logged in: ${currentUser.name} (${currentUser.email})`);
         res.json({ success: true, user: currentUser, isAdmin: true });
         return;
       } else {
         res.status(401).json({ 
-          error: 'Incorrect administrator password. Password required: BJordan23!' 
+          error: 'Incorrect administrator password. Please check your password or update it.' 
         });
         return;
       }
     }
 
     // Direct password match without email specified
-    if (cleanPassword === 'BJordan23!') {
+    if (verifyPasswordHash(cleanPassword)) {
       currentUser = ADMIN_USERS[0]; // Joannie
-      console.log(`[Auth] Administrator logged in via master password: ${currentUser.name}`);
+      console.log(`[Auth] Administrator logged in via password: ${currentUser.name}`);
       res.json({ success: true, user: currentUser, isAdmin: true });
       return;
     }
@@ -106,6 +117,41 @@ async function startServer() {
     currentUser = guestUser;
     console.log(`[Auth] Guest logged in: ${guestUser.name} (${guestUser.email})`);
     res.json({ success: true, user: guestUser, isAdmin: false });
+  });
+
+  // Change Admin Password (cryptographic salt & hash update)
+  app.post('/api/auth/change-password', (req: Request, res: Response) => {
+    const { currentPassword, newPassword } = req.body;
+    if (!verifyPasswordHash(currentPassword)) {
+      res.status(401).json({ error: 'Current password is incorrect.' });
+      return;
+    }
+
+    if (!newPassword || newPassword.trim().length < 6) {
+      res.status(400).json({ error: 'New password must be at least 6 characters.' });
+      return;
+    }
+
+    const newSalt = crypto.randomBytes(16).toString('hex');
+    const newHash = crypto.createHash('sha256').update(newPassword.trim() + ':' + newSalt).digest('hex');
+
+    adminPasswordSalt = newSalt;
+    adminPasswordHash = newHash;
+
+    console.log('[Auth] Admin password successfully updated and salted/hashed.');
+    res.json({ success: true, message: 'Password successfully updated and encrypted.' });
+  });
+
+  // Update password hash sync
+  app.post('/api/auth/update-password-hash', (req: Request, res: Response) => {
+    const { salt, hash } = req.body;
+    if (salt && hash) {
+      adminPasswordSalt = salt;
+      adminPasswordHash = hash;
+      res.json({ success: true });
+      return;
+    }
+    res.status(400).json({ error: 'Missing salt or hash.' });
   });
 
   // Logout

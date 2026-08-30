@@ -12,15 +12,18 @@ import {
   Lock, 
   Sparkles,
   KeyRound,
+  Key,
   Mail,
   UserCheck
 } from 'lucide-react';
+import { verifyAdminPassword } from '../lib/authCrypto';
 
 interface AuthModalProps {
   isOpen: boolean;
   onClose: () => void;
   currentUser: UserProfile | null;
   onUserChange: (user: UserProfile | null) => void;
+  onOpenChangePassword?: () => void;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -28,6 +31,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   currentUser,
   onUserChange,
+  onOpenChangePassword,
 }) => {
   const [activeTab, setActiveTab] = useState<'admin' | 'guest'>('admin');
   const [selectedAdmin, setSelectedAdmin] = useState<UserProfile>(ADMIN_USERS[0]);
@@ -56,32 +60,42 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     }
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          email: targetEmail, 
-          password: adminPassword 
-        })
-      });
-      const data = await res.json();
-      if (res.ok && data.user) {
-        onUserChange(data.user);
-        setSuccessMsg(`Welcome, Administrator ${data.user.name}!`);
+      // First verify against cryptographic hash (works in browser & static hosts)
+      const isClientValid = await verifyAdminPassword(adminPassword);
+      
+      // Try backend server verification if running full-stack
+      let serverSucceeded = false;
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ 
+            email: targetEmail, 
+            password: adminPassword 
+          })
+        });
+        const data = await res.json();
+        if (res.ok && data.user) {
+          serverSucceeded = true;
+          onUserChange(data.user);
+        }
+      } catch (err) {
+        // Fallback for static GitHub Pages hosting
+      }
+
+      if (serverSucceeded || isClientValid) {
+        if (!serverSucceeded) {
+          onUserChange(selectedAdmin);
+        }
+        setSuccessMsg(`Welcome, Administrator ${selectedAdmin.name}!`);
         setTimeout(() => {
           onClose();
         }, 600);
       } else {
-        setErrorMsg(data.error || 'Incorrect administrator password. Please enter the valid password.');
+        setErrorMsg('Incorrect administrator password. Please try again or use your updated password.');
       }
-    } catch (err) {
-      if (adminPassword === 'BJordan23!') {
-        onUserChange(selectedAdmin);
-        setSuccessMsg(`Welcome, Administrator ${selectedAdmin.name}!`);
-        setTimeout(() => onClose(), 600);
-      } else {
-        setErrorMsg('Incorrect administrator password. Password required: BJordan23!');
-      }
+    } catch (err: any) {
+      setErrorMsg('Authentication error. Please check your credentials.');
     } finally {
       setIsLoading(false);
     }
@@ -95,23 +109,41 @@ export const AuthModal: React.FC<AuthModalProps> = ({
     setSuccessMsg('');
 
     try {
-      const res = await fetch('/api/auth/login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email, name })
-      });
-      const data = await res.json();
-      if (data.user) {
-        onUserChange(data.user);
-        setSuccessMsg(`Welcome, ${data.user.name}!`);
-        setTimeout(() => {
-          onClose();
-        }, 600);
-      } else {
-        setErrorMsg(data.error || 'Login failed. Please check your credentials.');
+      let loggedInUser: UserProfile | null = null;
+      try {
+        const res = await fetch('/api/auth/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ email, name })
+        });
+        const data = await res.json();
+        if (data.user) {
+          loggedInUser = data.user;
+        }
+      } catch (networkErr) {
+        // Fallback for static hosting / GitHub Pages
       }
+
+      // If backend was not available or static mode, log in locally as guest
+      if (!loggedInUser) {
+        loggedInUser = {
+          id: `guest_${Date.now()}`,
+          name: name.trim() || 'Guest Reader',
+          email: email.trim().toLowerCase() || 'guest@example.com',
+          role: 'friend_follower',
+          roleLabel: 'Friend / Follower',
+          avatar: `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(name || 'guest')}`,
+          joinedDate: new Date().toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
+        };
+      }
+
+      onUserChange(loggedInUser);
+      setSuccessMsg(`Welcome, ${loggedInUser.name}!`);
+      setTimeout(() => {
+        onClose();
+      }, 600);
     } catch (err) {
-      setErrorMsg('Could not connect to server.');
+      setErrorMsg('Login failed. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -157,7 +189,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
         {/* Current Active Account Banner */}
         {currentUser && (
-          <div className="px-6 py-3.5 bg-blue-50/90 border-b border-blue-200 flex items-center justify-between">
+          <div className="px-6 py-3.5 bg-blue-50/90 border-b border-blue-200 flex flex-wrap items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <img
                 src={currentUser.avatar}
@@ -178,14 +210,32 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 <p className="text-xs text-stone-600">{currentUser.email}</p>
               </div>
             </div>
-            <button
-              id="logout-btn"
-              onClick={handleLogout}
-              className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-stone-700 hover:text-rose-700 text-xs font-semibold border border-stone-200 transition shadow-xs"
-            >
-              <LogOut className="w-3.5 h-3.5" />
-              <span>Sign Out</span>
-            </button>
+
+            <div className="flex items-center gap-2">
+              {currentUser.isAdmin && onOpenChangePassword && (
+                <button
+                  type="button"
+                  id="change-password-modal-btn"
+                  onClick={() => {
+                    onClose();
+                    onOpenChangePassword();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold shadow-xs transition"
+                  title="Change Administrator Password"
+                >
+                  <Key className="w-3.5 h-3.5" />
+                  <span>Change Password</span>
+                </button>
+              )}
+              <button
+                id="logout-btn"
+                onClick={handleLogout}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-stone-700 hover:text-rose-700 text-xs font-semibold border border-stone-200 transition shadow-xs"
+              >
+                <LogOut className="w-3.5 h-3.5" />
+                <span>Sign Out</span>
+              </button>
+            </div>
           </div>
         )}
 
@@ -303,7 +353,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                     required
                     value={adminPassword}
                     onChange={(e) => setAdminPassword(e.target.value)}
-                    placeholder="Enter password (e.g. BJordan23!)"
+                    placeholder="Enter your administrator password"
                     className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-12 py-2.5 text-stone-900 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
                   />
                   <button

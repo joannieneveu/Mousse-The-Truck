@@ -615,7 +615,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-            <span>Status: <strong className="text-slate-200">Pacific NW / Rockies</strong></span>
+            <span>Status: <strong className="text-slate-200">Lethbridge Launch • Heading North</strong></span>
             <button
               onClick={() => setShowElevationDrawer(!showElevationDrawer)}
               className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"

@@ -17,13 +17,14 @@ import {
   Truck,
   Heart,
   Settings,
-  Instagram
+  Instagram,
+  Key
 } from 'lucide-react';
 import { LiveLocation, UserProfile } from '../types';
 
 interface NavbarProps {
-  activeTab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'family' | 'live';
-  setActiveTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'family' | 'live') => void;
+  activeTab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live';
+  setActiveTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live') => void;
   liveLocation: LiveLocation;
   currentUser: UserProfile | null;
   pendingSubscribersCount?: number;
@@ -31,6 +32,7 @@ interface NavbarProps {
   onOpenCheckinModal: () => void;
   onOpenSubscribeModal: () => void;
   onOpenAdminSubscribersModal: () => void;
+  onOpenChangePassword?: () => void;
   onToggleLocationSharing?: () => void;
 }
 
@@ -44,6 +46,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onOpenCheckinModal,
   onOpenSubscribeModal,
   onOpenAdminSubscribersModal,
+  onOpenChangePassword,
   onToggleLocationSharing,
 }) => {
   const isAdmin = currentUser?.isAdmin;
@@ -224,19 +227,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             <button
-              id="nav-tab-family"
-              onClick={() => setActiveTab('family')}
-              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                activeTab === 'family'
-                  ? 'bg-blue-900 text-white shadow-sm'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/60'
-              }`}
-            >
-              <Users className="w-4 h-4" />
-              <span>Our Family</span>
-            </button>
-
-            <button
               id="nav-tab-live"
               onClick={() => setActiveTab('live')}
               className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
@@ -255,19 +245,32 @@ export const Navbar: React.FC<NavbarProps> = ({
             
             {/* Admin: Manage Subscribers */}
             {isAdmin && (
-              <button
-                onClick={onOpenAdminSubscribersModal}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition"
-                title="Manage Subscribers & Review Pending Requests"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                <span className="hidden sm:inline">Subscribers</span>
-                {pendingSubscribersCount > 0 && (
-                  <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                    {pendingSubscribersCount}
-                  </span>
+              <>
+                <button
+                  onClick={onOpenAdminSubscribersModal}
+                  className="bg-slate-900 hover:bg-slate-800 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-sm transition"
+                  title="Manage Subscribers & Review Pending Requests"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                  <span className="hidden sm:inline">Subscribers</span>
+                  {pendingSubscribersCount > 0 && (
+                    <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
+                      {pendingSubscribersCount}
+                    </span>
+                  )}
+                </button>
+
+                {onOpenChangePassword && (
+                  <button
+                    onClick={onOpenChangePassword}
+                    className="bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+                    title="Change Admin Password"
+                  >
+                    <Key className="w-3.5 h-3.5 text-blue-900" />
+                    <span className="hidden xl:inline">Security</span>
+                  </button>
                 )}
-              </button>
+              </>
             )}
 
             {/* Instagram Follow Button */}
@@ -361,14 +364,6 @@ export const Navbar: React.FC<NavbarProps> = ({
             }`}
           >
             Mousse (Rig)
-          </button>
-          <button
-            onClick={() => setActiveTab('family')}
-            className={`px-3 py-1.5 rounded-xl whitespace-nowrap font-medium transition ${
-              activeTab === 'family' ? 'bg-blue-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-            }`}
-          >
-            Family
           </button>
           <button
             onClick={() => setActiveTab('live')}

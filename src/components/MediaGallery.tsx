@@ -86,6 +86,9 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     if (!activeMedia || !commentInput.trim()) return;
 
     setIsPostingComment(true);
+    const author = currentUser ? currentUser.name : (guestName.trim() || 'Guest Follower');
+    const content = commentInput.trim();
+
     try {
       const res = await fetch('/api/comments', {
         method: 'POST',
@@ -93,33 +96,43 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         body: JSON.stringify({
           targetId: activeMedia.id,
           targetType: 'media',
-          content: commentInput.trim(),
-          authorName: currentUser ? currentUser.name : (guestName.trim() || 'Guest Follower')
+          content,
+          authorName: author
         })
       });
       const data = await res.json();
       if (data.success && data.comment) {
         setMediaComments(prev => [data.comment, ...prev]);
         setCommentInput('');
+        setIsPostingComment(false);
+        return;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setIsPostingComment(false);
+      // static fallback
     }
+
+    const localComment: CommentItem = {
+      id: `comment-media-${Date.now()}`,
+      targetId: activeMedia.id,
+      targetType: 'media',
+      authorName: author,
+      content,
+      createdAt: new Date().toISOString(),
+      likes: 0
+    };
+    setMediaComments(prev => [localComment, ...prev]);
+    setCommentInput('');
+    setIsPostingComment(false);
   };
 
   const handleDeleteMediaComment = async (commentId: string) => {
     if (window.confirm('Remove this comment as administrator?')) {
       try {
-        const res = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          setMediaComments(prev => prev.filter(c => c.id !== commentId));
-        }
+        await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
       } catch (err) {
-        console.error(err);
+        // static fallback
       }
+      setMediaComments(prev => prev.filter(c => c.id !== commentId));
     }
   };
 

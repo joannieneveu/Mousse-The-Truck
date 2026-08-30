@@ -21,12 +21,16 @@ import {
   ChevronRight,
   Maximize2,
   X,
-  Instagram
+  Instagram,
+  Home,
+  Upload,
+  ArrowUpRight
 } from 'lucide-react';
-import { LiveLocation, TravelLog, Waypoint } from '../types';
+import { LiveLocation, TravelLog, Waypoint, FamilyMember } from '../types';
+import { INITIAL_FAMILY_MEMBERS } from '../data/initialData';
 
 interface HomePageProps {
-  onNavigateTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'family' | 'live') => void;
+  onNavigateTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live') => void;
   onSelectLog: (log: TravelLog) => void;
   liveLocation: LiveLocation;
   recentLogs: TravelLog[];
@@ -43,6 +47,56 @@ export const HomePage: React.FC<HomePageProps> = ({
   onOpenSubscribeModal
 }) => {
   const [selectedPhoto, setSelectedPhoto] = useState<{ url: string; title: string; caption: string } | null>(null);
+  
+  // Family state (merged into Home)
+  const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(INITIAL_FAMILY_MEMBERS);
+  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
+  const [familyHeroPhoto, setFamilyHeroPhoto] = useState<string>(() => {
+    try {
+      return localStorage.getItem('mousse_family_hero_photo') || '/Family.jpeg';
+    } catch {
+      return '/Family.jpeg';
+    }
+  });
+  const [newPhotoUrl, setNewPhotoUrl] = useState<string>('');
+  const [isEditingHeroPhoto, setIsEditingHeroPhoto] = useState<boolean>(false);
+
+  const onTripMembers = familyMembers.filter(m => m.onTripWithUs);
+  const atHomeMembers = familyMembers.filter(m => !m.onTripWithUs);
+
+  const handleUpdateAvatar = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMember || !newPhotoUrl.trim()) return;
+
+    setFamilyMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, avatar: newPhotoUrl.trim() } : m));
+    setEditingMember(null);
+    setNewPhotoUrl('');
+  };
+
+  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'member' | 'hero') => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      const dataUrl = event.target?.result as string;
+      if (dataUrl) {
+        if (target === 'hero') {
+          setFamilyHeroPhoto(dataUrl);
+          try {
+            localStorage.setItem('mousse_family_hero_photo', dataUrl);
+          } catch {
+            // ignore quota
+          }
+          setIsEditingHeroPhoto(false);
+        } else if (editingMember) {
+          setFamilyMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, avatar: dataUrl } : m));
+          setEditingMember(null);
+        }
+      }
+    };
+    reader.readAsDataURL(file);
+  };
 
   return (
     <div id="home-page" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16 animate-in fade-in duration-300 font-sans">
@@ -168,30 +222,30 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           </div>
 
-          {/* Right Column: Hero Photo Showcase with Portrait Departure */}
-          <div className="lg:col-span-6 xl:col-span-5 flex flex-col justify-center">
+          {/* Right Column: Hero Photo Showcase with Fixed Portrait Departure */}
+          <div className="lg:col-span-6 xl:col-span-5 flex flex-col justify-center items-center lg:items-end">
             
-            {/* Departure Photo: Formatted in Portrait (Preserving Heads with object-cover object-top) */}
+            {/* Departure Photo: Fixed Format Portrait (Ensures Baby Henri is 100% visible) */}
             <div 
               onClick={() => setSelectedPhoto({
                 url: '/departure.jpeg',
-                title: 'The Departure in Mousse',
-                caption: 'Joannie, Barton, and baby Henri setting off in Lethbridge, AB to begin the 35,000 km journey to the Arctic and Antarctica.'
+                title: 'The Grand Departure in Mousse',
+                caption: 'Joannie, Barton, and baby Henri setting off in Lethbridge, AB to begin the 35,000 km expedition to the Arctic and Antarctica.'
               })}
-              className="relative rounded-3xl overflow-hidden border border-stone-300 shadow-md bg-stone-900 group cursor-pointer aspect-[3/4] max-h-[500px] w-full"
+              className="relative rounded-3xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900 group cursor-pointer aspect-[3/4] w-full max-w-xs sm:max-w-sm lg:max-w-md mx-auto lg:mx-0"
             >
               <img
                 src="/departure.jpeg"
-                alt="The Departure - Joannie, Barton, and baby Henri in portrait view"
-                className="w-full h-full object-cover object-top group-hover:scale-105 transition duration-700"
+                alt="The Departure - Joannie, Barton, and baby Henri in fixed portrait format"
+                className="w-full h-full object-cover object-[50%_15%] group-hover:scale-103 transition duration-700"
                 referrerPolicy="no-referrer"
               />
-              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/25 to-transparent flex flex-col justify-end p-6 text-white">
+              <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col justify-end p-5 sm:p-6 text-white">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/80 px-2.5 py-0.5 rounded-md border border-emerald-700/50">
-                    Portrait • Departure Launch
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/85 px-2.5 py-0.5 rounded-md border border-emerald-700/50 shadow-xs">
+                    Fixed Portrait • Expedition Launch
                   </span>
-                  <span className="p-1.5 rounded-lg bg-black/40 text-white/80 opacity-0 group-hover:opacity-100 transition">
+                  <span className="p-1.5 rounded-lg bg-black/40 text-white/90 opacity-0 group-hover:opacity-100 transition">
                     <Maximize2 className="w-4 h-4" />
                   </span>
                 </div>
@@ -399,6 +453,231 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
+      {/* OUR BLENDED FAMILY: EXPEDITION TRIO & FAMILY AT HOME (MERGED FROM FAMILY TAB) */}
+      <section id="family-section" className="space-y-12 pt-4 border-t border-stone-200">
+        
+        {/* Family Section Header */}
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-emerald-900 uppercase tracking-wider mb-1">
+              <Users className="w-3.5 h-3.5 text-emerald-800" />
+              <span>Our Blended Newfoundland Family</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              Meet the Crew Behind Mousse on the Loose
+            </h2>
+          </div>
+          <p className="text-xs sm:text-sm text-stone-600 max-w-md">
+            Joannie, Barton, and baby Henri on the road full-time, supported by our older kids cheering from home and joining for legs of the route.
+          </p>
+        </div>
+
+        {/* Editorial Overview Card with Family Photo */}
+        <div className="relative rounded-3xl overflow-hidden border border-stone-200 bg-[#FAF8F5] text-stone-900 shadow-sm">
+          <div className="grid grid-cols-1 lg:grid-cols-12 items-center">
+            
+            <div className="p-6 sm:p-10 lg:col-span-7 space-y-5">
+              <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-emerald-900/10 text-emerald-950 border border-emerald-900/15">
+                <Users className="w-3.5 h-3.5 text-emerald-900" />
+                <span>Mousse on the Loose • Arctic to Antarctica</span>
+              </div>
+
+              <h3 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight leading-snug">
+                Joannie, Barton, Baby Henri & The Americas Expedition
+              </h3>
+
+              <p className="text-sm sm:text-base text-stone-700 leading-relaxed font-normal">
+                We are Joannie and Barton, a Newfoundland-based blended family, travelling with our newest addition, Henri. In August 2026, we set off in our custom moss-green overland truck, Mousse, on Mousse on the Loose: a year-long, 35,000 km journey from the Arctic to Antarctica, alongside remote Executive MBA studies. Our older children will join us for stretches of the adventure between university, work and lives of their own.
+              </p>
+
+              {/* Stats Strip */}
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 pt-4 border-t border-stone-200">
+                <div className="bg-white/90 border border-stone-200 rounded-2xl p-3 shadow-xs">
+                  <div className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Home Base</div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5">Newfoundland, Canada</div>
+                </div>
+                <div className="bg-white/90 border border-stone-200 rounded-2xl p-3 shadow-xs">
+                  <div className="text-[10px] text-emerald-800 font-semibold uppercase tracking-wider">The Rig (Mousse)</div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5">Lethbridge (Aug 27)</div>
+                </div>
+                <div className="bg-white/90 border border-stone-200 rounded-2xl p-3 shadow-xs">
+                  <div className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Infant Explorer</div>
+                  <div className="font-bold text-blue-950 text-xs sm:text-sm mt-0.5">Henri (Born June 2026)</div>
+                </div>
+                <div className="bg-white/90 border border-stone-200 rounded-2xl p-3 shadow-xs">
+                  <div className="text-[10px] text-stone-500 font-semibold uppercase tracking-wider">Studies On Road</div>
+                  <div className="font-bold text-slate-900 text-xs sm:text-sm mt-0.5">Executive MBAs (Remote)</div>
+                </div>
+              </div>
+            </div>
+
+            <div className="lg:col-span-5 p-6 sm:p-8 lg:p-6 flex flex-col justify-center">
+              <div className="relative rounded-2xl overflow-hidden border border-stone-200 shadow-md group bg-stone-100">
+                <img
+                  src={familyHeroPhoto}
+                  alt="Joannie, Barton, and baby Henri on the Newfoundland pebble beach"
+                  className="w-full h-80 object-cover group-hover:scale-105 transition duration-700"
+                  referrerPolicy="no-referrer"
+                />
+                <div className="absolute inset-0 bg-gradient-to-t from-slate-950/80 via-slate-950/20 to-transparent flex flex-col justify-end p-4 text-xs">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <span className="text-[10px] font-semibold uppercase tracking-wider text-blue-200">Expedition Family Portrait</span>
+                      <div className="text-white text-sm font-bold">Joannie, Barton & Baby Henri</div>
+                      <div className="text-stone-300 text-[11px]">Newfoundland pebble coast, August 2026</div>
+                    </div>
+                    <button
+                      onClick={() => setIsEditingHeroPhoto(true)}
+                      className="px-2.5 py-1.5 bg-white/20 backdrop-blur-md hover:bg-blue-900 text-white rounded-xl text-xs flex items-center gap-1 shadow transition cursor-pointer"
+                      title="Change or upload family photo"
+                    >
+                      <Upload className="w-3.5 h-3.5" />
+                      <span className="hidden sm:inline">Change Photo</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+          </div>
+        </div>
+
+        {/* The Sabbatical Crew on the Road */}
+        <div className="space-y-6">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Truck className="w-6 h-6 text-blue-900" />
+              On the Road: The Full-Time Expedition Trio
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1">
+              Joannie, Barton, and baby Henri traveling full-time in our custom 4x4 overland truck.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            {onTripMembers.map((member) => (
+              <div
+                key={member.id}
+                className="bg-white border border-stone-200 rounded-3xl p-6 shadow-xs space-y-4 flex flex-col justify-between hover:shadow-md transition"
+              >
+                <div className="space-y-4">
+                  <div className="flex items-center gap-4">
+                    <div className="relative group">
+                      <img
+                        src={member.avatar}
+                        alt={member.name}
+                        className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-900/30 shadow-xs"
+                      />
+                      <button
+                        onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
+                        title="Update photo"
+                        className="absolute -bottom-1 -right-1 p-1.5 bg-blue-950 hover:bg-blue-900 text-white rounded-lg opacity-85 hover:opacity-100 transition shadow-xs cursor-pointer"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                    <div>
+                      <h4 className="text-lg font-bold text-slate-900">{member.name}</h4>
+                      <div className="text-xs font-semibold text-blue-900">{member.relation}</div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-stone-600 leading-relaxed font-normal">
+                    {member.bio}
+                  </p>
+
+                  {member.detailNote && (
+                    <div className="bg-[#FAF8F5] border border-stone-200 rounded-xl p-2.5 text-[11px] text-stone-700">
+                      <span className="font-semibold text-slate-900">Status: </span>
+                      {member.detailNote}
+                    </div>
+                  )}
+                </div>
+
+                <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                  <button
+                    onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
+                    className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1 cursor-pointer"
+                  >
+                    <Upload className="w-3 h-3" />
+                    <span>Update Picture</span>
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Our Family at Home (Monogram avatars per guidelines) */}
+        <div className="space-y-6 pt-4">
+          <div>
+            <h3 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+              <Home className="w-6 h-6 text-stone-700" />
+              Our Family at Home
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1">
+              The older kids in our blended family cheering us on, tracking our live coordinates, and following little brother Henri.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-6">
+            {atHomeMembers.map((member) => (
+              <div
+                key={member.id}
+                className="bg-white border border-stone-200 rounded-3xl p-5 shadow-xs space-y-3 flex flex-col justify-between hover:shadow-md transition"
+              >
+                <div className="space-y-3">
+                  <div className="flex items-center gap-3">
+                    {/* Monogram avatar badge instead of photo */}
+                    <div className="w-12 h-12 rounded-2xl bg-blue-950 text-white flex items-center justify-center font-bold text-base shadow-xs border border-blue-900">
+                      {member.name.charAt(0)}
+                    </div>
+                    <div>
+                      <h4 className="text-base font-bold text-slate-900">{member.name}</h4>
+                      <div className="text-xs text-stone-500">{member.relation}</div>
+                    </div>
+                  </div>
+
+                  <p className="text-xs text-stone-600 leading-relaxed font-normal">
+                    {member.bio}
+                  </p>
+                </div>
+
+                {member.detailNote && (
+                  <div className="bg-[#FAF8F5] border border-stone-200 rounded-xl p-2 text-[11px] text-stone-700 font-medium">
+                    {member.detailNote}
+                  </div>
+                )}
+              </div>
+            ))}
+          </div>
+        </div>
+
+        {/* Instagram Follow Banner */}
+        <div className="bg-gradient-to-r from-amber-50 via-orange-50 to-stone-50 border border-orange-200/90 rounded-3xl p-6 sm:p-8 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 shadow-xs">
+          <div className="space-y-1">
+            <div className="flex items-center gap-2 text-orange-800 font-bold text-base">
+              <Instagram className="w-5 h-5 text-orange-700" />
+              <span>Follow the Expedition on Instagram</span>
+            </div>
+            <p className="text-xs text-stone-600 max-w-xl leading-relaxed">
+              Follow our daily reels, camp setups, baby Henri milestones, and behind-the-scenes overland stories as we make our way from the Arctic to Ushuaia.
+            </p>
+          </div>
+
+          <a
+            href="https://www.instagram.com/moussethetruck/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="bg-orange-700 hover:bg-orange-800 text-white font-semibold px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition shrink-0"
+          >
+            <span>@moussethetruck</span>
+            <ArrowUpRight className="w-4 h-4" />
+          </a>
+        </div>
+
+      </section>
+
       {/* ROUTE OVERVIEW STRIP & QUICK MAP JUMP */}
       <section className="bg-slate-950 text-white rounded-3xl p-6 sm:p-10 shadow-md relative overflow-hidden">
         <div className="relative z-10 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
@@ -477,7 +756,7 @@ export const HomePage: React.FC<HomePageProps> = ({
               </div>
               <button
                 onClick={() => setSelectedPhoto(null)}
-                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition"
+                className="w-8 h-8 rounded-full bg-slate-800 hover:bg-slate-700 text-white flex items-center justify-center transition cursor-pointer"
               >
                 <X className="w-4 h-4" />
               </button>
@@ -489,6 +768,128 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="max-h-[70vh] w-auto max-w-full object-contain rounded-xl"
                 referrerPolicy="no-referrer"
               />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Photo update modal for Joannie, Barton & Henri */}
+      {editingMember && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <h3 className="font-serif font-bold text-lg text-stone-900">
+                Update Profile Picture for {editingMember.name}
+              </h3>
+              <button
+                onClick={() => setEditingMember(null)}
+                className="w-7 h-7 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center justify-center text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-sans">
+              {/* Option A: Select file from device */}
+              <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-2">
+                <label className="block font-semibold text-stone-800">
+                  Select Real Photo from Device
+                </label>
+                <p className="text-[11px] text-stone-500">
+                  Choose your exact original photo file (JPG, PNG).
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'member')}
+                  className="w-full text-xs text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-900 file:text-white hover:file:bg-blue-950 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center gap-2 text-stone-400 text-center">
+                <div className="h-[1px] bg-stone-300 flex-1"></div>
+                <span>OR PASTE URL</span>
+                <div className="h-[1px] bg-stone-300 flex-1"></div>
+              </div>
+
+              {/* Option B: Enter URL */}
+              <form onSubmit={handleUpdateAvatar} className="space-y-4">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Image Web Link / URL
+                  </label>
+                  <input
+                    type="url"
+                    value={newPhotoUrl}
+                    onChange={(e) => setNewPhotoUrl(e.target.value)}
+                    placeholder="https://... or photo link"
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                  />
+                </div>
+
+                <div className="flex items-center justify-end gap-2 pt-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingMember(null)}
+                    className="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 font-medium cursor-pointer"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={!newPhotoUrl.trim()}
+                    className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-semibold disabled:opacity-50 cursor-pointer"
+                  >
+                    Save Photo URL
+                  </button>
+                </div>
+              </form>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Hero Photo update modal */}
+      {isEditingHeroPhoto && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
+          <div className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <h3 className="font-serif font-bold text-lg text-stone-900">
+                Upload Real Family Photo
+              </h3>
+              <button
+                onClick={() => setIsEditingHeroPhoto(false)}
+                className="w-7 h-7 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center justify-center text-xs cursor-pointer"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4 text-xs font-sans">
+              <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-2">
+                <label className="block font-semibold text-stone-800">
+                  Select Family Photo File from Your Device
+                </label>
+                <p className="text-[11px] text-stone-500">
+                  Select your original family photo.
+                </p>
+                <input
+                  type="file"
+                  accept="image/*"
+                  onChange={(e) => handleFileUpload(e, 'hero')}
+                  className="w-full text-xs text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-900 file:text-white hover:file:bg-blue-950 cursor-pointer"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setIsEditingHeroPhoto(false)}
+                  className="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 font-medium cursor-pointer"
+                >
+                  Close
+                </button>
+              </div>
             </div>
           </div>
         </div>

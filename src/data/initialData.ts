@@ -170,7 +170,7 @@ export const INITIAL_SUBSCRIBERS: Subscriber[] = [
 ];
 
 export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
-  // 1 Active Published Entry
+  // 1 Active Published Entry - Departure
   {
     id: 'log-departure-mousse',
     title: 'The Grand Departure in Mousse: Embarking on 35,000 km from Newfoundland to the Americas',
@@ -192,7 +192,7 @@ Travelling with our newest addition, baby Henri (born June 2026), our expedition
 Henri is settling into his custom truck crib with wide eyes, and Mousse’s off-grid solar power and heated living quarters feel like the perfect mobile family home.
 
 From here, our compass points north up the Alaska Highway and Dempster Highway toward the Arctic Ocean at Tuktoyaktuk. Follow along with us on our live GPS map!`,
-    coverImage: '/lethbridge_departure.jpg',
+    coverImage: '/departure.jpeg',
     gallery: [
       {
         url: '/departure.jpeg',
@@ -234,240 +234,28 @@ From here, our compass points north up the Alaska Highway and Dempster Highway t
     mbaHighlight: 'Configured Starlink mobile satellite system and kicked off initial road-term MBA readings.',
     henriHighlight: 'Henri testing out his custom truck crib for the very first night on the road!',
     tags: ['Departure', 'Mousse On The Loose', 'Lethbridge', 'Expedition Launch', 'Newfoundland Family'],
-    likesCount: 14,
-    commentsCount: 2
-  },
-
-  // Category 1: adventures_mba (DRAFT - will be published upon reaching the Arctic)
-  {
-    id: 'log-1-tuktoyaktuk',
-    title: 'Reaching the Arctic Ocean at Tuktoyaktuk: The Northern Apex of our Sabbatical',
-    slug: 'reaching-arctic-ocean-tuktoyaktuk',
-    date: 'July 15, 2026',
-    locationName: 'Tuktoyaktuk, Northwest Territories',
-    country: 'Canada',
-    coordinates: { lat: 69.4454, lng: -133.0342 },
-    author: 'Joannie & Barton',
-    readingTime: '5 min read',
-    category: 'adventures_mba',
-    journeyLeg: 'arctic_yukon',
-    status: 'draft',
-    excerpt: 'Standing on the rocky gravel shore of the Beaufort Sea in 3°C air, looking out at the Arctic Ocean with Barton and 3-month-old Henri. We have reached the northernmost point of our 35,000 km expedition.',
-    content: `After months of preparation, route mapping, and outfitting our 4x4 campervan, reaching Tuktoyaktuk felt like stepping onto another planet.
-
-The Dempster Highway threw everything at our rig: washboard gravel, thick northern mud, and endless rolling tundra. Barton navigated the long shifts with patience, while the van’s custom off-grid power setup and heated living quarters kept our little family cozy.
-
-During evening stops under the 24-hour midnight sun, Barton and I worked on our remote Executive MBA readings via Starlink. Discussing corporate finance and supply chain logistics at 69° North while listening to the wind sweep across the Arctic tundra is an experience we will never forget.
-
-From here, every single kilometer points south. Next stop: heading back through the Yukon and down toward the Pacific Northwest.`,
-    coverImage: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=1200&q=80',
-    gallery: [
-      {
-        url: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=800&q=80',
-        caption: 'The Arctic Ocean coast at Tuktoyaktuk, NWT.',
-        type: 'image'
-      },
-      {
-        url: 'https://images.unsplash.com/photo-1518709268805-4e9042af9f23?auto=format&fit=crop&w=800&q=80',
-        caption: 'The Dempster Highway gravel stretch.',
-        type: 'image'
-      }
-    ],
-    metrics: {
-      elevationM: 5,
-      tempC: 3,
-      kmTraveled: 3640,
-      henriAge: '3 months',
-      mbaModule: 'Economics & Supply Chain Analysis'
-    },
-    mbaHighlight: 'Reviewed remote MBA case studies under the Arctic midnight sun with our Starlink setup.',
-    tags: ['Arctic Ocean', 'Dempster Highway', 'MBA On The Road', 'Adventures']
-  },
-
-  // Category 2: henri_milestones (DRAFT)
-  {
-    id: 'log-2-henri-arctic-dips',
-    title: 'Henri’s First Ocean Dip: Touching the Arctic Sea in Wool Booties',
-    slug: 'henri-first-ocean-dip-arctic',
-    date: 'July 16, 2026',
-    locationName: 'Beaufort Sea, Tuktoyaktuk',
-    country: 'Canada',
-    coordinates: { lat: 69.4454, lng: -133.0342 },
-    author: 'Joannie & Barton',
-    readingTime: '3 min read',
-    category: 'henri_milestones',
-    journeyLeg: 'arctic_yukon',
-    status: 'draft',
-    excerpt: 'Little Henri turned 3 months old on the Dempster Highway. Today we gently dipped his tiny wool bootie into the Arctic Ocean surf!',
-    content: `Henri continues to be the calmest, happiest little companion on this expedition. 
-
-The rhythmic vibration of the 4x4 campervan on gravel roads lulls him into the most peaceful naps. In Tuktoyaktuk, bundled in three layers of soft merino wool and his insulated down suit, he opened his big eyes to look at the vast expanse of the Beaufort Sea.
-
-We gently dipped the toe of his warm bootie into the edge of the Arctic water. One day we will tell him that before he could crawl, he was already at the edge of the Arctic Ocean.
-
-Milestones this month:
-- Rolling over easily during tummy time on the van’s rear bed
-- Big, bubbly giggles whenever Barton sings camp songs
-- Sleeping through the night despite 24 hours of Arctic daylight`,
-    coverImage: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1200&q=80',
-    gallery: [
-      {
-        url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=800&q=80',
-        caption: 'Henri all bundled up for the brisk Arctic breeze.',
-        type: 'image'
-      }
-    ],
-    metrics: {
-      elevationM: 5,
-      tempC: 4,
-      kmTraveled: 3650,
-      henriAge: '3 months, 18 days'
-    },
-    henriHighlight: 'Dipped his bootie in the Arctic Ocean and rolled over on the campervan bed in full midnight daylight!',
-    tags: ['Henri Milestones', 'Baby On Board', 'Arctic Memories']
-  },
-
-  // Category 3: visits_along_the_way (DRAFT)
-  {
-    id: 'log-3-whitehorse-fellowship',
-    title: 'Yukon Hospitality: Visiting Old Friends & Fellow Sabbatical Travelers in Whitehorse',
-    slug: 'yukon-hospitality-whitehorse-visit',
-    date: 'June 22, 2026',
-    locationName: 'Whitehorse, Yukon Territory',
-    country: 'Canada',
-    coordinates: { lat: 60.7212, lng: -135.0568 },
-    author: 'Joannie & Barton',
-    readingTime: '4 min read',
-    category: 'visits_along_the_way',
-    journeyLeg: 'arctic_yukon',
-    status: 'draft',
-    excerpt: 'A wonderful stopover in Whitehorse to visit friends, share a home-cooked dinner, and connect with fellow overlanders heading north.',
-    content: `After long days on the Alaska Highway, pulling into Whitehorse was a breath of fresh air. 
-
-We had the pleasure of catching up with old medical school friends and sharing a warm meal around a real dining table. Henri loved being passed around for cuddles, and we had a great time swapping travel stories with an overlanding family who just completed their trip from South America.
-
-Having these personal visits and connections along the route grounds our journey in community. It reminds us that while the geography is stunning, the people we visit make the trip truly special.`,
-    coverImage: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1200&q=80',
-    gallery: [
-      {
-        url: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=800&q=80',
-        caption: 'Evening light over the Yukon River in Whitehorse.',
-        type: 'image'
-      }
-    ],
-    metrics: {
-      elevationM: 670,
-      tempC: 18,
-      kmTraveled: 2150,
-      henriAge: '2.5 months',
-      visitors: 'Dave & Elena (Whitehorse)'
-    },
-    visitorHighlight: 'Dinner in Whitehorse with Dave & Elena, and sharing route advice with fellow overlanders.',
-    tags: ['Visits Along The Way', 'Whitehorse', 'Yukon Friends']
-  },
-
-  // Category 1: adventures_mba (DRAFT)
-  {
-    id: 'log-4-pacific-northwest',
-    title: 'Heading South through the Pacific Northwest: Olympic Peninsula & Ferry Crossings',
-    slug: 'pacific-northwest-olympic-peninsula',
-    date: 'August 24, 2026',
-    locationName: 'Seattle & Olympic Peninsula, WA',
-    country: 'United States',
-    coordinates: { lat: 47.6062, lng: -122.3321 },
-    author: 'Joannie & Barton',
-    readingTime: '4 min read',
-    category: 'adventures_mba',
-    journeyLeg: 'rockies_pacific',
-    status: 'draft',
-    excerpt: 'Descending into the towering mossy rainforests of Washington state, taking ferry crossings across Puget Sound, and digging into our fall MBA team project.',
-    content: `The contrast between the stark Arctic tundra and the dense temperate rainforests of the Pacific Northwest is breathtaking.
-
-We’ve set up camp along the Olympic Peninsula, surrounded by giant Douglas firs and cedar trees. The air smells of salt water and cedar.
-
-Barton and I spent this morning on a virtual team strategy call with our MBA cohort. Working collaboratively across time zones from inside our campervan is becoming second nature. The solar battery system has been rock-solid, powering our laptops, Starlink, and baby bottle warmers effortlessly.
-
-Next up: navigating south along the Oregon Coast and through the California Redwoods toward Baja!`,
-    coverImage: 'https://images.unsplash.com/photo-1502175353174-a7a70e73b362?auto=format&fit=crop&w=1200&q=80',
-    gallery: [
-      {
-        url: 'https://images.unsplash.com/photo-1502175353174-a7a70e73b362?auto=format&fit=crop&w=800&q=80',
-        caption: 'Lush greenery and coastline in the Pacific Northwest.',
-        type: 'image'
-      }
-    ],
-    metrics: {
-      elevationM: 68,
-      tempC: 20,
-      kmTraveled: 6920,
-      henriAge: '4.5 months',
-      mbaModule: 'Strategic Leadership & Remote Team Dynamics'
-    },
-    mbaHighlight: 'Completed our MBA strategy cohort presentation via Starlink from Olympic National Park.',
-    tags: ['Pacific Northwest', 'MBA On The Road', 'Camper Life', 'Adventures']
-  },
-
-  // Category 2: henri_milestones (DRAFT)
-  {
-    id: 'log-5-henri-forest-smiles',
-    title: 'Henri’s 4-Month Milestones: Discovering Giant Trees and Rainforest Sounds',
-    slug: 'henri-4-month-milestones-rainforest',
-    date: 'August 26, 2026',
-    locationName: 'Olympic Peninsula, Washington',
-    country: 'United States',
-    coordinates: { lat: 47.6062, lng: -122.3321 },
-    author: 'Joannie & Barton',
-    readingTime: '3 min read',
-    category: 'henri_milestones',
-    journeyLeg: 'rockies_pacific',
-    status: 'draft',
-    excerpt: 'Henri is now 4 months old! He loves riding in the front carrier, staring up through the canopy at sunlight filtering through the trees.',
-    content: `Henri reached his 4-month mark this week, and we are amazed by how quickly he is growing.
-
-His favorite activity is riding in the baby sling on morning walks. He tracks birds with his eyes and reaches his hands toward tree branches. In the van, he is practicing grabbing his soft teething toys and babbling happily while Barton cooks dinner.
-
-We check in with family back home regularly via video calls. Riley shared photos of her newborn twins, and Henri seemed fascinated by the sounds of the babies over the screen!
-
-Current Henri Stats:
-- Age: 4 months
-- Favorite sound: Barton whistling while making morning pour-over coffee
-- Favorite view: Canopy leaves dancing in the coastal breeze`,
-    coverImage: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=1200&q=80',
-    gallery: [
-      {
-        url: 'https://images.unsplash.com/photo-1544161515-4ab6ce6db874?auto=format&fit=crop&w=800&q=80',
-        caption: 'Morning carrier walk through coastal forests with Henri.',
-        type: 'image'
-      }
-    ],
-    metrics: {
-      elevationM: 68,
-      tempC: 19,
-      kmTraveled: 6930,
-      henriAge: '4 months'
-    },
-    henriHighlight: '4-month growth milestone! Reaching for toys, wide awake forest walks, and video chatting with big sister Riley and her new twins.',
-    tags: ['Henri Milestones', '4 Months Old', 'Family Love']
+    likesCount: 0,
+    commentsCount: 0
   }
 ];
 
 export const INITIAL_LIVE_LOCATION: LiveLocation = {
-  lat: 47.6062,
-  lng: -122.3321,
-  altitudeM: 68,
+  lat: 49.6956,
+  lng: -112.8451,
+  altitudeM: 910,
   speedKmh: 0,
-  heading: 185,
+  heading: 0,
   timestamp: new Date().toISOString(),
-  accuracyM: 4.8,
-  batteryPercent: 92,
+  accuracyM: 5.0,
+  batteryPercent: 98,
   isSharing: true,
-  statusMessage: 'Parked along Puget Sound on the Olympic Peninsula. Coffee brewing, Henri enjoying morning tummy time, and preparing for the drive south!',
-  lastCity: 'Seattle & Olympic Peninsula, WA',
-  nextMilestone: 'Oregon Coast & California Redwoods',
+  statusMessage: 'Picked up Mousse in Lethbridge, Alberta! Truck organized, baby Henri snug in his custom crib, Starlink active, and setting off on the 35,000 km expedition.',
+  lastCity: 'Lethbridge, Alberta',
+  nextMilestone: 'Banff National Park & Alaska Highway',
   trackingMode: 'live_browser_gps',
   weather: {
-    tempC: 19,
-    condition: 'Crisp Coastal Sun',
+    tempC: 22,
+    condition: 'Sunny & Clear Big Sky',
     icon: 'sun'
   }
 };
@@ -476,19 +264,20 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
   {
     id: 'lethbridge',
     name: 'Lethbridge, Alberta',
-    region: 'Truck Pickup Point',
+    region: 'Truck Pickup & Launch Point',
     country: 'Canada',
     leg: 'arctic_yukon',
     lat: 49.6956,
     lng: -112.8451,
-    date: 'August 27, 2026',
+    date: 'August 28, 2026',
     status: 'completed',
     elevationM: 910,
     summary: 'Picked up our custom overland truck in Lethbridge on August 27th, packed baby Henri’s gear, and embarked on our grand journey up North on August 28th!',
     henriNote: 'Henri testing out his custom truck crib for the very first night.',
     mbaNote: 'Configured Starlink and reviewed our first road-term syllabus.',
     thumbnail: 'https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 0
+    distanceFromStartKm: 0,
+    relatedLogId: 'log-departure-mousse'
   },
   {
     id: 'whitehorse',
@@ -499,14 +288,11 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     lat: 60.7212,
     lng: -135.0568,
     date: 'September 2026',
-    status: 'completed',
+    status: 'upcoming',
     elevationM: 670,
-    summary: 'Visited medical friends in Whitehorse and prepped the 4x4 rig for the Dempster Highway gravel run.',
-    henriNote: 'Rolled over on the camper bed under 24-hour midnight daylight.',
-    mbaNote: 'Strategy team breakout call from the banks of the Yukon River.',
+    summary: 'Planned: Visiting medical friends in Whitehorse and prepping the 4x4 rig for the Dempster Highway gravel run.',
     thumbnail: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 2150,
-    relatedLogId: 'log-3-whitehorse-fellowship'
+    distanceFromStartKm: 2150
   },
   {
     id: 'tuktoyaktuk',
@@ -516,33 +302,27 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     leg: 'arctic_yukon',
     lat: 69.4454,
     lng: -133.0342,
-    date: 'July 15, 2026',
-    status: 'completed',
+    date: 'October 2026',
+    status: 'upcoming',
     elevationM: 5,
-    summary: 'The Northern Apex! Dipped Henri’s bootie into the Arctic Ocean surf at 69° North.',
-    henriNote: 'Dipped his bootie in the Arctic Ocean!',
-    mbaNote: 'Supply chain analysis of extreme northern logistics.',
+    summary: 'Planned: The Northern Apex! Reaching the Beaufort Sea and Arctic Ocean surf at 69° North.',
     thumbnail: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 3640,
-    relatedLogId: 'log-1-tuktoyaktuk'
+    distanceFromStartKm: 3640
   },
   {
     id: 'olympic_peninsula',
-    name: 'Olympic Peninsula & Seattle',
-    region: 'Washington State',
+    name: 'Pacific Northwest & Redwoods',
+    region: 'Washington & Oregon',
     country: 'United States',
     leg: 'rockies_pacific',
     lat: 47.6062,
     lng: -122.3321,
-    date: 'August 24, 2026',
-    status: 'current',
+    date: 'November 2026',
+    status: 'upcoming',
     elevationM: 68,
-    summary: 'CURRENT POSITION: Coastal rainforests, Puget Sound ferry crossings, and Henri’s 4-month milestones.',
-    henriNote: '4 months old, loving forest carrier walks and smiling at big trees.',
-    mbaNote: 'Working on fall MBA strategy cohort presentations.',
+    summary: 'Planned: Coastal rainforests, Puget Sound ferry crossings, and exploring the California Redwoods.',
     thumbnail: 'https://images.unsplash.com/photo-1502175353174-a7a70e73b362?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 6920,
-    relatedLogId: 'log-4-pacific-northwest'
+    distanceFromStartKm: 6920
   },
   {
     id: 'baja_mexico',
@@ -552,7 +332,7 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     leg: 'baja_mexico',
     lat: 26.0118,
     lng: -111.3486,
-    date: 'October 2026',
+    date: 'December 2026',
     status: 'upcoming',
     elevationM: 12,
     summary: 'Planned: Desert coastal tracks, warm turquoise water, and off-grid solar camping with Henri.',
@@ -567,10 +347,10 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     leg: 'central_america',
     lat: 9.3892,
     lng: -84.1404,
-    date: 'December 2026',
+    date: 'February 2027',
     status: 'upcoming',
     elevationM: 1200,
-    summary: 'Planned: Cloud forests, wildlife encounters, and warm tropical Christmas sabbatical celebration.',
+    summary: 'Planned: Cloud forests, wildlife encounters, and warm tropical sabbatical adventures.',
     distanceFromStartKm: 15600,
     thumbnail: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=600&q=80'
   },
@@ -582,7 +362,7 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     leg: 'andes_south_america',
     lat: -13.5319,
     lng: -71.9675,
-    date: 'March 2027',
+    date: 'April 2027',
     status: 'upcoming',
     elevationM: 3400,
     summary: 'Planned: High Andean passes, historic cultural sites, and alpaca watching with baby Henri.',
@@ -608,50 +388,7 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
 
 export const INITIAL_MEDIA: MediaItem[] = [];
 
-export const INITIAL_COMMENTS: CommentItem[] = [
-  {
-    id: 'comm-1',
-    targetId: 'log-1-tuktoyaktuk',
-    targetType: 'log',
-    authorId: 'user_riley',
-    authorName: 'Riley',
-    authorAvatar: 'https://images.unsplash.com/photo-1544005313-94ddf0286df2?auto=format&fit=crop&w=200&q=80',
-    authorRole: 'family_member',
-    authorRoleLabel: 'Riley (Twin Mom)',
-    content: 'Mom & Barton, these Arctic photos are so incredible! Henri looks so tiny and adorable in that down suit. The twins and I are following your GPS track every day from home. Love you so much!',
-    createdAt: 'July 16, 2026 • 3:20 PM',
-    likes: 6,
-    likedByUsers: ['user_joannie', 'user_barton']
-  },
-  {
-    id: 'comm-2',
-    targetId: 'log-2-henri-arctic-dips',
-    targetType: 'log',
-    authorId: 'user_mattea',
-    authorName: 'Mattéa',
-    authorAvatar: 'https://images.unsplash.com/photo-1534528741775-53994a69daeb?auto=format&fit=crop&w=200&q=80',
-    authorRole: 'family_member',
-    authorRoleLabel: 'Mattéa (Family)',
-    content: 'That bootie in the Arctic Ocean photo is the best thing ever! Henri is already such a little explorer. Miss you guys!',
-    createdAt: 'July 17, 2026 • 9:10 AM',
-    likes: 4,
-    likedByUsers: ['user_joannie', 'user_barton']
-  },
-  {
-    id: 'comm-3',
-    targetId: 'log-1-tuktoyaktuk',
-    targetType: 'log',
-    authorId: 'user_alex_mba',
-    authorName: 'Alex Rivera',
-    authorAvatar: 'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?auto=format&fit=crop&w=200&q=80',
-    authorRole: 'mba_cohort',
-    authorRoleLabel: 'MBA Cohort Classmate',
-    content: 'Joining Zoom strategy discussions from 69° North latitude via Starlink is next-level! The whole MBA cohort is cheering you both on.',
-    createdAt: 'July 18, 2026 • 11:45 AM',
-    likes: 5,
-    likedByUsers: ['user_barton']
-  }
-];
+export const INITIAL_COMMENTS: CommentItem[] = [];
 
 export const INITIAL_RIG_PHOTOS: RigPhoto[] = [
   {

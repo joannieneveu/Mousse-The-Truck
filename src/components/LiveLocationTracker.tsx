@@ -71,10 +71,10 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
   
   // Campfire Cheers State
   const [cheerSent, setCheerSent] = useState<string | null>(null);
-  const [cheerCount, setCheerCount] = useState<number>(248);
-  const [smoresCount, setSmoresCount] = useState<number>(89);
-  const [drinksCount, setDrinksCount] = useState<number>(104);
-  const [firesCount, setFiresCount] = useState<number>(55);
+  const [cheerCount, setCheerCount] = useState<number>(0);
+  const [smoresCount, setSmoresCount] = useState<number>(0);
+  const [drinksCount, setDrinksCount] = useState<number>(0);
+  const [firesCount, setFiresCount] = useState<number>(0);
   const [gpsError, setGpsError] = useState<string | null>(null);
 
   // Live guest comments/messages for the rig
@@ -280,6 +280,9 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
     if (!commentText.trim()) return;
 
     setIsPostingComment(true);
+    const author = currentUser ? currentUser.name : (guestName.trim() || 'Guest Follower');
+    const content = commentText.trim();
+
     try {
       const res = await fetch('/api/comments', {
         method: 'POST',
@@ -287,34 +290,44 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
         body: JSON.stringify({
           targetId: 'live_radar',
           targetType: 'radar',
-          content: commentText.trim(),
-          authorName: currentUser ? currentUser.name : (guestName.trim() || 'Guest Follower')
+          content,
+          authorName: author
         })
       });
       const data = await res.json();
       if (data.success && data.comment) {
         setRadarComments(prev => [data.comment, ...prev]);
         setCommentText('');
+        setIsPostingComment(false);
+        return;
       }
     } catch (err) {
-      console.error(err);
-    } finally {
-      setIsPostingComment(false);
+      // static fallback
     }
+
+    const localComment: CommentItem = {
+      id: `comment-radar-${Date.now()}`,
+      targetId: 'live_radar',
+      targetType: 'live_radar',
+      authorName: author,
+      content,
+      createdAt: new Date().toISOString(),
+      likes: 0
+    };
+    setRadarComments(prev => [localComment, ...prev]);
+    setCommentText('');
+    setIsPostingComment(false);
   };
 
   // Admin remove inappropriate comment
   const handleDeleteComment = async (commentId: string) => {
     if (window.confirm('Remove this comment as administrator?')) {
       try {
-        const res = await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
-        const data = await res.json();
-        if (data.success) {
-          setRadarComments(prev => prev.filter(c => c.id !== commentId));
-        }
+        await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
       } catch (err) {
-        console.error(err);
+        // static fallback
       }
+      setRadarComments(prev => prev.filter(c => c.id !== commentId));
     }
   };
 
@@ -810,46 +823,6 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
             </button>
           </div>
         </form>
-      </div>
-
-      {/* How GPS Coordinates Update Explainer Card */}
-      <div className="bg-[#FAF8F5] border border-stone-200/90 rounded-3xl p-6 sm:p-8 space-y-4">
-        <h3 className="font-serif font-bold text-stone-900 text-base flex items-center gap-2">
-          <Satellite className="w-5 h-5 text-blue-900" />
-          How Your GPS Coordinates Update Along the 35,000 KM Route
-        </h3>
-        
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-xs">
-          <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-1.5 shadow-xs">
-            <span className="font-bold text-blue-950 flex items-center gap-1.5">
-              <Navigation className="w-4 h-4 text-blue-900" />
-              1. Live Phone / Tablet GPS
-            </span>
-            <p className="text-stone-600 leading-relaxed text-[11px]">
-              Tap <strong>“Detect Device GPS”</strong> or <strong>“Start Continuous Stream”</strong> from your phone or tablet on the dash. It reads your device’s GPS chip and broadcasts coordinates in real-time.
-            </p>
-          </div>
-
-          <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-1.5 shadow-xs">
-            <span className="font-bold text-blue-950 flex items-center gap-1.5">
-              <MapPin className="w-4 h-4 text-emerald-800" />
-              2. One-Click Field Check-In
-            </span>
-            <p className="text-stone-600 leading-relaxed text-[11px]">
-              Whenever you stop at camp or cross a border, type your landmark or pick a preset, adjust coordinates, and tap <strong>“Publish Coordinates”</strong> to update the live marker instantly.
-            </p>
-          </div>
-
-          <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-1.5 shadow-xs">
-            <span className="font-bold text-blue-950 flex items-center gap-1.5">
-              <Wifi className="w-4 h-4 text-indigo-700" />
-              3. Starlink Satellite Sync
-            </span>
-            <p className="text-stone-600 leading-relaxed text-[11px]">
-              Through off-grid stretches like the Dempster Highway or Andean passes, coordinates sync via the truck’s high-speed <strong>Starlink</strong> terminal and Weboost booster.
-            </p>
-          </div>
-        </div>
       </div>
 
     </div>
