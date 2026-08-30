@@ -1,0 +1,6 @@
+{
+  "name": "Mousse on the Loose - Americas Expedition",
+  "description": "Mousse on the Loose: Interactive family expedition journal, live GPS route map, rig specs for Mousse, photo/video galleries, and subscriber updates for Joannie, Barton, and baby Henri journeying 35,000 km across the Americas.",
+  "requestFramePermissions": ["geolocation"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
