@@ -29,6 +29,7 @@ import { SubscribeModal } from './components/SubscribeModal';
 import { SubscriberAdminModal } from './components/SubscriberAdminModal';
 import { AuthModal } from './components/AuthModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { 
   Compass, 
   MapPin, 
@@ -45,7 +46,8 @@ import {
   Instagram
 } from 'lucide-react';
 
-export default function App() {
+function AppContent() {
+  const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live'>('home');
   const [waypoints, setWaypoints] = useState<Waypoint[]>(INITIAL_WAYPOINTS);
   const [liveLocation, setLiveLocation] = useState<LiveLocation>(INITIAL_LIVE_LOCATION);
@@ -506,45 +508,49 @@ export default function App() {
                 <h3 className="font-bold text-white text-lg leading-tight">
                   Mousse on the Loose
                 </h3>
-                <div className="text-[11px] text-emerald-400 font-medium">Americas Sabbatical Expedition</div>
+                <div className="text-[11px] text-emerald-400 font-medium">
+                  {language === 'fr' ? 'Expédition sabbatique des Amériques' : 'Americas Sabbatical Expedition'}
+                </div>
               </div>
             </div>
             <p className="text-xs text-slate-400 leading-relaxed max-w-md">
-              Documenting our 35,000 km journey in our moss-green rig <em>Mousse</em> across the Americas with baby Henri, learning Spanish, remote MBA coursework, and visiting friends along the way.
+              {language === 'fr'
+                ? 'Récit de notre voyage de 35 000 km à bord de notre camion Mousse à travers les Amériques avec bébé Henri, apprentissage de l\'espagnol, études MBA à distance et visites d\'amis en chemin.'
+                : 'Documenting our 35,000 km journey in our moss-green rig Mousse across the Americas with baby Henri, learning Spanish, remote MBA coursework, and visiting friends along the way.'}
             </p>
             <div className="text-[11px] text-slate-400 pt-1">
-              Joannie, Barton & Henri • Rig: Mousse • Picked up in Lethbridge, AB (Aug 27, 2026)
+              Joannie, Barton & Henri • {language === 'fr' ? 'Camion : Mousse • Réceptionné à Lethbridge, AB (27 août 2026)' : 'Rig: Mousse • Picked up in Lethbridge, AB (Aug 27, 2026)'}
             </div>
           </div>
 
           <div className="space-y-2 text-xs">
             <div className="font-semibold text-slate-200 uppercase tracking-wider text-[11px]">
-              Expedition Sections
+              {language === 'fr' ? 'Rubriques de l\'expédition' : 'Expedition Sections'}
             </div>
             <ul className="space-y-1.5 text-slate-400">
               <li>
                 <button onClick={() => { setActiveTab('home'); }} className="hover:text-blue-400 transition">
-                  Home & Family Story
+                  {language === 'fr' ? 'Accueil et histoire familiale' : 'Home & Family Story'}
                 </button>
               </li>
               <li>
                 <button onClick={() => { setActiveTab('map'); setSelectedLog(null); }} className="hover:text-blue-400 transition">
-                  Interactive Route Map
+                  {language === 'fr' ? 'Carte interactive de l\'itinéraire' : 'Interactive Route Map'}
                 </button>
               </li>
               <li>
                 <button onClick={() => { setActiveTab('journal'); setSelectedLog(null); }} className="hover:text-blue-400 transition">
-                  The 3 Expedition Journals
+                  {language === 'fr' ? 'Les 3 journaux d\'expédition' : 'The 3 Expedition Journals'}
                 </button>
               </li>
               <li>
                 <button onClick={() => { setActiveTab('gallery'); }} className="hover:text-blue-400 transition">
-                  Photo & Video Gallery
+                  {language === 'fr' ? 'Galerie photos et vidéos' : 'Photo & Video Gallery'}
                 </button>
               </li>
               <li>
                 <button onClick={() => { setActiveTab('rig'); }} className="hover:text-blue-400 transition">
-                  Mousse (Rig Specs & Photos)
+                  {language === 'fr' ? 'Mousse (Spécifications et photos)' : 'Mousse (Rig Specs & Photos)'}
                 </button>
               </li>
             </ul>
@@ -552,10 +558,12 @@ export default function App() {
 
           <div className="space-y-3 text-xs">
             <div className="font-semibold text-slate-200 uppercase tracking-wider text-[11px]">
-              Follow the Expedition
+              {language === 'fr' ? 'Suivre l\'expédition' : 'Follow the Expedition'}
             </div>
             <p className="text-xs text-slate-400">
-              Follow real-time overland reels, baby Henri milestones, and camp stories on Instagram.
+              {language === 'fr'
+                ? 'Suivez les reels tout-terrain en direct, les progrès de bébé Henri et les histoires de bivouac sur Instagram.'
+                : 'Follow real-time overland reels, baby Henri milestones, and camp stories on Instagram.'}
             </p>
             <div className="flex flex-wrap items-center gap-2">
               <a
@@ -573,7 +581,7 @@ export default function App() {
                 className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition"
               >
                 <Mail className="w-3.5 h-3.5 text-blue-400" />
-                <span>Email Journal</span>
+                <span>{language === 'fr' ? 'Recevoir le journal' : 'Email Journal'}</span>
               </button>
             </div>
           </div>
@@ -581,7 +589,7 @@ export default function App() {
         </div>
 
         <div className="max-w-7xl mx-auto mt-8 pt-6 border-t border-slate-900 flex flex-col sm:flex-row items-center justify-between text-[11px] text-slate-500 gap-2">
-          <span>&copy; 2026 Joannie & Barton. All rights reserved.</span>
+          <span>&copy; 2026 Joannie & Barton. {language === 'fr' ? 'Tous droits réservés.' : 'All rights reserved.'}</span>
           <span>Lethbridge ➔ Arctic Ocean (Tuktoyaktuk) ➔ Ushuaia, Tierra del Fuego</span>
         </div>
       </footer>
@@ -629,7 +637,9 @@ export default function App() {
             <div className="flex items-center justify-between border-b border-stone-200 pb-3">
               <div className="flex items-center gap-2">
                 <Radio className="w-5 h-5 text-blue-900" />
-                <h3 className="font-serif font-bold text-lg text-stone-900">GPS Satellite Status & Check-In</h3>
+                <h3 className="font-serif font-bold text-lg text-stone-900">
+                  {language === 'fr' ? 'État satellite GPS & Pointage' : 'GPS Satellite Status & Check-In'}
+                </h3>
               </div>
               <button
                 onClick={() => setIsCheckinModalOpen(false)}
@@ -649,5 +659,13 @@ export default function App() {
       )}
 
     </div>
+  );
+}
+
+export default function App() {
+  return (
+    <LanguageProvider>
+      <AppContent />
+    </LanguageProvider>
   );
 }

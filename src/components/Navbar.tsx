@@ -18,9 +18,11 @@ import {
   Heart,
   Settings,
   Instagram,
-  Key
+  Key,
+  Globe
 } from 'lucide-react';
 import { LiveLocation, UserProfile } from '../types';
+import { useLanguage } from '../context/LanguageContext';
 
 interface NavbarProps {
   activeTab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live';
@@ -50,6 +52,7 @@ export const Navbar: React.FC<NavbarProps> = ({
   onToggleLocationSharing,
 }) => {
   const isAdmin = currentUser?.isAdmin;
+  const { language, setLanguage, t } = useLanguage();
 
   return (
     <header id="main-navbar" className="sticky top-0 z-40 bg-[#FAF8F5]/95 backdrop-blur-md text-stone-800 border-b border-stone-200/90 shadow-sm font-sans">
@@ -73,17 +76,40 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span className={`font-semibold uppercase tracking-wider text-[10px] px-1.5 py-0.2 rounded ${
                 liveLocation.isSharing ? 'bg-emerald-900/80 text-emerald-300' : 'bg-blue-900/80 text-blue-300'
               }`}>
-                {liveLocation.isSharing ? 'Live GPS Active' : 'GPS Paused'}
+                {liveLocation.isSharing ? t('nav.gpsActive') : t('nav.gpsPaused')}
               </span>
               <span className="text-slate-500 hidden sm:inline">•</span>
               <span className="truncate text-slate-300">
-                Currently near <strong className="text-white">{liveLocation.lastCity}</strong> • 6,920 km (Tuktoyaktuk Arctic Leg Reached)
+                {t('nav.currentlyNear')} <strong className="text-white">{liveLocation.lastCity}</strong> • {language === 'fr' ? '6 920 km (Étape arctique de Tuktoyaktuk atteinte)' : '6,920 km (Tuktoyaktuk Arctic Leg Reached)'}
               </span>
             </div>
           </div>
 
-          {/* Quick controls & Social */}
-          <div className="flex items-center gap-3 shrink-0 text-xs">
+          {/* Quick controls, Language & Social */}
+          <div className="flex items-center gap-2.5 sm:gap-3 shrink-0 text-xs">
+            
+            {/* Quick Language Toggle in Top Bar */}
+            <div className="flex items-center bg-slate-800 rounded-lg p-0.5 border border-slate-700">
+              <button
+                onClick={() => setLanguage('en')}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${
+                  language === 'en' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+                title="View website in English"
+              >
+                EN
+              </button>
+              <button
+                onClick={() => setLanguage('fr')}
+                className={`px-1.5 py-0.5 rounded text-[10px] font-bold transition ${
+                  language === 'fr' ? 'bg-blue-600 text-white' : 'text-slate-400 hover:text-white'
+                }`}
+                title="Traduire le site en Français"
+              >
+                FR
+              </button>
+            </div>
+
             <a
               href="https://www.instagram.com/moussethetruck/"
               target="_blank"
@@ -107,12 +133,12 @@ export const Navbar: React.FC<NavbarProps> = ({
                 {liveLocation.isSharing ? (
                   <>
                     <ToggleRight className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>Sharing: ON</span>
+                    <span>{t('nav.sharingOn')}</span>
                   </>
                 ) : (
                   <>
                     <ToggleLeft className="w-3.5 h-3.5 text-blue-400" />
-                    <span>Sharing: OFF</span>
+                    <span>{t('nav.sharingOff')}</span>
                   </>
                 )}
               </button>
@@ -123,7 +149,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="text-blue-400 hover:text-blue-300 font-semibold text-[11px] flex items-center gap-1"
             >
               <Radio className="w-3 h-3 animate-pulse" />
-              <span>Satellite Check-In</span>
+              <span>{t('nav.satelliteCheckin')}</span>
             </button>
           </div>
 
@@ -148,13 +174,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   Mousse on the Loose
                 </span>
                 <span className="hidden md:inline-block px-2 py-0.5 rounded-full text-[10px] font-bold bg-emerald-100 text-emerald-900 border border-emerald-200">
-                  Americas Expedition
+                  {t('nav.expeditionBadge')}
                 </span>
               </div>
               <div className="text-[11px] sm:text-xs text-stone-500 font-sans flex items-center gap-1.5 mt-0.5">
-                <span className="text-stone-700 font-medium">Joannie, Barton & Baby Henri</span>
+                <span className="text-stone-700 font-medium">{t('nav.crewSubtitle')}</span>
                 <span className="text-stone-300">•</span>
-                <span className="text-emerald-800 font-semibold">Rig: Mousse</span>
+                <span className="text-emerald-800 font-semibold">{t('nav.rigSubtitle')}</span>
               </div>
             </div>
           </div>
@@ -162,6 +188,35 @@ export const Navbar: React.FC<NavbarProps> = ({
           {/* Action Buttons & Profile */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             
+            {/* Language Switcher Button in Header */}
+            <div className="flex items-center bg-stone-100 hover:bg-stone-200/80 p-0.5 rounded-xl border border-stone-200 text-xs shadow-2xs">
+              <button
+                id="lang-toggle-en"
+                onClick={() => setLanguage('en')}
+                className={`px-2 py-1 rounded-lg font-bold text-xs transition ${
+                  language === 'en'
+                    ? 'bg-blue-900 text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+                title="Switch to English"
+              >
+                EN
+              </button>
+              <button
+                id="lang-toggle-fr"
+                onClick={() => setLanguage('fr')}
+                className={`px-2 py-1 rounded-lg font-bold text-xs flex items-center gap-1 transition ${
+                  language === 'fr'
+                    ? 'bg-blue-900 text-white shadow-2xs'
+                    : 'text-stone-600 hover:text-stone-900'
+                }`}
+                title="Passer en Français"
+              >
+                <span>FR</span>
+                <span className="hidden lg:inline text-[11px] font-medium">Français</span>
+              </button>
+            </div>
+
             {/* Admin: Manage Subscribers */}
             {isAdmin && (
               <>
@@ -171,7 +226,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                   title="Manage Subscribers & Review Pending Requests"
                 >
                   <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                  <span className="hidden sm:inline">Subscribers</span>
+                  <span className="hidden sm:inline">{t('nav.subscribers')}</span>
                   {pendingSubscribersCount > 0 && (
                     <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
                       {pendingSubscribersCount}
@@ -186,7 +241,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                     title="Change Admin Password"
                   >
                     <Key className="w-3.5 h-3.5 text-blue-900" />
-                    <span className="hidden lg:inline">Security</span>
+                    <span className="hidden lg:inline">{t('nav.security')}</span>
                   </button>
                 )}
               </>
@@ -211,7 +266,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               className="bg-blue-900 hover:bg-blue-950 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
             >
               <Mail className="w-3.5 h-3.5" />
-              <span>Subscribe</span>
+              <span>{t('nav.subscribe')}</span>
             </button>
 
             {/* Log In / User Button */}
@@ -219,7 +274,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               id="auth-persona-btn"
               onClick={onOpenAuthModal}
               className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition text-xs"
-              title={currentUser ? `Signed in as ${currentUser.name}` : "Sign In (Admins & Guests)"}
+              title={currentUser ? `${t('nav.signedInAs')} ${currentUser.name}` : t('nav.signIn')}
             >
               {currentUser?.avatar ? (
                 <img
@@ -231,7 +286,7 @@ export const Navbar: React.FC<NavbarProps> = ({
                 <User className="w-4 h-4 text-stone-600" />
               )}
               <span className="font-bold text-stone-800 hidden md:inline truncate max-w-[120px]">
-                {currentUser?.name || 'Sign In'}
+                {currentUser?.name || t('nav.signIn')}
               </span>
               {currentUser?.isAdmin && (
                 <span className="hidden sm:inline-block w-2 h-2 rounded-full bg-emerald-500" title="Admin Active" />
@@ -258,7 +313,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Home className="w-4 h-4" />
-              <span>Home</span>
+              <span>{t('nav.home')}</span>
             </button>
 
             <button
@@ -271,7 +326,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Compass className="w-4 h-4" />
-              <span>Interactive Map</span>
+              <span>{t('nav.map')}</span>
             </button>
 
             <button
@@ -284,7 +339,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <BookOpen className="w-4 h-4" />
-              <span>Expedition Journals</span>
+              <span>{t('nav.journal')}</span>
             </button>
 
             <button
@@ -297,7 +352,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Camera className="w-4 h-4" />
-              <span>Photo & Video Gallery</span>
+              <span>{t('nav.gallery')}</span>
             </button>
 
             <button
@@ -310,7 +365,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Truck className="w-4 h-4" />
-              <span>Mousse (The Rig)</span>
+              <span>{t('nav.rig')}</span>
             </button>
 
             <button
@@ -323,7 +378,7 @@ export const Navbar: React.FC<NavbarProps> = ({
               }`}
             >
               <Radio className="w-4 h-4" />
-              <span>GPS Tracking</span>
+              <span>{t('nav.live')}</span>
             </button>
 
           </nav>
@@ -332,3 +387,4 @@ export const Navbar: React.FC<NavbarProps> = ({
     </header>
   );
 };
+

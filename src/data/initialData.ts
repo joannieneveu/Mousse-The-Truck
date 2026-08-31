@@ -25,10 +25,10 @@ export const ADMIN_USERS: UserProfile[] = [
   },
   {
     id: 'user_barton',
-    name: 'Barton',
+    name: 'Barton Thiessen',
     email: 'barton@mun.ca',
     role: 'expedition_leader',
-    roleLabel: 'Barton (Expedition Leader & Driver)',
+    roleLabel: 'Barton Thiessen (Expedition Leader & Driver)',
     avatar: '/Barton.jpeg',
     joinedDate: 'August 2026',
     bio: 'Physician, Skier, expedition driver, 4x4 overland student, and remote MBA student managing our travel adventures and campfire dinners while also caring for baby Henri.',
@@ -95,7 +95,7 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
   },
   {
     id: 'mattea',
-    name: 'Mattéa',
+    name: 'Mattea',
     relation: 'Sister & McGill Student (Montreal, QC)',
     bio: 'Loving the photos and updates of little brother Henri exploring the outdoors while doing her second year university at McGill.',
     avatar: '',
@@ -134,7 +134,7 @@ export const INITIAL_SUBSCRIBERS: Subscriber[] = [
   },
   {
     id: 'sub-4',
-    name: 'Mattéa',
+    name: 'Mattea',
     email: 'mattea.family@americasexpedition.com',
     relationshipNote: 'Family',
     status: 'approved',
