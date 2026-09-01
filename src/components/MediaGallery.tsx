@@ -27,14 +27,19 @@ import {
   Sparkles,
   MessageSquare,
   Send,
-  Trash2
+  Trash2,
+  FolderOpen,
+  Layers
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { BatchPhotoUploadModal } from './BatchPhotoUploadModal';
+import { extractPhotosFromDropEvent, extractPhotosFromFileInput, ProcessedPhoto } from '../utils/photoDropHelper';
 
 interface MediaGalleryProps {
   media: MediaItem[];
   currentUser?: UserProfile | null;
   onUploadMedia: (newMedia: Partial<MediaItem>) => Promise<void>;
+  onUploadBatchMedia?: (items: Partial<MediaItem>[]) => Promise<void>;
   onViewLocationOnMap?: (lat?: number, lng?: number) => void;
   onOpenAuthModal?: () => void;
 }
@@ -43,6 +48,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
   media,
   currentUser,
   onUploadMedia,
+  onUploadBatchMedia,
   onViewLocationOnMap,
   onOpenAuthModal,
 }) => {
@@ -53,6 +59,11 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [likedMediaIds, setLikedMediaIds] = useState<Record<string, boolean>>({});
   const [mediaList, setMediaList] = useState<MediaItem[]>(media);
+
+  // Batch Drag & Drop Upload State
+  const [batchPhotosToUpload, setBatchPhotosToUpload] = useState<ProcessedPhoto[]>([]);
+  const [isBatchModalOpen, setIsBatchModalOpen] = useState<boolean>(false);
+  const [isHeroDragging, setIsHeroDragging] = useState<boolean>(false);
 
   // Comments for Active Media
   const [mediaComments, setMediaComments] = useState<CommentItem[]>([]);
@@ -195,6 +206,40 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     }
   };
 
+  const handleDropOnGalleryHero = async (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsHeroDragging(false);
+    const photos = await extractPhotosFromDropEvent(e);
+    if (photos.length > 0) {
+      setBatchPhotosToUpload(photos);
+      setIsBatchModalOpen(true);
+    }
+  };
+
+  const handleFileInputBatch = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const photos = await extractPhotosFromFileInput(e);
+    if (photos.length > 0) {
+      setBatchPhotosToUpload(photos);
+      setIsBatchModalOpen(true);
+    }
+  };
+
+  const handleExecuteBatchUpload = async (items: Partial<MediaItem>[]) => {
+    if (onUploadBatchMedia) {
+      await onUploadBatchMedia(items);
+    } else {
+      for (const item of items) {
+        await onUploadMedia(item);
+      }
+    }
+    confetti({
+      particleCount: 50,
+      spread: 70,
+      origin: { y: 0.6 }
+    });
+  };
+
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadTitle.trim() || !uploadUrl.trim()) return;
@@ -214,7 +259,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         locationName: uploadLocation,
         country: 'Canada',
         tags: tagsArray.length > 0 ? tagsArray : ['Expedition 2026'],
-        author: uploadAuthor || 'Dr. Joannie & Dr. Barton',
+        author: uploadAuthor || 'Joannie & Barton',
         journeyLeg: 'rockies_pacific',
         likesCount: 0
       });
@@ -254,13 +299,77 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
           </p>
         </div>
 
-        <button
-          onClick={() => setIsUploadModalOpen(true)}
-          className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition self-start md:self-auto font-sans"
-        >
-          <Upload className="w-4 h-4" />
-          <span>Upload Photo or Video</span>
-        </button>
+        <div className="flex items-center gap-2.5">
+          <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition self-start md:self-auto font-sans">
+            <FolderOpen className="w-4 h-4" />
+            <span>Upload From Files / iPhoto</span>
+            <input
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              onChange={handleFileInputBatch}
+              className="hidden"
+            />
+          </label>
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-2xs transition self-start md:self-auto font-sans"
+          >
+            <Upload className="w-4 h-4 text-stone-600" />
+            <span>Single Upload</span>
+          </button>
+        </div>
+      </div>
+
+      {/* DRAG & DROP PHOTO DROPZONE HERO BANNER */}
+      <div
+        id="gallery-drag-dropzone"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsHeroDragging(true);
+        }}
+        onDragLeave={() => setIsHeroDragging(false)}
+        onDrop={handleDropOnGalleryHero}
+        className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition p-6 sm:p-8 text-center font-sans ${
+          isHeroDragging 
+            ? 'border-blue-900 bg-blue-50/90 scale-101 shadow-lg' 
+            : 'border-stone-300 bg-white/80 hover:bg-white hover:border-stone-400 shadow-2xs'
+        }`}
+      >
+        <div className="max-w-xl mx-auto space-y-4">
+          <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center shadow-xs">
+            <Layers className="w-7 h-7" />
+          </div>
+
+          <div className="space-y-1.5">
+            <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
+              {isHeroDragging ? '✨ Release Photos to Upload Batch!' : 'Drag & Drop Photos Directly From iPhoto or Computer Folders'}
+            </h2>
+            <p className="text-xs text-stone-600 leading-relaxed max-w-md mx-auto">
+              Drag one or multiple photos directly onto this screen from your Mac's <strong>iPhoto / Apple Photos library</strong>, desktop folders, or phone backup.
+            </p>
+          </div>
+
+          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+            <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition">
+              <FolderOpen className="w-4 h-4" />
+              <span>Select Photos from Computer</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={handleFileInputBatch}
+                className="hidden"
+              />
+            </label>
+            <button
+              onClick={() => setIsUploadModalOpen(true)}
+              className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
+            >
+              Paste Web Image URL
+            </button>
+          </div>
+        </div>
       </div>
 
       {/* Filter Bar */}
@@ -741,6 +850,18 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
           </div>
         </div>
       )}
+
+      {/* Batch Upload Modal for Multi-Photo Drag and Drop */}
+      <BatchPhotoUploadModal
+        isOpen={isBatchModalOpen}
+        onClose={() => {
+          setIsBatchModalOpen(false);
+          setBatchPhotosToUpload([]);
+        }}
+        initialPhotos={batchPhotosToUpload}
+        onUploadBatch={handleExecuteBatchUpload}
+        authorName={currentUser ? currentUser.name : 'Joannie & Barton'}
+      />
 
     </div>
   );

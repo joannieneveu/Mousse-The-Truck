@@ -251,7 +251,7 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
 
         {/* Footer */}
         <div className="flex items-center justify-between border-t border-stone-200 pt-4 text-xs text-stone-500">
-          <span>Only Dr. Joannie & Dr. Barton have administrative permissions to approve updates.</span>
+          <span>Only Joannie & Barton have administrative permissions to approve updates.</span>
           <button
             onClick={onClose}
             className="bg-stone-200 hover:bg-stone-300 text-stone-800 px-4 py-2 rounded-xl font-medium transition"

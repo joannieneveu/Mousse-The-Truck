@@ -186,7 +186,7 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
               Comprehensive Technical Systems
             </h2>
             <p className="text-xs sm:text-sm text-stone-600 mt-1 font-sans">
-              Explore the engineering and systems keeping Dr. Joannie, Dr. Barton, and baby Henri safe across extreme latitudes.
+              Explore the engineering and systems keeping Joannie, Barton, and baby Henri safe across extreme latitudes.
             </p>
           </div>
         </div>

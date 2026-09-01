@@ -154,6 +154,7 @@ export interface TravelLog {
   mbaHighlight?: string;
   visitorHighlight?: string;
   tags: string[];
+  fontFamily?: 'serif' | 'sans' | 'mono' | 'handwriting';
   likesCount?: number;
   commentsCount?: number;
 }

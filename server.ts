@@ -692,6 +692,43 @@ Return ONLY a valid JSON object matching this schema:
     res.json({ success: true, item: newItem });
   });
 
+  // Batch Media Upload (Multi-photo drag-and-drop from iPhoto or desktop folders)
+  app.post('/api/media/batch', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators can upload photos.' });
+      return;
+    }
+
+    const items: Partial<MediaItem>[] = req.body.items || [];
+    if (!Array.isArray(items) || items.length === 0) {
+      res.status(400).json({ error: 'No items provided for batch upload.' });
+      return;
+    }
+
+    const newCreatedItems: MediaItem[] = items.map((item, idx) => ({
+      id: `media-${Date.now()}-${idx}`,
+      title: item.title || 'Expedition Capture',
+      type: item.type || 'image',
+      url: item.url || '',
+      thumbnailUrl: item.thumbnailUrl || item.url || '',
+      caption: item.caption || '',
+      locationName: item.locationName || liveLocation.lastCity,
+      coordinates: item.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
+      date: item.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+      tags: item.tags || ['Mousse on the Loose'],
+      author: currentUser ? currentUser.name : 'Joannie & Barton',
+      featured: Boolean(item.featured),
+      journeyLeg: item.journeyLeg || 'arctic_yukon',
+      likesCount: 0,
+      commentsCount: 0
+    }));
+
+    // Prepend all new photos to media gallery
+    mediaItems = [...newCreatedItems, ...mediaItems];
+    console.log(`[Batch Media Upload] Uploaded ${newCreatedItems.length} photos from admin ${currentUser.name}`);
+    res.json({ success: true, items: newCreatedItems, count: newCreatedItems.length });
+  });
+
   // --- RIG & SPECS PHOTOS API ---
 
   app.get('/api/rig-photos', (req: Request, res: Response) => {

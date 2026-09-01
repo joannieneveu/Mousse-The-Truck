@@ -28,13 +28,13 @@ interface LocationPreset {
 }
 
 const ROUTE_PRESETS: LocationPreset[] = [
+  { name: 'Airdrie (Alberta)', country: 'Canada', lat: 51.2917, lng: -114.0144, leg: 'arctic_yukon' },
+  { name: 'Liard Provincial Park (BC)', country: 'Canada', lat: 59.4269, lng: -126.0964, leg: 'arctic_yukon' },
+  { name: 'Whitehorse, Yukon', country: 'Canada', lat: 60.7212, lng: -135.0568, leg: 'arctic_yukon' },
   { name: 'Lethbridge, Alberta', country: 'Canada', lat: 49.6956, lng: -112.8451, leg: 'arctic_yukon' },
   { name: 'Banff National Park, AB', country: 'Canada', lat: 51.1784, lng: -115.5708, leg: 'arctic_yukon' },
   { name: 'Jasper National Park, AB', country: 'Canada', lat: 52.8737, lng: -118.0814, leg: 'arctic_yukon' },
   { name: 'Dawson Creek, BC (Mile 0)', country: 'Canada', lat: 55.7596, lng: -120.2377, leg: 'arctic_yukon' },
-  { name: 'Liard River Hot Springs, BC', country: 'Canada', lat: 59.4260, lng: -126.1000, leg: 'arctic_yukon' },
-  { name: 'Whitehorse, Yukon', country: 'Canada', lat: 60.7212, lng: -135.0568, leg: 'arctic_yukon' },
-  { name: 'Dawson City, Yukon', country: 'Canada', lat: 64.0601, lng: -139.4320, leg: 'arctic_yukon' },
   { name: 'Arctic Circle (Dempster Hwy)', country: 'Canada', lat: 66.5650, lng: -136.3000, leg: 'arctic_yukon' },
   { name: 'Inuvik, NWT', country: 'Canada', lat: 68.3607, lng: -133.7230, leg: 'arctic_yukon' },
   { name: 'Tuktoyaktuk (Arctic Ocean), NWT', country: 'Canada', lat: 69.4454, lng: -133.0342, leg: 'arctic_yukon' },

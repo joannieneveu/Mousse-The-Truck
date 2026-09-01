@@ -360,7 +360,7 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
                 </span>
               </div>
               <p className="text-xs text-slate-400 font-sans mt-0.5">
-                Real-time satellite coordinates & telemetry for Dr. Joannie, Dr. Barton, and baby Henri.
+                Real-time satellite coordinates & telemetry for Joannie, Barton, and baby Henri.
               </p>
             </div>
           </div>
@@ -461,7 +461,7 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
           </div>
           <div className="flex-1 space-y-1.5">
             <div className="text-xs font-semibold text-blue-400 uppercase tracking-wider">
-              Field Status Note from Dr. Joannie & Dr. Barton
+              Field Status Note from Joannie & Barton
             </div>
             <p className="text-sm font-serif italic text-slate-100 leading-relaxed">
               "{liveLocation.statusMessage}"
@@ -646,7 +646,7 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
                 Expedition Broadcast & GPS Telemetry Controls
               </h2>
               <p className="text-xs text-stone-500 font-sans mt-0.5">
-                For Dr. Joannie & Dr. Barton: Broadcast live coordinates via device GPS, enter coordinates manually, or publish a field note.
+                For Joannie & Barton: Broadcast live coordinates via device GPS, enter coordinates manually, or publish a field note.
               </p>
             </div>
 
@@ -843,7 +843,7 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
           </div>
           <h3 className="text-sm font-bold text-stone-900">Expedition GPS Feed</h3>
           <p className="text-xs text-stone-600 max-w-md mx-auto leading-relaxed">
-            Live GPS telemetry and status notes are broadcast directly by Dr. Joannie & Dr. Barton from the Mousse overland truck. Follow along on the interactive route map above.
+            Live GPS telemetry and status notes are broadcast directly by Joannie & Barton from the Mousse overland truck. Follow along on the interactive route map above.
           </p>
         </div>
       )}

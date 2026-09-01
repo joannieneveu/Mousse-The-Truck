@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { 
   TravelLog, 
   JournalCategory, 
@@ -16,32 +16,17 @@ import {
   GraduationCap, 
   Users, 
   ArrowRight,
-  Send,
-  RefreshCw,
-  Heart,
-  Compass,
-  Sparkles,
-  Calendar,
-  Upload,
-  Image as ImageIcon,
-  Camera,
-  Lock,
-  Key,
   ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
-  FileEdit,
   Globe2,
-  Lightbulb,
-  Activity,
-  Trash2
+  Edit3
 } from 'lucide-react';
-import confetti from 'canvas-confetti';
+import { JournalEditorModal } from './JournalEditorModal';
 
 interface TravelLogListProps {
   logs: TravelLog[];
   onSelectLog: (log: TravelLog) => void;
   onCreateLog: (newLog: any) => Promise<void>;
+  onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<void>;
   onViewLocationOnMap?: (lat?: number, lng?: number) => void;
   onTogglePublish?: (logId: string) => Promise<void>;
   onDeleteLog?: (logId: string) => Promise<void>;
@@ -54,6 +39,7 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
   logs,
   onSelectLog,
   onCreateLog,
+  onUpdateLog,
   onViewLocationOnMap,
   onTogglePublish,
   onDeleteLog,
@@ -66,133 +52,16 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  
-  // New Log Form State
-  const [title, setTitle] = useState<string>('');
-  const [locationName, setLocationName] = useState<string>(liveLocation?.lastCity || 'Lethbridge & Heading North');
-  const [country, setCountry] = useState<string>('Canada');
-  const [category, setCategory] = useState<JournalCategory>('adventures_mba');
-  const [status, setStatus] = useState<'draft' | 'published'>('draft');
-  const [content, setContent] = useState<string>('');
-  const [coverImage, setCoverImage] = useState<string>('/lethbridge_departure.jpg');
-  const [coverImageFile, setCoverImageFile] = useState<File | null>(null);
-  const [activity, setActivity] = useState<string>('Picking up Mousse overland truck and heading North to Arctic tundra');
-  
-  const [henriHighlight, setHenriHighlight] = useState<string>('');
-  const [mbaHighlight, setMbaHighlight] = useState<string>('');
-  const [visitorHighlight, setVisitorHighlight] = useState<string>('');
-  const [henriAge, setHenriAge] = useState<string>('2.5 months');
+  const [editingLog, setEditingLog] = useState<TravelLog | null>(null);
 
-  // Google Location & Activity Insights state
-  const [isPullingInsights, setIsPullingInsights] = useState<boolean>(false);
-  const [insightsError, setInsightsError] = useState<string>('');
-  const [population, setPopulation] = useState<string>('');
-  const [interestingFacts, setInterestingFacts] = useState<string[]>([]);
-  const [culturalContext, setCulturalContext] = useState<string>('');
-  const [activityTips, setActivityTips] = useState<string>('');
-  const [newFactInput, setNewFactInput] = useState<string>('');
-  
-  // Map Ping State
-  const [addLocationPing, setAddLocationPing] = useState<boolean>(true);
-  const [latitude, setLatitude] = useState<number>(liveLocation?.lat || 49.6956);
-  const [longitude, setLongitude] = useState<number>(liveLocation?.lng || -112.8451);
-  const [journeyLeg, setJourneyLeg] = useState<JourneyLeg>('arctic_yukon');
-  const [updateLiveCity, setUpdateLiveCity] = useState<boolean>(true);
-
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-
-  const handleOpenCreateModal = () => {
-    if (isUserAdmin) {
-      setIsCreateModalOpen(true);
-    }
-  };
-
-  // Google / Gemini Location Insights Fetcher
-  const handlePullLocationInsights = async () => {
-    if (!locationName.trim()) {
-      setInsightsError('Please provide a location name first.');
-      return;
-    }
-    setInsightsError('');
-    setIsPullingInsights(true);
-
-    try {
-      const res = await fetch('/api/gemini/location-insights', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          locationName: locationName.trim(),
-          country: country.trim() || 'Canada',
-          activity: activity.trim() || undefined
-        })
-      });
-
-      const data = await res.json();
-      if (data.insights) {
-        if (data.insights.population) setPopulation(data.insights.population);
-        if (Array.isArray(data.insights.interestingFacts)) setInterestingFacts(data.insights.interestingFacts);
-        if (data.insights.culturalContext) setCulturalContext(data.insights.culturalContext);
-        if (data.insights.activityTips) setActivityTips(data.insights.activityTips);
-      }
-    } catch (err) {
-      console.error('Failed to pull insights:', err);
-      setInsightsError('Could not fetch location info automatically. You can still type details manually.');
-    } finally {
-      setIsPullingInsights(false);
-    }
-  };
-
-  const handleAddFact = () => {
-    if (newFactInput.trim()) {
-      setInterestingFacts(prev => [...prev, newFactInput.trim()]);
-      setNewFactInput('');
-    }
-  };
-
-  const handleRemoveFact = (index: number) => {
-    setInterestingFacts(prev => prev.filter((_, i) => i !== index));
-  };
-
-  const handleUseCurrentGPS = () => {
-    if (liveLocation) {
-      setLatitude(liveLocation.lat);
-      setLongitude(liveLocation.lng);
-      if (liveLocation.lastCity) {
-        setLocationName(liveLocation.lastCity);
-      }
-    } else if (navigator.geolocation) {
-      navigator.geolocation.getCurrentPosition(
-        (pos) => {
-          setLatitude(Number(pos.coords.latitude.toFixed(4)));
-          setLongitude(Number(pos.coords.longitude.toFixed(4)));
-        },
-        (err) => console.warn(err)
-      );
-    }
-  };
-
-  const handleCoverFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
-    setCoverImageFile(file);
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        setCoverImage(dataUrl);
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
-  // Filter logs: Non-admins ONLY see published logs
+  // Filter logs: public users only see published entries, admin sees all
   const visibleLogs = logs.filter(log => {
-    if (!isUserAdmin) {
-      return log.status === 'published';
+    if (isUserAdmin) {
+      if (statusFilter === 'published') return log.status === 'published';
+      if (statusFilter === 'draft') return log.status === 'draft';
+      return true;
     }
-    if (statusFilter === 'published') return log.status === 'published';
-    if (statusFilter === 'draft') return log.status === 'draft';
-    return true;
+    return log.status === 'published';
   });
 
   const filteredLogs = visibleLogs.filter(log => {
@@ -211,69 +80,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
 
   const featuredLog = filteredLogs[0] || visibleLogs[0];
 
-  // Submit new log
-  const handleSubmitNewLog = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!title.trim() || !content.trim()) return;
-
-    setIsSubmitting(true);
-    try {
-      await onCreateLog({
-        title,
-        locationName,
-        country,
-        category,
-        status,
-        content,
-        coverImage,
-        coordinates: { lat: Number(latitude), lng: Number(longitude) },
-        journeyLeg,
-        addLocationPing,
-        updateLiveCity,
-        henriHighlight: henriHighlight || undefined,
-        mbaHighlight: mbaHighlight || undefined,
-        visitorHighlight: visitorHighlight || undefined,
-        metrics: {
-          elevationM: liveLocation?.altitudeM || 910,
-          tempC: liveLocation?.weather?.tempC || 22,
-          kmTraveled: 0,
-          henriAge: henriAge || '2.5 months',
-          activityType: activity || undefined
-        },
-        locationInsights: (population || interestingFacts.length > 0 || culturalContext || activityTips) ? {
-          population: population || undefined,
-          interestingFacts: interestingFacts.length > 0 ? interestingFacts : undefined,
-          culturalContext: culturalContext || undefined,
-          activityTips: activityTips || undefined
-        } : undefined,
-        tags: [country, category.replace(/_/g, ' '), 'Mousse on the Loose 2026']
-      });
-
-      setIsCreateModalOpen(false);
-      // Reset
-      setTitle('');
-      setContent('');
-      setActivity('');
-      setPopulation('');
-      setInterestingFacts([]);
-      setCulturalContext('');
-      setActivityTips('');
-      setHenriHighlight('');
-      setMbaHighlight('');
-      setVisitorHighlight('');
-      
-      confetti({
-        particleCount: 50,
-        spread: 70,
-        origin: { y: 0.6 }
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSubmitting(false);
-    }
-  };
-
   const getCategoryBadge = (cat: JournalCategory) => {
     switch (cat) {
       case 'adventures_mba':
@@ -288,14 +94,14 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
   };
 
   return (
-    <div id="travel-logs-section" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
+    <div id="travel-logs-page" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-8 animate-in fade-in duration-300">
       
-      {/* Header Banner */}
-      <div className="flex flex-col md:flex-row md:items-end justify-between gap-4 border-b border-stone-200 pb-6">
+      {/* Top Header & Admin Action */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-stone-200 pb-6">
         <div>
-          <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 uppercase tracking-widest mb-1.5 font-sans">
+          <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 uppercase tracking-wider mb-1 font-sans">
             <BookOpen className="w-4 h-4" />
-            <span>The Sabbatical Chronicle</span>
+            <span>Expedition Chronicles</span>
           </div>
           <h1 className="text-3xl sm:text-4xl font-serif font-bold text-stone-900 tracking-tight">
             Expedition Journals
@@ -309,7 +115,10 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
           <div className="flex items-center gap-3">
             <button
               id="write-new-log-btn"
-              onClick={handleOpenCreateModal}
+              onClick={() => {
+                setEditingLog(null);
+                setIsCreateModalOpen(true);
+              }}
               className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition font-sans"
             >
               <Plus className="w-4 h-4" />
@@ -358,30 +167,28 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
         </div>
       )}
 
-      {/* 3 Dedicated Journal Streams Tabs */}
-      <div className="bg-white border border-stone-200/90 p-4 rounded-3xl space-y-3 shadow-sm font-sans">
-        <div className="flex items-center gap-2 overflow-x-auto pb-1 scrollbar-none">
-          <span className="text-xs font-semibold text-stone-500 uppercase tracking-wider mr-1 shrink-0">
-            Streams:
-          </span>
-
+      {/* Category Pills & Search */}
+      <div className="flex flex-col md:flex-row gap-4 justify-between items-stretch md:items-center font-sans">
+        
+        {/* Stream Filter Pills */}
+        <div className="flex items-center gap-2 overflow-x-auto pb-2 md:pb-0 scrollbar-none">
           <button
             onClick={() => setSelectedCategory('all')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition whitespace-nowrap ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition ${
               selectedCategory === 'all'
                 ? 'bg-stone-900 text-white shadow-xs'
-                : 'bg-stone-100 text-stone-700 hover:bg-stone-200'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
-            All Streams ({visibleLogs.length})
+            All Entries ({visibleLogs.length})
           </button>
 
           <button
             onClick={() => setSelectedCategory('adventures_mba')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
               selectedCategory === 'adventures_mba'
                 ? 'bg-blue-900 text-white shadow-xs'
-                : 'bg-blue-50 text-blue-950 border border-blue-200 hover:bg-blue-100'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
             <GraduationCap className="w-3.5 h-3.5" />
@@ -390,10 +197,10 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
 
           <button
             onClick={() => setSelectedCategory('henri_milestones')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
               selectedCategory === 'henri_milestones'
-                ? 'bg-rose-800 text-white shadow-xs'
-                : 'bg-rose-50 text-rose-950 border border-rose-200 hover:bg-rose-100'
+                ? 'bg-rose-700 text-white shadow-xs'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
             <Baby className="w-3.5 h-3.5" />
@@ -402,10 +209,10 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
 
           <button
             onClick={() => setSelectedCategory('visits_along_the_way')}
-            className={`px-3.5 py-1.5 rounded-xl text-xs font-semibold transition flex items-center gap-1.5 whitespace-nowrap ${
+            className={`px-4 py-2 rounded-2xl text-xs font-semibold whitespace-nowrap transition flex items-center gap-1.5 ${
               selectedCategory === 'visits_along_the_way'
-                ? 'bg-emerald-800 text-white shadow-xs'
-                : 'bg-emerald-50 text-emerald-950 border border-emerald-200 hover:bg-emerald-100'
+                ? 'bg-emerald-700 text-white shadow-xs'
+                : 'bg-white border border-stone-200 text-stone-600 hover:bg-stone-50'
             }`}
           >
             <Users className="w-3.5 h-3.5" />
@@ -413,69 +220,79 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
           </button>
         </div>
 
-        {/* Search */}
-        <div className="relative pt-1 border-t border-stone-100">
-          <Search className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+        {/* Search Bar */}
+        <div className="relative min-w-[240px]">
+          <Search className="w-4 h-4 absolute left-3.5 top-1/2 -translate-y-1/2 text-stone-400" />
           <input
             type="text"
+            placeholder="Search stories, places, milestones..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            placeholder="Search entries by location, keywords, milestones or tags..."
-            className="w-full bg-[#FAF8F5] border border-stone-200 rounded-xl pl-9 pr-3.5 py-2 text-xs text-stone-800 focus:outline-none focus:border-blue-900"
+            className="w-full pl-9.5 pr-4 py-2 bg-white border border-stone-200 rounded-2xl text-xs text-stone-900 placeholder:text-stone-400 focus:outline-none focus:ring-2 focus:ring-blue-900/30 focus:border-blue-900"
           />
+          {searchQuery && (
+            <button
+              onClick={() => setSearchQuery('')}
+              className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 hover:text-stone-600 text-xs"
+            >
+              ✕
+            </button>
+          )}
         </div>
       </div>
 
-      {/* Featured / Departure Log */}
-      {featuredLog && !searchQuery && selectedCategory === 'all' && statusFilter === 'all' && (
+      {/* Featured Story Hero Card (if filtered has entries) */}
+      {featuredLog && selectedCategory === 'all' && searchQuery === '' && (
         <div 
           onClick={() => onSelectLog(featuredLog)}
-          className="group relative bg-white border border-stone-200/90 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition cursor-pointer grid grid-cols-1 lg:grid-cols-12 gap-0"
+          className="group relative bg-white border border-stone-200/90 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition cursor-pointer grid grid-cols-1 lg:grid-cols-12 gap-0"
         >
-          <div className="lg:col-span-5 relative aspect-[3/4] sm:aspect-[4/5] lg:aspect-auto h-80 sm:h-96 lg:h-full bg-stone-900 overflow-hidden">
+          <div className="lg:col-span-7 relative bg-stone-900 overflow-hidden min-h-[300px] sm:min-h-[360px]">
             <img
               src={featuredLog.coverImage}
               alt={featuredLog.title}
               className={`w-full h-full ${
                 featuredLog.coverImage.includes('departure.jpeg') ? 'object-cover object-[50%_15%]' : 'object-cover'
-              } group-hover:scale-102 transition duration-500`}
+              } group-hover:scale-103 transition duration-700`}
+              referrerPolicy="no-referrer"
             />
-            <div className="absolute top-3 left-3 flex items-center gap-2 font-sans">
-              <span className={`px-3 py-1 rounded-full text-xs font-semibold border backdrop-blur-xs ${getCategoryBadge(featuredLog.category).bg}`}>
-                {getCategoryBadge(featuredLog.category).label}
+            <div className="absolute top-4 left-4 flex items-center gap-2 font-sans">
+              <span className="px-3 py-1 rounded-full text-xs font-semibold bg-white/90 backdrop-blur-xs text-blue-950 border border-stone-200 shadow-xs">
+                ⭐ Featured Chronicle
               </span>
               {featuredLog.status === 'draft' && (
-                <span className="px-2.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white shadow-xs">
+                <span className="px-2.5 py-0.5 rounded-full text-[11px] font-bold bg-amber-500 text-white shadow-xs">
                   DRAFT
                 </span>
               )}
             </div>
           </div>
 
-          <div className="lg:col-span-7 p-6 sm:p-8 flex flex-col justify-between space-y-4">
+          <div className="lg:col-span-5 p-6 sm:p-8 flex flex-col justify-between space-y-6">
             <div className="space-y-3">
-              <div className="flex items-center gap-3 text-xs text-stone-500 font-sans">
-                <span className="flex items-center gap-1">
-                  <Calendar className="w-3.5 h-3.5" />
-                  {featuredLog.date}
+              <div className="flex flex-wrap items-center gap-2 font-sans text-xs">
+                <span className={`px-2.5 py-0.5 rounded-full font-semibold border ${getCategoryBadge(featuredLog.category).bg}`}>
+                  {getCategoryBadge(featuredLog.category).label}
                 </span>
-                <span>•</span>
-                <span className="flex items-center gap-1 text-blue-900 font-medium">
-                  <MapPin className="w-3.5 h-3.5" />
-                  {featuredLog.locationName}
-                </span>
-                <span>•</span>
-                <span className="flex items-center gap-1">
+                <span className="text-stone-400">•</span>
+                <span className="text-stone-500 flex items-center gap-1">
                   <Clock className="w-3.5 h-3.5" />
                   {featuredLog.readingTime}
                 </span>
+              </div>
+
+              <div className="flex items-center gap-2 text-xs text-blue-900 font-semibold font-sans">
+                <MapPin className="w-3.5 h-3.5" />
+                <span>{featuredLog.locationName}</span>
+                <span className="text-stone-400">•</span>
+                <span className="text-stone-500 font-normal">{featuredLog.date}</span>
               </div>
 
               <h2 className="text-2xl sm:text-3xl font-serif font-bold text-stone-900 group-hover:text-blue-900 transition leading-tight">
                 {featuredLog.title}
               </h2>
 
-              <p className="text-xs sm:text-sm text-stone-600 font-serif leading-relaxed line-clamp-3">
+              <p className="text-xs sm:text-sm text-stone-600 font-serif leading-relaxed line-clamp-4">
                 {featuredLog.excerpt || featuredLog.content.slice(0, 200)}...
               </p>
             </div>
@@ -486,6 +303,19 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
               </span>
 
               <div className="flex items-center gap-2">
+                {isUserAdmin && (
+                  <button
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setEditingLog(featuredLog);
+                    }}
+                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition"
+                  >
+                    <Edit3 className="w-3.5 h-3.5" />
+                    <span>Edit</span>
+                  </button>
+                )}
+
                 {isUserAdmin && onTogglePublish && (
                   <button
                     onClick={(e) => {
@@ -600,6 +430,19 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
                     </span>
 
                     <div className="flex items-center gap-2">
+                      {isUserAdmin && (
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            setEditingLog(log);
+                          }}
+                          className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
+                      )}
+
                       {isUserAdmin && onTogglePublish && (
                         <button
                           onClick={(e) => {
@@ -628,509 +471,27 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
         )}
       </div>
 
-      {/* --- WRITE NEW LOG MODAL --- */}
-      {isCreateModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-3xl w-full p-6 sm:p-8 shadow-2xl text-stone-800 space-y-6 my-8 font-sans">
-            
-            <div className="flex items-center justify-between border-b border-stone-200 pb-4">
-              <div>
-                <h2 className="text-xl font-serif font-bold text-stone-900 flex items-center gap-2">
-                  <BookOpen className="w-5 h-5 text-blue-900" />
-                  Write Expedition Journal Entry
-                </h2>
-                <p className="text-xs text-stone-500">
-                  Author: Joannie & Barton (Mousse on the Loose)
-                </p>
-              </div>
-
-              <button
-                onClick={() => setIsCreateModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 flex items-center justify-center text-sm"
-              >
-                ✕
-              </button>
-            </div>
-
-            <form onSubmit={handleSubmitNewLog} className="space-y-5 text-xs">
-              
-              {/* Publication Status Toggle */}
-              <div className="bg-amber-50/80 border border-amber-200 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                <div>
-                  <div className="font-semibold text-amber-950 text-xs">Publication Status</div>
-                  <div className="text-[11px] text-amber-800">
-                    Drafts remain hidden from the public until you reach the Arctic and choose to publish!
-                  </div>
-                </div>
-
-                <div className="flex items-center gap-2 bg-white border border-amber-200 p-1 rounded-xl shrink-0">
-                  <button
-                    type="button"
-                    onClick={() => setStatus('draft')}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                      status === 'draft' ? 'bg-amber-600 text-white' : 'text-stone-600 hover:bg-stone-100'
-                    }`}
-                  >
-                    Save as Draft (Private)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setStatus('published')}
-                    className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                      status === 'published' ? 'bg-emerald-700 text-white' : 'text-stone-600 hover:bg-stone-100'
-                    }`}
-                  >
-                    Publish to Public
-                  </button>
-                </div>
-              </div>
-
-              {/* Journal Category Selection */}
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Choose Journal Stream *
-                </label>
-                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-                  <label className={`p-3 rounded-2xl border cursor-pointer flex flex-col justify-between transition ${
-                    category === 'adventures_mba' 
-                      ? 'bg-blue-50 border-blue-900 ring-1 ring-blue-900 text-blue-950' 
-                      : 'bg-white border-stone-200 text-stone-700'
-                  }`}>
-                    <div className="flex items-center gap-1.5 font-bold mb-1">
-                      <GraduationCap className="w-4 h-4 text-blue-900" />
-                      <span>Adventures & MBA</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500">Barton & Joannie's sabbatical & MBA on the road</p>
-                    <input 
-                      type="radio" 
-                      name="journal_cat" 
-                      value="adventures_mba" 
-                      checked={category === 'adventures_mba'} 
-                      onChange={() => setCategory('adventures_mba')} 
-                      className="sr-only" 
-                    />
-                  </label>
-
-                  <label className={`p-3 rounded-2xl border cursor-pointer flex flex-col justify-between transition ${
-                    category === 'henri_milestones' 
-                      ? 'bg-rose-50 border-rose-700 ring-1 ring-rose-700 text-rose-950' 
-                      : 'bg-white border-stone-200 text-stone-700'
-                  }`}>
-                    <div className="flex items-center gap-1.5 font-bold mb-1">
-                      <Baby className="w-4 h-4 text-rose-700" />
-                      <span>Henri’s Milestones</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500">Milestones, firsts & infant memories</p>
-                    <input 
-                      type="radio" 
-                      name="journal_cat" 
-                      value="henri_milestones" 
-                      checked={category === 'henri_milestones'} 
-                      onChange={() => setCategory('henri_milestones')} 
-                      className="sr-only" 
-                    />
-                  </label>
-
-                  <label className={`p-3 rounded-2xl border cursor-pointer flex flex-col justify-between transition ${
-                    category === 'visits_along_the_way' 
-                      ? 'bg-emerald-50 border-emerald-700 ring-1 ring-emerald-700 text-emerald-950' 
-                      : 'bg-white border-stone-200 text-stone-700'
-                  }`}>
-                    <div className="flex items-center gap-1.5 font-bold mb-1">
-                      <Users className="w-4 h-4 text-emerald-700" />
-                      <span>Visits Along The Way</span>
-                    </div>
-                    <p className="text-[11px] text-stone-500">Visiting friends, family & colleagues</p>
-                    <input 
-                      type="radio" 
-                      name="journal_cat" 
-                      value="visits_along_the_way" 
-                      checked={category === 'visits_along_the_way'} 
-                      onChange={() => setCategory('visits_along_the_way')} 
-                      className="sr-only" 
-                    />
-                  </label>
-                </div>
-              </div>
-
-              {/* Title & Location */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                <div className="sm:col-span-2">
-                  <label className="block font-semibold text-stone-700 mb-1">
-                    Entry Title *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={title}
-                    onChange={(e) => setTitle(e.target.value)}
-                    placeholder="e.g. Navigating Coastal Passes & Fall MBA Team Work"
-                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 text-xs"
-                  />
-                </div>
-
-                <div>
-                  <label className="block font-semibold text-stone-700 mb-1">
-                    Location Name *
-                  </label>
-                  <input
-                    type="text"
-                    required
-                    value={locationName}
-                    onChange={(e) => setLocationName(e.target.value)}
-                    placeholder="e.g. Whitehorse, Yukon or Banff, AB"
-                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 text-xs"
-                  />
-                </div>
-              </div>
-
-              {/* Activity description */}
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Activity Done at this Location (Optional)
-                </label>
-                <input
-                  type="text"
-                  value={activity}
-                  onChange={(e) => setActivity(e.target.value)}
-                  placeholder="e.g. Soaking in natural mineral hot springs, 10km trail run, Starlink setup"
-                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 text-xs"
-                />
-              </div>
-
-              {/* GOOGLE LOCATION & ACTIVITY INSIGHTS GENERATOR */}
-              <div className="bg-blue-50/60 border border-blue-200/90 rounded-2xl p-4 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <div>
-                    <div className="flex items-center gap-1.5 font-bold text-blue-950 text-xs">
-                      <Sparkles className="w-4 h-4 text-blue-800" />
-                      <span>Google Location & Activity Insights</span>
-                    </div>
-                    <p className="text-[11px] text-stone-600">
-                      Pull population, cultural background, and interesting local facts about {locationName || 'your location'}.
-                    </p>
-                  </div>
-
-                  <button
-                    type="button"
-                    onClick={handlePullLocationInsights}
-                    disabled={isPullingInsights || !locationName.trim()}
-                    className="px-4 py-1.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-1.5 shadow-xs transition shrink-0 disabled:opacity-50"
-                  >
-                    {isPullingInsights ? (
-                      <>
-                        <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                        <span>Fetching info...</span>
-                      </>
-                    ) : (
-                      <>
-                        <Sparkles className="w-3.5 h-3.5" />
-                        <span>Pull Google Insights</span>
-                      </>
-                    )}
-                  </button>
-                </div>
-
-                {insightsError && (
-                  <p className="text-[11px] text-rose-600 font-medium">{insightsError}</p>
-                )}
-
-                {/* Pulled Insights Review & Edit */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-blue-200/60">
-                  <div>
-                    <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">
-                      Population Size
-                    </label>
-                    <input
-                      type="text"
-                      value={population}
-                      onChange={(e) => setPopulation(e.target.value)}
-                      placeholder="e.g. 28,000 residents"
-                      className="w-full bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 text-xs"
-                    />
-                  </div>
-
-                  <div>
-                    <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">
-                      Cultural Context / Territory
-                    </label>
-                    <input
-                      type="text"
-                      value={culturalContext}
-                      onChange={(e) => setCulturalContext(e.target.value)}
-                      placeholder="e.g. Traditional territory of Kwanlin Dün First Nation"
-                      className="w-full bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 text-xs"
-                    />
-                  </div>
-                </div>
-
-                {/* Interesting Facts List */}
-                <div className="space-y-1.5">
-                  <label className="block text-[11px] font-semibold text-stone-700">
-                    Interesting Facts about this Place
-                  </label>
-                  {interestingFacts.map((fact, idx) => (
-                    <div key={idx} className="flex items-center gap-2 bg-white border border-stone-200 px-3 py-1.5 rounded-xl text-xs text-stone-800">
-                      <span className="text-blue-900 font-bold">•</span>
-                      <span className="flex-1">{fact}</span>
-                      <button
-                        type="button"
-                        onClick={() => handleRemoveFact(idx)}
-                        className="text-stone-400 hover:text-rose-600 text-xs"
-                      >
-                        ✕
-                      </button>
-                    </div>
-                  ))}
-
-                  <div className="flex items-center gap-2">
-                    <input
-                      type="text"
-                      value={newFactInput}
-                      onChange={(e) => setNewFactInput(e.target.value)}
-                      placeholder="Add an interesting fact..."
-                      className="flex-1 bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 text-xs"
-                    />
-                    <button
-                      type="button"
-                      onClick={handleAddFact}
-                      className="px-3 py-1.5 bg-stone-200 hover:bg-stone-300 text-stone-800 rounded-xl text-xs font-semibold"
-                    >
-                      Add Fact
-                    </button>
-                  </div>
-                </div>
-
-                {activityTips && (
-                  <div>
-                    <label className="block text-[11px] font-semibold text-stone-700 mb-0.5">
-                      Activity Notes & Tips
-                    </label>
-                    <textarea
-                      rows={2}
-                      value={activityTips}
-                      onChange={(e) => setActivityTips(e.target.value)}
-                      className="w-full bg-white border border-stone-300 rounded-xl p-2 text-stone-900 text-xs"
-                    />
-                  </div>
-                )}
-              </div>
-
-              {/* Cover Image (Upload or URL) */}
-              <div className="space-y-2">
-                <label className="block font-semibold text-stone-700">
-                  Cover Photo (Upload from Device or paste URL)
-                </label>
-                <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-                  <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center justify-center gap-2 shadow-xs transition shrink-0">
-                    <Upload className="w-4 h-4" />
-                    <span>Upload Photo from Phone/Computer</span>
-                    <input
-                      type="file"
-                      accept="image/*"
-                      onChange={handleCoverFileUpload}
-                      className="hidden"
-                    />
-                  </label>
-                  <div className="flex-1 relative">
-                    <input
-                      type="text"
-                      value={coverImage}
-                      onChange={(e) => setCoverImage(e.target.value)}
-                      placeholder="Or paste an image URL (https://...)"
-                      className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 text-xs"
-                    />
-                  </div>
-                </div>
-
-                {coverImage && (
-                  <div className="relative w-full h-32 rounded-xl overflow-hidden border border-stone-200 bg-stone-100">
-                    <img
-                      src={coverImage}
-                      alt="Cover preview"
-                      className="w-full h-full object-cover"
-                      referrerPolicy="no-referrer"
-                    />
-                    <div className="absolute bottom-2 left-2 px-2 py-1 bg-black/60 backdrop-blur-xs text-white text-[10px] rounded-md font-medium">
-                      Cover Preview
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              {/* Content */}
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Journal Content *
-                </label>
-                <textarea
-                  rows={6}
-                  required
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  placeholder="Write your reflections, stories, road memories, or notes..."
-                  className="w-full bg-white border border-stone-300 rounded-xl p-3.5 text-stone-900 focus:outline-none focus:border-blue-900 font-serif text-sm leading-relaxed"
-                />
-              </div>
-
-              {/* Highlight depending on category */}
-              {category === 'henri_milestones' && (
-                <div>
-                  <label className="block font-semibold text-rose-900 mb-1 flex items-center gap-1">
-                    <Baby className="w-3.5 h-3.5 text-rose-700" />
-                    <span>Henri’s Specific Milestone on this Entry</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={henriHighlight}
-                    onChange={(e) => setHenriHighlight(e.target.value)}
-                    placeholder="e.g. Rolling over, laughing at forest sounds, 4-month checkup"
-                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-rose-700 text-xs"
-                  />
-                </div>
-              )}
-
-              {category === 'adventures_mba' && (
-                <div>
-                  <label className="block font-semibold text-blue-950 mb-1 flex items-center gap-1">
-                    <GraduationCap className="w-3.5 h-3.5 text-blue-900" />
-                    <span>MBA / Adventure Note</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={mbaHighlight}
-                    onChange={(e) => setMbaHighlight(e.target.value)}
-                    placeholder="e.g. Finished Strategic Management Case Study via Starlink at camp"
-                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 text-xs"
-                  />
-                </div>
-              )}
-
-              {category === 'visits_along_the_way' && (
-                <div>
-                  <label className="block font-semibold text-emerald-900 mb-1 flex items-center gap-1">
-                    <Users className="w-3.5 h-3.5 text-emerald-700" />
-                    <span>Who We Visited / Connected With</span>
-                  </label>
-                  <input
-                    type="text"
-                    value={visitorHighlight}
-                    onChange={(e) => setVisitorHighlight(e.target.value)}
-                    placeholder="e.g. Dinner in Whitehorse with Dr. Dave & Elena"
-                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-emerald-700 text-xs"
-                  />
-                </div>
-              )}
-
-              {/* Interactive Map Ping Configuration */}
-              <div className="bg-white border border-stone-300 rounded-2xl p-4 space-y-3">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-                  <label className="flex items-center gap-2 font-semibold text-stone-900 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      checked={addLocationPing}
-                      onChange={(e) => setAddLocationPing(e.target.checked)}
-                      className="w-4 h-4 rounded text-blue-900 focus:ring-blue-900 border-stone-300"
-                    />
-                    <span className="flex items-center gap-1.5">
-                      <MapPin className="w-4 h-4 text-emerald-700" />
-                      <span>Drop a ping for this location onto the interactive map</span>
-                    </span>
-                  </label>
-
-                  {addLocationPing && (
-                    <button
-                      type="button"
-                      onClick={handleUseCurrentGPS}
-                      className="text-[11px] text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1 bg-blue-50 px-2.5 py-1 rounded-lg border border-blue-200 self-start sm:self-auto"
-                    >
-                      <Compass className="w-3.5 h-3.5" />
-                      <span>Use Live GPS Coordinates</span>
-                    </button>
-                  )}
-                </div>
-
-                {addLocationPing && (
-                  <div className="space-y-3 pt-2 border-t border-stone-200">
-                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                      <div>
-                        <label className="block text-[11px] font-semibold text-stone-600 mb-1">Latitude</label>
-                        <input
-                          type="number"
-                          step="any"
-                          value={latitude}
-                          onChange={(e) => setLatitude(parseFloat(e.target.value) || 0)}
-                          className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-stone-600 mb-1">Longitude</label>
-                        <input
-                          type="number"
-                          step="any"
-                          value={longitude}
-                          onChange={(e) => setLongitude(parseFloat(e.target.value) || 0)}
-                          className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 text-xs"
-                        />
-                      </div>
-                      <div>
-                        <label className="block text-[11px] font-semibold text-stone-600 mb-1">Expedition Leg</label>
-                        <select
-                          value={journeyLeg}
-                          onChange={(e) => setJourneyLeg(e.target.value as JourneyLeg)}
-                          className="w-full bg-stone-50 border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 text-xs font-medium"
-                        >
-                          <option value="arctic_yukon">❄️ Arctic & Yukon</option>
-                          <option value="arctic_dempster">❄️ Dempster Highway</option>
-                          <option value="rockies_pacific">🌲 Rockies & Pacific NW</option>
-                          <option value="baja_mexico">🌵 Baja & Mexico</option>
-                          <option value="central_america">🌋 Central America</option>
-                          <option value="andes_patagonia">🏔️ Andes & Patagonia</option>
-                        </select>
-                      </div>
-                    </div>
-
-                    <label className="flex items-center gap-2 text-stone-600 cursor-pointer pt-1">
-                      <input
-                        type="checkbox"
-                        checked={updateLiveCity}
-                        onChange={(e) => setUpdateLiveCity(e.target.checked)}
-                        className="w-3.5 h-3.5 rounded text-blue-900 focus:ring-blue-900 border-stone-300"
-                      />
-                      <span className="text-[11px]">Also update live telemetry ticker with this current location</span>
-                    </label>
-                  </div>
-                )}
-              </div>
-
-              {/* Modal Actions */}
-              <div className="flex items-center justify-between pt-4 border-t border-stone-200">
-                <span className="text-[11px] text-stone-500">
-                  Saving as: <strong>{status === 'draft' ? 'Draft (Private)' : 'Published (Public)'}</strong>
-                </span>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => setIsCreateModalOpen(false)}
-                    className="px-4 py-2 rounded-xl text-stone-600 hover:bg-stone-200 font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isSubmitting}
-                    className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-6 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm disabled:opacity-50"
-                  >
-                    {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                    <span>{status === 'draft' ? 'Save Draft' : 'Publish Entry'}</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-
-          </div>
-        </div>
+      {/* --- WRITE / EDIT JOURNAL ENTRY MODAL --- */}
+      {(isCreateModalOpen || editingLog !== null) && (
+        <JournalEditorModal
+          initialLog={editingLog}
+          isOpen={isCreateModalOpen || editingLog !== null}
+          onClose={() => {
+            setIsCreateModalOpen(false);
+            setEditingLog(null);
+          }}
+          onSave={async (logData) => {
+            if (editingLog && onUpdateLog) {
+              await onUpdateLog(editingLog.id, logData);
+            } else {
+              await onCreateLog(logData);
+            }
+            setIsCreateModalOpen(false);
+            setEditingLog(null);
+          }}
+          liveLocation={liveLocation}
+          authorName={currentUser?.name || 'Joannie & Barton'}
+        />
       )}
 
     </div>

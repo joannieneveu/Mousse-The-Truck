@@ -29,6 +29,9 @@ import { SubscribeModal } from './components/SubscribeModal';
 import { SubscriberAdminModal } from './components/SubscriberAdminModal';
 import { AuthModal } from './components/AuthModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
+import { GlobalDropzoneOverlay } from './components/GlobalDropzoneOverlay';
+import { BatchPhotoUploadModal } from './components/BatchPhotoUploadModal';
+import { ProcessedPhoto } from './utils/photoDropHelper';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { 
   Compass, 
@@ -62,6 +65,15 @@ function AppContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
+
+  // Global Drag and Drop state
+  const [globalDroppedPhotos, setGlobalDroppedPhotos] = useState<ProcessedPhoto[]>([]);
+  const [isGlobalBatchModalOpen, setIsGlobalBatchModalOpen] = useState<boolean>(false);
+
+  const handlePhotosDroppedGlobally = (photos: ProcessedPhoto[]) => {
+    setGlobalDroppedPhotos(photos);
+    setIsGlobalBatchModalOpen(true);
+  };
 
   // Load state from backend on mount
   useEffect(() => {
@@ -227,6 +239,42 @@ function AppContent() {
     }
   };
 
+  // Upload batch media items (drag-and-drop from iPhoto or desktop folders)
+  const handleUploadBatchMedia = async (items: Partial<MediaItem>[]) => {
+    let createdItems: MediaItem[] = [];
+    try {
+      const res = await fetch('/api/media/batch', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ items })
+      });
+      const data = await res.json();
+      if (Array.isArray(data.items)) {
+        createdItems = data.items;
+        setMediaItems(prev => [...data.items, ...prev]);
+      }
+    } catch (err) {
+      // Fallback for static hosting / preview
+    }
+
+    if (createdItems.length === 0) {
+      const fallbackItems: MediaItem[] = items.map((it, idx) => ({
+        id: `media-batch-${Date.now()}-${idx}`,
+        type: it.type || 'image',
+        url: it.url || '/departure.jpeg',
+        title: it.title || 'Expedition Photo',
+        locationName: it.locationName || liveLocation.lastCity,
+        date: it.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        tags: it.tags || ['Expedition'],
+        author: currentUser ? currentUser.name : 'Joannie & Barton',
+        caption: it.caption || '',
+        likesCount: 0,
+        commentsCount: 0
+      }));
+      setMediaItems(prev => [...fallbackItems, ...prev]);
+    }
+  };
+
   // Upload rig photo
   const handleUploadRigPhoto = async (newPhoto: { title: string; caption: string; url: string; category: RigPhoto['category'] }) => {
     let createdPhoto: RigPhoto | null = null;
@@ -349,6 +397,39 @@ function AppContent() {
     }
   };
 
+  // Update an existing log
+  const handleUpdateLog = async (logId: string, updatedFields: Partial<TravelLog>) => {
+    try {
+      const res = await fetch(`/api/logs/${logId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedFields)
+      });
+      const data = await res.json();
+      if (data.success && data.log) {
+        setTravelLogs(prev => prev.map(l => l.id === logId ? data.log : l));
+        if (selectedLog?.id === logId) {
+          setSelectedLog(data.log);
+        }
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update log on server:', err);
+    }
+
+    // Static fallback
+    setTravelLogs(prev => prev.map(l => {
+      if (l.id === logId) {
+        const updated = { ...l, ...updatedFields };
+        if (selectedLog?.id === logId) {
+          setSelectedLog(updated);
+        }
+        return updated;
+      }
+      return l;
+    }));
+  };
+
   // Switch to map view & center on coordinate
   const handleViewLocationOnMap = (lat?: number, lng?: number) => {
     setActiveTab('map');
@@ -444,12 +525,14 @@ function AppContent() {
               onViewLocationOnMap={handleViewLocationOnMap}
               onTogglePublish={handleTogglePublishLog}
               onDeleteLog={handleDeleteLog}
+              onUpdateLog={handleUpdateLog}
             />
           ) : (
             <TravelLogList
               logs={travelLogs}
               onSelectLog={(log) => setSelectedLog(log)}
               onCreateLog={handleCreateLog}
+              onUpdateLog={handleUpdateLog}
               onViewLocationOnMap={handleViewLocationOnMap}
               onTogglePublish={handleTogglePublishLog}
               onDeleteLog={handleDeleteLog}
@@ -466,6 +549,7 @@ function AppContent() {
             media={mediaItems}
             currentUser={currentUser}
             onUploadMedia={handleUploadMedia}
+            onUploadBatchMedia={handleUploadBatchMedia}
             onViewLocationOnMap={handleViewLocationOnMap}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
@@ -625,6 +709,27 @@ function AppContent() {
           onClose={() => setIsPinModalOpen(false)}
         />
       )}
+
+      {/* 5. Global Drag & Drop Overlay from iPhoto / folders */}
+      <GlobalDropzoneOverlay
+        onPhotosDropped={handlePhotosDroppedGlobally}
+        isAdmin={currentUser?.isAdmin}
+      />
+
+      {/* 6. Global Batch Photo Upload Modal */}
+      <BatchPhotoUploadModal
+        isOpen={isGlobalBatchModalOpen}
+        onClose={() => {
+          setIsGlobalBatchModalOpen(false);
+          setGlobalDroppedPhotos([]);
+        }}
+        initialPhotos={globalDroppedPhotos}
+        onUploadBatch={async (items) => {
+          await handleUploadBatchMedia(items);
+          setActiveTab('gallery');
+        }}
+        authorName={currentUser?.name || 'Joannie & Barton'}
+      />
 
     </div>
   );

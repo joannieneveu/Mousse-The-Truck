@@ -16,22 +16,25 @@ import {
   Heart, 
   MessageSquare, 
   Send, 
-  Mountain,
-  Thermometer,
-  Calendar,
-  Check,
-  User,
-  ThumbsUp,
-  LogIn,
-  Globe2,
-  Lightbulb,
-  Sparkles,
-  ShieldCheck,
-  Trash2,
-  Eye,
-  EyeOff
+  Mountain, 
+  Thermometer, 
+  Calendar, 
+  Check, 
+  User, 
+  ThumbsUp, 
+  LogIn, 
+  Globe2, 
+  Lightbulb, 
+  Sparkles, 
+  ShieldCheck, 
+  Trash2, 
+  Eye, 
+  EyeOff,
+  Edit3
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
+import { RichTextRenderer } from '../utils/richTextRenderer';
+import { JournalEditorModal } from './JournalEditorModal';
 
 interface TravelLogDetailProps {
   log: TravelLog;
@@ -41,6 +44,7 @@ interface TravelLogDetailProps {
   onViewLocationOnMap?: (lat: number, lng: number) => void;
   onTogglePublish?: (logId: string) => Promise<void>;
   onDeleteLog?: (logId: string) => Promise<void>;
+  onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<void>;
 }
 
 export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
@@ -50,11 +54,13 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   onOpenAuthModal,
   onViewLocationOnMap,
   onTogglePublish,
-  onDeleteLog
+  onDeleteLog,
+  onUpdateLog
 }) => {
   const [likes, setLikes] = useState<number>(log.likesCount || 14);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
+  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [commentText, setCommentText] = useState<string>('');
@@ -213,9 +219,18 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Admin Publish Toggle & Delete */}
+          {/* Admin Edit, Publish Toggle & Delete */}
           {currentUser?.isAdmin && (
             <div className="flex items-center gap-1.5 mr-2">
+              <button
+                onClick={() => setIsEditorOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
+                title="Edit Journal Entry"
+              >
+                <Edit3 className="w-3.5 h-3.5" />
+                <span>Edit Entry</span>
+              </button>
+
               <button
                 onClick={handleStatusToggle}
                 disabled={isTogglingStatus}
@@ -448,13 +463,13 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </div>
       )}
 
-      {/* Main Journal Content */}
-      <div className="prose prose-stone max-w-none font-serif text-stone-800 text-base sm:text-lg leading-relaxed sm:leading-loose space-y-6 pt-2">
-        {log.content.split('\n\n').map((paragraph, index) => (
-          <p key={index} className="text-stone-800">
-            {paragraph}
-          </p>
-        ))}
+      {/* Main Journal Content with Rich Text & Typography Rendering */}
+      <div className="pt-2">
+        <RichTextRenderer 
+          content={log.content} 
+          fontFamily={log.fontFamily} 
+          className="max-w-none"
+        />
       </div>
 
       {/* Photo Gallery if present */}
@@ -645,6 +660,22 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           )}
         </div>
       </section>
+
+      {/* Admin Edit Modal */}
+      {isEditorOpen && (
+        <JournalEditorModal
+          initialLog={log}
+          isOpen={isEditorOpen}
+          onClose={() => setIsEditorOpen(false)}
+          onSave={async (data) => {
+            if (onUpdateLog) {
+              await onUpdateLog(log.id, data);
+            }
+            setIsEditorOpen(false);
+          }}
+          authorName={currentUser?.name || log.author}
+        />
+      )}
 
     </article>
   );
