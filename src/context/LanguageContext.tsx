@@ -11,13 +11,10 @@ export interface LanguageContextType {
 export const translations: Record<Language, Record<string, string>> = {
   en: {
     // Top bar & Navbar
-    'nav.gpsActive': 'Live GPS Active',
-    'nav.gpsPaused': 'GPS Paused',
     'nav.currentlyNear': 'Currently near',
+    'nav.pinnedLocation': 'Current Location Pin',
+    'nav.updatePin': 'Pin Where We Are',
     'nav.reachedLeg': '6,920 km (Tuktoyaktuk Arctic Leg Reached)',
-    'nav.sharingOn': 'Sharing: ON',
-    'nav.sharingOff': 'Sharing: OFF',
-    'nav.satelliteCheckin': 'Satellite Check-In',
     'nav.brandTitle': 'Mousse on the Loose',
     'nav.expeditionBadge': 'Americas Expedition',
     'nav.crewSubtitle': 'Joannie, Barton & Baby Henri',
@@ -28,11 +25,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.signIn': 'Sign In',
     'nav.signedInAs': 'Signed in as',
     'nav.home': 'Home',
-    'nav.map': 'Interactive Map',
+    'nav.map': 'Route Map',
     'nav.journal': 'Expedition Journals',
     'nav.gallery': 'Photo & Video Gallery',
     'nav.rig': 'Mousse (The Rig)',
-    'nav.live': 'GPS Tracking',
 
     // Hero & Home
     'home.heroBadge': 'Live Expedition • 35,000 km Sabbatical',
@@ -108,13 +104,10 @@ export const translations: Record<Language, Record<string, string>> = {
   },
   fr: {
     // Top bar & Navbar
-    'nav.gpsActive': 'GPS en direct actif',
-    'nav.gpsPaused': 'GPS en pause',
     'nav.currentlyNear': 'Actuellement près de',
+    'nav.pinnedLocation': "Épingle d'emplacement actuel",
+    'nav.updatePin': 'Épingler notre position',
     'nav.reachedLeg': '6 920 km (Étape arctique de Tuktoyaktuk atteinte)',
-    'nav.sharingOn': 'Partage : ACTIVÉ',
-    'nav.sharingOff': 'Partage : DÉSACTIVÉ',
-    'nav.satelliteCheckin': 'Pointage satellite',
     'nav.brandTitle': 'Mousse on the Loose',
     'nav.expeditionBadge': 'Expédition des Amériques',
     'nav.crewSubtitle': 'Joannie, Barton et bébé Henri',
@@ -125,11 +118,10 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.signIn': 'Se connecter',
     'nav.signedInAs': 'Connecté en tant que',
     'nav.home': 'Accueil',
-    'nav.map': 'Carte Interactive',
+    'nav.map': "Carte de l'itinéraire",
     'nav.journal': "Journaux d'expédition",
     'nav.gallery': 'Galerie photos et vidéos',
     'nav.rig': 'Mousse (Le camion)',
-    'nav.live': 'Suivi GPS',
 
     // Hero & Home
     'home.heroBadge': 'Expédition en direct • Sabbatique de 35 000 km',

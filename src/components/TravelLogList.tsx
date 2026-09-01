@@ -59,26 +59,14 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
   onDeleteLog,
   currentUser,
   liveLocation,
-  isAdmin = true
+  isAdmin: propIsAdmin
 }) => {
+  const isUserAdmin = Boolean(currentUser?.isAdmin);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [isAuthorLockModalOpen, setIsAuthorLockModalOpen] = useState<boolean>(false);
   
-  // Author unlocked status
-  const [isAuthorUnlocked, setIsAuthorUnlocked] = useState<boolean>(() => {
-    try {
-      return currentUser?.isAdmin || localStorage.getItem('mousse_author_unlocked') === 'true';
-    } catch {
-      return false;
-    }
-  });
-  const [passkeyInput, setPasskeyInput] = useState<string>('');
-  const [passkeyError, setPasskeyError] = useState<string>('');
-  const [isVerifyingPasskey, setIsVerifyingPasskey] = useState<boolean>(false);
-
   // New Log Form State
   const [title, setTitle] = useState<string>('');
   const [locationName, setLocationName] = useState<string>(liveLocation?.lastCity || 'Lethbridge & Heading North');
@@ -113,59 +101,9 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
-  useEffect(() => {
-    if (currentUser?.isAdmin) {
-      setIsAuthorUnlocked(true);
-    }
-  }, [currentUser]);
-
   const handleOpenCreateModal = () => {
-    if (isAuthorUnlocked || currentUser?.isAdmin) {
+    if (isUserAdmin) {
       setIsCreateModalOpen(true);
-    } else {
-      setIsAuthorLockModalOpen(true);
-    }
-  };
-
-  const handleVerifyPasskey = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setPasskeyError('');
-    setIsVerifyingPasskey(true);
-
-    try {
-      const res = await fetch('/api/auth/verify-author-passkey', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ passkey: passkeyInput })
-      });
-      const data = await res.json();
-
-      if (data.verified) {
-        setIsAuthorUnlocked(true);
-        try {
-          localStorage.setItem('mousse_author_unlocked', 'true');
-        } catch {}
-        setIsAuthorLockModalOpen(false);
-        setPasskeyInput('');
-        setIsCreateModalOpen(true);
-      } else {
-        setPasskeyError(data.error || 'Incorrect author passkey.');
-      }
-    } catch {
-      const clean = passkeyInput.trim().toLowerCase();
-      if (clean === 'mousse2026' || clean === 'mousse' || clean === 'mun2026') {
-        setIsAuthorUnlocked(true);
-        try {
-          localStorage.setItem('mousse_author_unlocked', 'true');
-        } catch {}
-        setIsAuthorLockModalOpen(false);
-        setPasskeyInput('');
-        setIsCreateModalOpen(true);
-      } else {
-        setPasskeyError('Incorrect author passkey. Use expedition PIN (e.g. mousse2026).');
-      }
-    } finally {
-      setIsVerifyingPasskey(false);
     }
   };
 
@@ -249,7 +187,7 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
 
   // Filter logs: Non-admins ONLY see published logs
   const visibleLogs = logs.filter(log => {
-    if (!isAdmin && !isAuthorUnlocked) {
+    if (!isUserAdmin) {
       return log.status === 'published';
     }
     if (statusFilter === 'published') return log.status === 'published';
@@ -367,29 +305,22 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-3">
-          <button
-            id="write-new-log-btn"
-            onClick={handleOpenCreateModal}
-            className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition font-sans"
-          >
-            {isAuthorUnlocked || currentUser?.isAdmin ? (
+        {isUserAdmin && (
+          <div className="flex items-center gap-3">
+            <button
+              id="write-new-log-btn"
+              onClick={handleOpenCreateModal}
+              className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition font-sans"
+            >
               <Plus className="w-4 h-4" />
-            ) : (
-              <Lock className="w-4 h-4 text-blue-300" />
-            )}
-            <span>Write Journal Entry</span>
-            {!isAuthorUnlocked && !currentUser?.isAdmin && (
-              <span className="text-[10px] bg-blue-950/80 px-2 py-0.5 rounded-full text-blue-200 border border-blue-800">
-                Author Only
-              </span>
-            )}
-          </button>
-        </div>
+              <span>Write Journal Entry</span>
+            </button>
+          </div>
+        )}
       </div>
 
-      {/* Admin Status Switcher (If logged in as Joannie/Barton or author unlocked) */}
-      {(isAdmin || isAuthorUnlocked) && (
+      {/* Admin Status Switcher (If logged in as Joannie/Barton) */}
+      {isUserAdmin && (
         <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans">
           <div className="flex items-center gap-2 text-amber-950">
             <ShieldCheck className="w-4 h-4 text-amber-800 shrink-0" />
@@ -555,7 +486,7 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
               </span>
 
               <div className="flex items-center gap-2">
-                {(isAdmin || isAuthorUnlocked) && onTogglePublish && (
+                {isUserAdmin && onTogglePublish && (
                   <button
                     onClick={(e) => {
                       e.stopPropagation();
@@ -669,7 +600,7 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
                     </span>
 
                     <div className="flex items-center gap-2">
-                      {(isAdmin || isAuthorUnlocked) && onTogglePublish && (
+                      {isUserAdmin && onTogglePublish && (
                         <button
                           onClick={(e) => {
                             e.stopPropagation();
@@ -1193,104 +1124,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
                   >
                     {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
                     <span>{status === 'draft' ? 'Save Draft' : 'Publish Entry'}</span>
-                  </button>
-                </div>
-              </div>
-            </form>
-
-          </div>
-        </div>
-      )}
-
-      {/* --- EXPEDITION AUTHOR SECURITY MODAL --- */}
-      {isAuthorLockModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm animate-in fade-in duration-200 font-sans">
-          <div className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-md w-full p-6 sm:p-8 shadow-2xl text-stone-800 space-y-5">
-            
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-              <div className="flex items-center gap-2">
-                <div className="w-8 h-8 rounded-full bg-blue-100 text-blue-900 flex items-center justify-center">
-                  <Lock className="w-4 h-4" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-slate-900 text-base">Author Verification</h3>
-                  <p className="text-[11px] text-stone-500">Mousse on the Loose Expedition</p>
-                </div>
-              </div>
-              <button
-                onClick={() => { setIsAuthorLockModalOpen(false); setPasskeyError(''); }}
-                className="w-7 h-7 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 flex items-center justify-center text-xs"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-3 text-xs text-stone-600 leading-relaxed">
-              <p>
-                To protect your website when shared publicly, only <strong>Joannie & Barton</strong> can write, edit, or publish journal entries and map pings.
-              </p>
-              <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3 text-blue-950 flex items-start gap-2">
-                <ShieldCheck className="w-4 h-4 text-blue-900 shrink-0 mt-0.5" />
-                <span>
-                  Please enter your Expedition Author Passkey / PIN to unlock publishing on this device:
-                </span>
-              </div>
-            </div>
-
-            <form onSubmit={handleVerifyPasskey} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Author Passkey / PIN
-                </label>
-                <div className="relative">
-                  <Key className="w-4 h-4 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-                  <input
-                    type="password"
-                    required
-                    autoFocus
-                    value={passkeyInput}
-                    onChange={(e) => { setPasskeyInput(e.target.value); setPasskeyError(''); }}
-                    placeholder="Enter passkey (e.g. mousse2026)"
-                    className="w-full bg-white border border-stone-300 rounded-xl pl-9 pr-3 py-2.5 text-stone-900 text-xs focus:outline-none focus:border-blue-900"
-                  />
-                </div>
-                {passkeyError && (
-                  <p className="text-xs text-rose-600 font-medium mt-1.5 flex items-center gap-1">
-                    <AlertCircle className="w-3.5 h-3.5" />
-                    <span>{passkeyError}</span>
-                  </p>
-                )}
-                <p className="text-[10px] text-stone-400 mt-1">
-                  Default expedition passkey: <code className="bg-stone-100 px-1 py-0.5 rounded text-stone-700 font-mono">mousse2026</code>
-                </p>
-              </div>
-
-              <div className="flex items-center justify-between pt-2">
-                <button
-                  type="button"
-                  onClick={() => {
-                    setPasskeyInput('mousse2026');
-                  }}
-                  className="text-[11px] text-blue-900 hover:underline"
-                >
-                  Fill default PIN
-                </button>
-
-                <div className="flex items-center gap-2">
-                  <button
-                    type="button"
-                    onClick={() => { setIsAuthorLockModalOpen(false); setPasskeyError(''); }}
-                    className="px-3 py-2 rounded-xl text-stone-600 hover:bg-stone-200 text-xs font-medium"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={isVerifyingPasskey || !passkeyInput.trim()}
-                    className="bg-blue-900 hover:bg-blue-950 text-white font-semibold px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-sm disabled:opacity-50"
-                  >
-                    {isVerifyingPasskey ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <ShieldCheck className="w-3.5 h-3.5" />}
-                    <span>Unlock & Write</span>
                   </button>
                 </div>
               </div>

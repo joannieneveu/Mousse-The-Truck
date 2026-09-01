@@ -44,20 +44,20 @@ import L from 'leaflet';
 interface InteractiveMapProps {
   waypoints: Waypoint[];
   liveLocation: LiveLocation;
+  isAdmin?: boolean;
   onSelectWaypoint: (waypoint: Waypoint) => void;
-  onOpenLiveModal: () => void;
+  onOpenPinModal?: () => void;
   onOpenNewLog: (coordinates?: { lat: number; lng: number }, locationName?: string) => void;
-  onToggleLocationSharing?: () => void;
   onSimulateLeg?: (leg: string) => void;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   waypoints,
   liveLocation,
+  isAdmin = false,
   onSelectWaypoint,
-  onOpenLiveModal,
+  onOpenPinModal,
   onOpenNewLog,
-  onToggleLocationSharing,
   onSimulateLeg,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
@@ -294,26 +294,30 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       googleMarkersRef.current.push(marker);
     });
 
-    // Live Beacon Marker
-    const isSharing = liveLocation.isSharingLocation ?? liveLocation.isSharing ?? true;
-    if (isSharing) {
-      const livePin = document.createElement('div');
-      livePin.innerHTML = `
-        <div class="relative flex items-center justify-center">
-          <div class="absolute w-8 h-8 rounded-full bg-cyan-400/40 animate-ping"></div>
-          <div class="w-7 h-7 rounded-full bg-cyan-500 border-2 border-white shadow-xl flex items-center justify-center text-slate-950 font-bold text-xs">
-            🛰️
-          </div>
+    // Expedition Location Pin Marker
+    const locationPin = document.createElement('div');
+    locationPin.innerHTML = `
+      <div class="relative flex items-center justify-center cursor-pointer group">
+        <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white font-extrabold text-xs shadow-2xl border-2 border-emerald-400">
+          <span>🚐</span>
+          <span class="truncate max-w-[120px]">Mousse: ${liveLocation.lastCity}</span>
         </div>
-      `;
-      const liveMarker = new AdvancedMarkerElement({
-        map,
-        position: { lat: liveLocation.lat, lng: liveLocation.lng },
-        title: `Live Beacon: ${liveLocation.lastCity}`,
-        content: livePin,
-      });
-      googleMarkersRef.current.push(liveMarker);
-    }
+      </div>
+    `;
+    const liveMarker = new AdvancedMarkerElement({
+      map,
+      position: { lat: liveLocation.lat, lng: liveLocation.lng },
+      title: `Current Location: ${liveLocation.lastCity}`,
+      content: locationPin,
+    });
+    liveMarker.addListener('click', () => {
+      if (isAdmin && onOpenPinModal) {
+        onOpenPinModal();
+      } else {
+        handleCenterLiveLocation();
+      }
+    });
+    googleMarkersRef.current.push(liveMarker);
   };
 
   // Render Leaflet Markers
@@ -346,31 +350,31 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       }).addTo(leafletPolylineGroupRef.current);
     }
 
-    // Add Live GPS Beacon Marker if enabled
-    const isSharing = liveLocation.isSharingLocation ?? liveLocation.isSharing ?? true;
-    if (isSharing) {
-      const liveIcon = L.divIcon({
-        className: 'custom-live-marker',
-        html: `
-          <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2">
-            <span class="absolute w-10 h-10 rounded-full bg-cyan-500/30 animate-ping"></span>
-            <span class="absolute w-6 h-6 rounded-full bg-cyan-400/50 animate-pulse"></span>
-            <div class="w-6 h-6 rounded-full bg-cyan-400 border-2 border-white shadow-2xl flex items-center justify-center text-[10px]">
-              📡
-            </div>
+    // Add Current Expedition Location Pin
+    const pinIcon = L.divIcon({
+      className: 'custom-location-pin-marker',
+      html: `
+        <div class="relative flex items-center justify-center -translate-x-1/2 -translate-y-1/2 cursor-pointer">
+          <div class="flex items-center gap-1.5 px-3 py-1.5 rounded-full bg-slate-900 text-white font-extrabold text-xs shadow-2xl border-2 border-emerald-400 hover:scale-105 transition">
+            <span>🚐</span>
+            <span class="truncate max-w-[120px]">Mousse: ${liveLocation.lastCity}</span>
           </div>
-        `,
-        iconSize: [24, 24],
-        iconAnchor: [12, 12],
-      });
+        </div>
+      `,
+      iconSize: [140, 32],
+      iconAnchor: [70, 16],
+    });
 
-      const liveMarker = L.marker([liveLocation.lat, liveLocation.lng], { icon: liveIcon, zIndexOffset: 1000 })
-        .addTo(leafletMarkersGroupRef.current);
+    const pinMarker = L.marker([liveLocation.lat, liveLocation.lng], { icon: pinIcon, zIndexOffset: 1000 })
+      .addTo(leafletMarkersGroupRef.current);
 
-      liveMarker.on('click', () => {
-        onOpenLiveModal();
-      });
-    }
+    pinMarker.on('click', () => {
+      if (isAdmin && onOpenPinModal) {
+        onOpenPinModal();
+      } else {
+        handleCenterLiveLocation();
+      }
+    });
 
     // Render Waypoint Markers
     filteredWaypoints.forEach((wp) => {
@@ -493,38 +497,32 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </select>
         </div>
 
-        {/* Right: Live GPS Telemetry Pill & Sharing Toggle */}
+        {/* Right: Expedition Location Pin Pill */}
         <div className="flex items-center gap-2 pointer-events-auto">
           
-          {/* Live Location Pulse Button */}
+          {/* Current Location Pin Button */}
           <button
-            id="live-beacon-pill-btn"
+            id="current-location-pin-btn"
             onClick={handleCenterLiveLocation}
-            className="bg-slate-900/90 hover:bg-slate-850 backdrop-blur-md border border-slate-700/80 px-3 py-2 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs transition"
+            className="bg-slate-900/90 hover:bg-slate-800 backdrop-blur-md border border-slate-700/80 px-3.5 py-2 rounded-2xl shadow-xl flex items-center gap-2.5 text-xs transition"
+            title="Center map on current pinned location"
           >
-            <span className="relative flex h-3 w-3">
-              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-cyan-400 opacity-75"></span>
-              <span className="relative inline-flex rounded-full h-3 w-3 bg-cyan-500"></span>
-            </span>
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400"></span>
             <div className="text-left">
-              <div className="text-[10px] uppercase font-bold text-slate-400">Live Beacon</div>
-              <div className="font-extrabold text-white truncate max-w-[120px]">{liveLocation.lastCity}</div>
+              <div className="text-[10px] uppercase font-bold text-slate-400">Current Pin</div>
+              <div className="font-extrabold text-white truncate max-w-[130px]">{liveLocation.lastCity}</div>
             </div>
           </button>
 
-          {/* Location Sharing Privacy Toggle */}
-          {onToggleLocationSharing && (
+          {/* Admin: Update Pin Button */}
+          {isAdmin && onOpenPinModal && (
             <button
-              onClick={onToggleLocationSharing}
-              title="Toggle Live Location Sharing with Friends & Family"
-              className={`p-2.5 rounded-2xl backdrop-blur-md border shadow-xl transition flex items-center gap-1.5 text-xs font-bold ${
-                isSharing 
-                  ? 'bg-emerald-500/20 text-emerald-300 border-emerald-500/40 hover:bg-emerald-500/30' 
-                  : 'bg-slate-900/90 text-slate-400 border-slate-700 hover:bg-slate-800'
-              }`}
+              onClick={onOpenPinModal}
+              title="Pin where Mousse is currently located"
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-2xl shadow-xl transition flex items-center gap-1.5 text-xs active:scale-95"
             >
-              {isSharing ? <Radio className="w-4 h-4 text-emerald-400 animate-pulse" /> : <ToggleLeft className="w-4 h-4" />}
-              <span className="hidden sm:inline">{isSharing ? 'GPS Sharing On' : 'GPS Private'}</span>
+              <MapPin className="w-3.5 h-3.5" />
+              <span className="hidden sm:inline">Update Pin</span>
             </button>
           )}
 
@@ -626,16 +624,18 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Action Buttons */}
-        <div className="flex items-center gap-2 pointer-events-auto">
-          <button
-            onClick={() => onOpenNewLog(selectedWaypoint ? { lat: selectedWaypoint.lat, lng: selectedWaypoint.lng } : undefined, selectedWaypoint?.name)}
-            className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-2xl text-xs shadow-xl flex items-center gap-1.5 transition transform active:scale-95"
-          >
-            <Sparkles className="w-3.5 h-3.5" />
-            <span>Drop Field Dispatch Here</span>
-          </button>
-        </div>
+        {/* Right: Quick Action Buttons (Admin only) */}
+        {isAdmin && (
+          <div className="flex items-center gap-2 pointer-events-auto">
+            <button
+              onClick={() => onOpenNewLog(selectedWaypoint ? { lat: selectedWaypoint.lat, lng: selectedWaypoint.lng } : undefined, selectedWaypoint?.name)}
+              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-2xl text-xs shadow-xl flex items-center gap-1.5 transition transform active:scale-95"
+            >
+              <Sparkles className="w-3.5 h-3.5" />
+              <span>Drop Field Dispatch Here</span>
+            </button>
+          </div>
+        )}
 
       </div>
 
@@ -709,12 +709,14 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               <span>Center Camera</span>
             </button>
 
-            <button
-              onClick={() => onOpenNewLog({ lat: selectedWaypoint.lat, lng: selectedWaypoint.lng }, selectedWaypoint.name)}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl transition"
-            >
-              Write Dispatch
-            </button>
+            {isAdmin && (
+              <button
+                onClick={() => onOpenNewLog({ lat: selectedWaypoint.lat, lng: selectedWaypoint.lng }, selectedWaypoint.name)}
+                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl transition"
+              >
+                Write Dispatch
+              </button>
+            )}
           </div>
 
         </div>

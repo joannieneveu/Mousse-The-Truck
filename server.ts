@@ -41,14 +41,21 @@ async function startServer() {
   let comments: CommentItem[] = [...INITIAL_COMMENTS];
   let rigPhotos: RigPhoto[] = [...INITIAL_RIG_PHOTOS];
 
-  // Cryptographic Salt & Hash for Admin Authentication (Zero plain-text in codebase)
-  let adminPasswordSalt = 'e6c2789bf03d4218a99db3b5860b291d';
-  let adminPasswordHash = '189e3bce55bf71239856f6c0eb627092ce4489a2638da0efcb63b3644fcfc14b';
+  // Cryptographic Salt & Hash for Admin Authentication
+  let isPasswordConfigured = false;
+  let adminPasswordSalt: string | null = null;
+  let adminPasswordHash: string | null = null;
 
   function verifyPasswordHash(password: string): boolean {
+    if (!isPasswordConfigured) return true;
     if (!password) return false;
-    const computed = crypto.createHash('sha256').update(password.trim() + ':' + adminPasswordSalt).digest('hex');
-    return computed === adminPasswordHash;
+    if (!adminPasswordSalt || !adminPasswordHash) return true;
+
+    const computedNorm = crypto.createHash('sha256').update(password.trim() + ':' + adminPasswordSalt).digest('hex');
+    if (computedNorm === adminPasswordHash) return true;
+
+    const computedLower = crypto.createHash('sha256').update(password.trim().toLowerCase() + ':' + adminPasswordSalt).digest('hex');
+    return computedLower === adminPasswordHash;
   }
 
   // Lazy Gemini Client
@@ -62,9 +69,13 @@ async function startServer() {
 
   // --- AUTHENTICATION API ---
 
-  // Get current active session
+  // Get current active session & password configuration status
   app.get('/api/auth/me', (req: Request, res: Response) => {
-    res.json({ user: currentUser });
+    res.json({ user: currentUser, isPasswordConfigured });
+  });
+
+  app.get('/api/auth/status', (req: Request, res: Response) => {
+    res.json({ isPasswordConfigured, currentUser });
   });
 
   // Get admin accounts list (Joannie & Barton)
@@ -72,30 +83,83 @@ async function startServer() {
     res.json(ADMIN_USERS);
   });
 
-  // Login (by Email or Admin Select with cryptographic hash check)
+  // Set initial admin password on first-time prompt
+  app.post('/api/auth/set-password', (req: Request, res: Response) => {
+    const { password, adminEmail } = req.body;
+    if (!password || password.trim().length < 4) {
+      res.status(400).json({ error: 'Password must be at least 4 characters.' });
+      return;
+    }
+
+    const salt = crypto.randomBytes(16).toString('hex');
+    const hash = crypto.createHash('sha256').update(password.trim() + ':' + salt).digest('hex');
+
+    adminPasswordSalt = salt;
+    adminPasswordHash = hash;
+    isPasswordConfigured = true;
+
+    const targetAdmin = ADMIN_USERS.find(u => u.email.toLowerCase() === (adminEmail || '').trim().toLowerCase()) || ADMIN_USERS[0];
+    currentUser = targetAdmin;
+
+    console.log(`[Auth] Administrator password created by ${targetAdmin.name}`);
+    res.json({ success: true, user: currentUser, isPasswordConfigured: true });
+  });
+
+  // Reset/Clear password requirement
+  app.post('/api/auth/reset-password', (req: Request, res: Response) => {
+    adminPasswordSalt = null;
+    adminPasswordHash = null;
+    isPasswordConfigured = false;
+    console.log('[Auth] Administrator password cleared/reset. Prompt will appear on next sign-in.');
+    res.json({ success: true, isPasswordConfigured: false });
+  });
+
+  // Login (by Email or Admin Select)
   app.post('/api/auth/login', (req: Request, res: Response) => {
-    const { email, name, password, passkey } = req.body;
+    const { email, name, password, passkey, newPasswordToSet, subscribeToEmails } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanPassword = (password || passkey || '').trim();
 
     // Check if logging in as Administrator (Joannie or Barton)
     const adminMatch = ADMIN_USERS.find(u => u.email.toLowerCase() === cleanEmail);
     if (adminMatch) {
+      // If user provided a new password during first-time login
+      if (newPasswordToSet && newPasswordToSet.trim().length >= 4) {
+        const salt = crypto.randomBytes(16).toString('hex');
+        const hash = crypto.createHash('sha256').update(newPasswordToSet.trim() + ':' + salt).digest('hex');
+        adminPasswordSalt = salt;
+        adminPasswordHash = hash;
+        isPasswordConfigured = true;
+        currentUser = adminMatch;
+        console.log(`[Auth] Administrator password configured and logged in: ${currentUser.name}`);
+        res.json({ success: true, user: currentUser, isAdmin: true, isPasswordConfigured: true });
+        return;
+      }
+
+      // If no password is configured yet, allow direct access
+      if (!isPasswordConfigured) {
+        currentUser = adminMatch;
+        console.log(`[Auth] Administrator logged in (unrestricted/first-time): ${currentUser.name}`);
+        res.json({ success: true, user: currentUser, isAdmin: true, isPasswordConfigured: false });
+        return;
+      }
+
+      // If password is configured, verify
       if (verifyPasswordHash(cleanPassword)) {
         currentUser = adminMatch;
-        console.log(`[Auth] Administrator logged in: ${currentUser.name} (${currentUser.email})`);
-        res.json({ success: true, user: currentUser, isAdmin: true });
+        console.log(`[Auth] Administrator logged in: ${currentUser.name}`);
+        res.json({ success: true, user: currentUser, isAdmin: true, isPasswordConfigured: true });
         return;
       } else {
         res.status(401).json({ 
-          error: 'Incorrect administrator password. Please check your password or update it.' 
+          error: 'Incorrect administrator password. If you forgot your password, you can reset it.' 
         });
         return;
       }
     }
 
-    // Direct password match without email specified
-    if (verifyPasswordHash(cleanPassword)) {
+    // Direct password match if password configured
+    if (isPasswordConfigured && cleanPassword && verifyPasswordHash(cleanPassword)) {
       currentUser = ADMIN_USERS[0]; // Joannie
       console.log(`[Auth] Administrator logged in via password: ${currentUser.name}`);
       res.json({ success: true, user: currentUser, isAdmin: true });
@@ -105,7 +169,7 @@ async function startServer() {
     // Guest login (allows commenting, liking, following along)
     const guestUser: UserProfile = {
       id: `guest-${Date.now()}`,
-      name: name?.trim() || (cleanEmail ? cleanEmail.split('@')[0] : 'Guest Visitor'),
+      name: name?.trim() || (cleanEmail ? cleanEmail.split('@')[0] : 'Guest Follower'),
       email: cleanEmail || 'guest@mousseontheloose.com',
       role: 'friend_follower',
       roleLabel: 'Guest / Friend',
@@ -115,20 +179,37 @@ async function startServer() {
     };
 
     currentUser = guestUser;
+
+    // Handle email subscription if checked during sign-in
+    if (subscribeToEmails && cleanEmail && cleanEmail.includes('@')) {
+      const existing = subscribers.find(s => s.email.toLowerCase() === cleanEmail);
+      if (!existing) {
+        subscribers.unshift({
+          id: `sub-${Date.now()}`,
+          email: cleanEmail,
+          name: guestUser.name,
+          relationshipNote: 'Subscribed on sign in',
+          status: 'approved',
+          subscribedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        });
+        console.log(`[Subscription Auto-Added] ${guestUser.name} (${cleanEmail}) subscribed for email alerts`);
+      }
+    }
+
     console.log(`[Auth] Guest logged in: ${guestUser.name} (${guestUser.email})`);
-    res.json({ success: true, user: guestUser, isAdmin: false });
+    res.json({ success: true, user: guestUser, isAdmin: false, subscribed: Boolean(subscribeToEmails) });
   });
 
   // Change Admin Password (cryptographic salt & hash update)
   app.post('/api/auth/change-password', (req: Request, res: Response) => {
     const { currentPassword, newPassword } = req.body;
-    if (!verifyPasswordHash(currentPassword)) {
+    if (isPasswordConfigured && !verifyPasswordHash(currentPassword)) {
       res.status(401).json({ error: 'Current password is incorrect.' });
       return;
     }
 
-    if (!newPassword || newPassword.trim().length < 6) {
-      res.status(400).json({ error: 'New password must be at least 6 characters.' });
+    if (!newPassword || newPassword.trim().length < 4) {
+      res.status(400).json({ error: 'New password must be at least 4 characters.' });
       return;
     }
 
@@ -137,6 +218,7 @@ async function startServer() {
 
     adminPasswordSalt = newSalt;
     adminPasswordHash = newHash;
+    isPasswordConfigured = true;
 
     console.log('[Auth] Admin password successfully updated and salted/hashed.');
     res.json({ success: true, message: 'Password successfully updated and encrypted.' });
@@ -144,10 +226,11 @@ async function startServer() {
 
   // Update password hash sync
   app.post('/api/auth/update-password-hash', (req: Request, res: Response) => {
-    const { salt, hash } = req.body;
+    const { salt, hash, isConfigured } = req.body;
     if (salt && hash) {
       adminPasswordSalt = salt;
       adminPasswordHash = hash;
+      isPasswordConfigured = isConfigured !== undefined ? Boolean(isConfigured) : true;
       res.json({ success: true });
       return;
     }
@@ -248,8 +331,13 @@ Return ONLY a valid JSON object matching this schema:
     });
   });
 
-  // Update live location (parents broadcasting live GPS or checking in)
+  // Update location pin (Expedition Administrators Joannie & Barton only)
   app.post('/api/location', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators (Joannie & Barton) can update the expedition location pin.' });
+      return;
+    }
+
     const { 
       lat, 
       lng, 
@@ -282,17 +370,22 @@ Return ONLY a valid JSON object matching this schema:
       statusMessage: statusMessage || liveLocation.statusMessage,
       lastCity: lastCity || liveLocation.lastCity,
       nextMilestone: nextMilestone || liveLocation.nextMilestone,
-      trackingMode: trackingMode || 'live_browser_gps',
+      trackingMode: trackingMode || 'manual_checkin',
       timestamp: new Date().toISOString(),
-      isSharing: isSharing !== undefined ? Boolean(isSharing) : liveLocation.isSharing
+      isSharing: isSharing !== undefined ? Boolean(isSharing) : true
     };
 
-    console.log(`[GPS Broadcast] Location: ${lat}, ${lng} (${lastCity || 'Unknown City'}), sharing: ${liveLocation.isSharing}`);
+    console.log(`[Location Pin Updated] Location: ${lat}, ${lng} (${lastCity || 'Unknown City'})`);
     res.json({ success: true, liveLocation });
   });
 
-  // Toggle Location Sharing (Enable / Disable)
+  // Toggle Location Sharing (Expedition Administrators only)
   app.post('/api/location/toggle-sharing', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators can toggle GPS location sharing.' });
+      return;
+    }
+
     const { enabled } = req.body;
     liveLocation.isSharing = typeof enabled === 'boolean' ? enabled : !liveLocation.isSharing;
     res.json({ success: true, isSharing: liveLocation.isSharing, liveLocation });
@@ -572,6 +665,11 @@ Return ONLY a valid JSON object matching this schema:
   });
 
   app.post('/api/media', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators (Joannie & Barton) can upload photos or videos.' });
+      return;
+    }
+
     const newItem: MediaItem = {
       id: `media-${Date.now()}`,
       title: req.body.title || 'Expedition Capture',
@@ -601,6 +699,11 @@ Return ONLY a valid JSON object matching this schema:
   });
 
   app.post('/api/rig-photos', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators can upload rig photos.' });
+      return;
+    }
+
     const { title, caption, url, category } = req.body;
     if (!url) {
       res.status(400).json({ error: 'Photo URL is required.' });

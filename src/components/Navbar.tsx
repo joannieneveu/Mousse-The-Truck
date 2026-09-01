@@ -6,36 +6,27 @@ import {
   BookOpen, 
   Camera, 
   Users, 
-  Radio, 
   Mail, 
-  Navigation,
-  Baby,
-  User,
-  ShieldCheck,
-  ToggleLeft,
-  ToggleRight,
-  Truck,
-  Heart,
-  Settings,
-  Instagram,
-  Key,
-  Globe
+  User, 
+  ShieldCheck, 
+  Truck, 
+  Instagram, 
+  Key
 } from 'lucide-react';
 import { LiveLocation, UserProfile } from '../types';
 import { useLanguage } from '../context/LanguageContext';
 
 interface NavbarProps {
-  activeTab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live';
-  setActiveTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live') => void;
+  activeTab: 'home' | 'map' | 'journal' | 'gallery' | 'rig';
+  setActiveTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig') => void;
   liveLocation: LiveLocation;
   currentUser: UserProfile | null;
   pendingSubscribersCount?: number;
   onOpenAuthModal: () => void;
-  onOpenCheckinModal: () => void;
+  onOpenPinModal: () => void;
   onOpenSubscribeModal: () => void;
   onOpenAdminSubscribersModal: () => void;
   onOpenChangePassword?: () => void;
-  onToggleLocationSharing?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
@@ -45,11 +36,10 @@ export const Navbar: React.FC<NavbarProps> = ({
   currentUser,
   pendingSubscribersCount = 0,
   onOpenAuthModal,
-  onOpenCheckinModal,
+  onOpenPinModal,
   onOpenSubscribeModal,
   onOpenAdminSubscribersModal,
   onOpenChangePassword,
-  onToggleLocationSharing,
 }) => {
   const isAdmin = currentUser?.isAdmin;
   const { language, setLanguage, t } = useLanguage();
@@ -61,22 +51,15 @@ export const Navbar: React.FC<NavbarProps> = ({
       <div className="bg-slate-950 text-slate-200 px-4 py-1.5 text-xs font-medium border-b border-slate-800">
         <div className="max-w-7xl mx-auto w-full flex items-center justify-between gap-4">
           
-          {/* GPS telemetry ticker */}
+          {/* Location Pin ticker */}
           <div className="flex items-center gap-2 truncate">
-            {liveLocation.isSharing ? (
-              <span className="flex h-2 w-2 relative shrink-0">
-                <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-emerald-400 opacity-75"></span>
-                <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-500"></span>
-              </span>
-            ) : (
-              <span className="h-2 w-2 rounded-full bg-blue-500 shrink-0"></span>
-            )}
+            <span className="flex h-2 w-2 relative shrink-0">
+              <span className="relative inline-flex rounded-full h-2 w-2 bg-emerald-400"></span>
+            </span>
 
             <div className="flex items-center gap-1.5 text-[11px] truncate">
-              <span className={`font-semibold uppercase tracking-wider text-[10px] px-1.5 py-0.2 rounded ${
-                liveLocation.isSharing ? 'bg-emerald-900/80 text-emerald-300' : 'bg-blue-900/80 text-blue-300'
-              }`}>
-                {liveLocation.isSharing ? t('nav.gpsActive') : t('nav.gpsPaused')}
+              <span className="font-semibold uppercase tracking-wider text-[10px] px-1.5 py-0.2 rounded bg-emerald-900/80 text-emerald-300">
+                {t('nav.pinnedLocation')}
               </span>
               <span className="text-slate-500 hidden sm:inline">•</span>
               <span className="truncate text-slate-300">
@@ -123,34 +106,26 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <span className="text-slate-700 hidden sm:inline">|</span>
 
-            {onToggleLocationSharing && (
+            {isAdmin ? (
               <button
-                id="toggle-sharing-nav-btn"
-                onClick={onToggleLocationSharing}
-                className="hidden sm:flex items-center gap-1 text-[11px] text-slate-300 hover:text-white transition"
-                title="Toggle Real-Time Location Sharing"
+                id="update-pin-nav-btn"
+                onClick={onOpenPinModal}
+                className="text-amber-400 hover:text-amber-300 font-semibold text-[11px] flex items-center gap-1 transition"
+                title="Send a pin of where we are"
               >
-                {liveLocation.isSharing ? (
-                  <>
-                    <ToggleRight className="w-3.5 h-3.5 text-emerald-400" />
-                    <span>{t('nav.sharingOn')}</span>
-                  </>
-                ) : (
-                  <>
-                    <ToggleLeft className="w-3.5 h-3.5 text-blue-400" />
-                    <span>{t('nav.sharingOff')}</span>
-                  </>
-                )}
+                <MapPin className="w-3 h-3 text-amber-400" />
+                <span>{t('nav.updatePin')}</span>
+              </button>
+            ) : (
+              <button
+                onClick={() => setActiveTab('map')}
+                className="text-blue-400 hover:text-blue-300 font-semibold text-[11px] flex items-center gap-1 transition"
+                title="View current location on Route Map"
+              >
+                <Compass className="w-3 h-3 text-blue-400" />
+                <span>{language === 'fr' ? "Voir l'étape sur la carte" : "View on Route Map"}</span>
               </button>
             )}
-
-            <button
-              onClick={onOpenCheckinModal}
-              className="text-blue-400 hover:text-blue-300 font-semibold text-[11px] flex items-center gap-1"
-            >
-              <Radio className="w-3 h-3 animate-pulse" />
-              <span>{t('nav.satelliteCheckin')}</span>
-            </button>
           </div>
 
         </div>
@@ -368,23 +343,11 @@ export const Navbar: React.FC<NavbarProps> = ({
               <span>{t('nav.rig')}</span>
             </button>
 
-            <button
-              id="nav-tab-live"
-              onClick={() => setActiveTab('live')}
-              className={`px-3 sm:px-4 py-2 rounded-xl text-xs sm:text-sm font-semibold flex items-center gap-2 shrink-0 transition ${
-                activeTab === 'live'
-                  ? 'bg-blue-900 text-white shadow-xs'
-                  : 'text-stone-600 hover:text-stone-900 hover:bg-stone-200/70'
-              }`}
-            >
-              <Radio className="w-4 h-4" />
-              <span>{t('nav.live')}</span>
-            </button>
-
           </nav>
         </div>
       </div>
     </header>
   );
 };
+
 

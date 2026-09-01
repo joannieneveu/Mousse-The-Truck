@@ -31,7 +31,7 @@ import { INITIAL_FAMILY_MEMBERS } from '../data/initialData';
 import { useLanguage } from '../context/LanguageContext';
 
 interface HomePageProps {
-  onNavigateTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live') => void;
+  onNavigateTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig') => void;
   onSelectLog: (log: TravelLog) => void;
   liveLocation: LiveLocation;
   recentLogs: TravelLog[];
@@ -54,6 +54,13 @@ export const HomePage: React.FC<HomePageProps> = ({
   // Family state (merged into Home)
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(INITIAL_FAMILY_MEMBERS);
   const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
+  const [heroPhoto, setHeroPhoto] = useState<string>(() => {
+    try {
+      return localStorage.getItem('mousse_homepage_hero_photo') || '/moussesunset.jpeg';
+    } catch {
+      return '/moussesunset.jpeg';
+    }
+  });
   const [familyHeroPhoto, setFamilyHeroPhoto] = useState<string>(() => {
     try {
       return localStorage.getItem('mousse_family_hero_photo') || '/Family.jpeg';
@@ -229,35 +236,39 @@ export const HomePage: React.FC<HomePageProps> = ({
 
           </div>
 
-          {/* Right Column: Hero Photo Showcase with Fixed Portrait Departure */}
+          {/* Right Column: Hero Photo Showcase with Mousse at Sunset */}
           <div className="lg:col-span-6 xl:col-span-5 flex flex-col justify-center items-center lg:items-end">
             
-            {/* Departure Photo: Fixed Format Portrait (Ensures Baby Henri is 100% visible) */}
+            {/* Hero Photo: Mousse at Sunset */}
             <div 
               onClick={() => setSelectedPhoto({
-                url: '/departure.jpeg',
-                title: 'The Grand Departure in Mousse',
-                caption: 'Joannie, Barton, and baby Henri setting off in Lethbridge, AB to begin the 35,000 km expedition to the Arctic and Antarctica.'
+                url: heroPhoto,
+                title: 'Mousse at Sunset',
+                caption: 'Our custom moss-green expedition rig Mousse glowing under the golden sunset as our 35,000 km Arctic to Antarctica journey begins.'
               })}
-              className="relative rounded-3xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900 group cursor-pointer aspect-[3/4] w-full max-w-xs sm:max-w-sm lg:max-w-md mx-auto lg:mx-0"
+              className="relative rounded-3xl overflow-hidden border border-stone-300 shadow-lg bg-stone-900 group cursor-pointer aspect-[4/3] sm:aspect-[3/2] lg:aspect-[4/3] w-full max-w-md lg:max-w-lg mx-auto lg:mx-0"
             >
               <img
-                src="/departure.jpeg"
-                alt="The Departure - Joannie, Barton, and baby Henri in fixed portrait format"
-                className="w-full h-full object-cover object-[50%_15%] group-hover:scale-103 transition duration-700"
+                src={heroPhoto}
+                alt="Mousse at Sunset - 35,000 km overland expedition truck"
+                className="w-full h-full object-cover object-center group-hover:scale-103 transition duration-700"
                 referrerPolicy="no-referrer"
               />
               <div className="absolute inset-0 bg-gradient-to-t from-slate-950/90 via-slate-950/20 to-transparent flex flex-col justify-end p-5 sm:p-6 text-white">
                 <div className="flex items-center justify-between">
-                  <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-300 bg-emerald-950/85 px-2.5 py-0.5 rounded-md border border-emerald-700/50 shadow-xs">
-                    Fixed Portrait • Expedition Launch
+                  <span className="text-[10px] font-bold uppercase tracking-wider text-amber-300 bg-amber-950/85 px-2.5 py-0.5 rounded-md border border-amber-700/50 shadow-xs">
+                    {isFr ? 'Mousse au Coucher du Soleil' : 'Mousse on the Loose • Sunset'}
                   </span>
                   <span className="p-1.5 rounded-lg bg-black/40 text-white/90 opacity-0 group-hover:opacity-100 transition">
                     <Maximize2 className="w-4 h-4" />
                   </span>
                 </div>
-                <div className="font-bold text-lg sm:text-xl mt-2">The Grand Departure</div>
-                <p className="text-stone-300 text-xs sm:text-sm mt-0.5">Joannie, Barton & baby Henri setting off in Mousse</p>
+                <div className="font-bold text-lg sm:text-xl mt-2">{isFr ? 'Mousse au Coucher du Soleil' : 'Mousse at Sunset'}</div>
+                <p className="text-stone-300 text-xs sm:text-sm mt-0.5">
+                  {isFr 
+                    ? 'Notre camion tout-terrain vert mousse sous les lueurs dorées du crépuscule' 
+                    : 'Our custom moss-green overland rig glowing in the golden sunset'}
+                </p>
               </div>
             </div>
 
@@ -644,8 +655,8 @@ export const HomePage: React.FC<HomePageProps> = ({
             </h3>
             <p className="text-xs sm:text-sm text-stone-600 mt-1">
               {isFr
-                ? 'Les plus grands enfants de notre famille recomposée qui nous soutiennent, suivent nos coordonnées en direct et veillent sur leur petit frère Henri.'
-                : 'The older kids in our blended family cheering us on, tracking our live coordinates, and following little brother Henri.'}
+                ? 'Les plus grands enfants de notre famille recomposée qui nous soutiennent, suivent nos étapes sur la carte et veillent sur leur petit frère Henri.'
+                : 'The older kids in our blended family cheering us on, following our route stops on the map, and keeping up with little brother Henri.'}
             </p>
           </div>
 
@@ -736,11 +747,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <ArrowRight className="w-3.5 h-3.5" />
               </button>
               <button
-                onClick={() => onNavigateTab('live')}
+                onClick={() => onNavigateTab('journal')}
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition"
               >
-                <Radio className="w-3.5 h-3.5 text-emerald-400" />
-                <span>{isFr ? 'Suivi satellite en direct' : 'Live Satellite Tracker'}</span>
+                <BookOpen className="w-3.5 h-3.5 text-amber-400" />
+                <span>{isFr ? "Lire les journaux d'expédition" : 'Read Expedition Journals'}</span>
               </button>
             </div>
           </div>

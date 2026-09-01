@@ -170,7 +170,225 @@ export const INITIAL_SUBSCRIBERS: Subscriber[] = [
 ];
 
 export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
-  // 1 Active Published Entry - Departure
+  // Entry 2 - Alberta to Yukon & Whitehorse Adventures
+  {
+    id: 'log-2-alberta-to-yukon',
+    title: 'From Family Roots to Laundromat Fiascos: Alberta, Hot Springs & Rolling into the Yukon!',
+    slug: 'alberta-to-yukon-family-roots-hot-springs-laundromat',
+    date: 'August 31, 2026',
+    locationName: 'Whitehorse & En Route to Pelly Crossing, Yukon',
+    country: 'Canada',
+    coordinates: { lat: 60.7212, lng: -135.0568 },
+    author: 'Joannie & Barton',
+    readingTime: '6 min read',
+    category: 'adventures_mba',
+    journeyLeg: 'arctic_yukon',
+    status: 'published',
+    excerpt: 'And just like that… Mousse is officially on the loose. From visiting the old Thiessen family farm in DeBolt and Henri’s first swim at Liard Hot Springs to the infamous Whitehorse Laundromat Incident.',
+    content: `And just like that… Mousse is officially on the loose.
+
+After a year and a half of planning, designing, changing our minds, changing them back, getting pregnant, needing a cot, waiting, dreaming, and wondering whether this enormous moss-green contraption would ever actually become ours, we finally picked up Mousse in Lethbridge.
+
+And somehow, it is even better than we imagined.
+
+There is something slightly surreal about spending 18 months planning a vehicle and then suddenly being handed the keys and thinking: Well… I guess we live in this now.
+
+Our first night with Mousse was spent in the Calgary area at the home of Brian Thiessen, Barton’s first cousin once removed... a family relationship that I can confidently explain if consulting a diagram lol.
+
+From there, we pointed Mousse north.
+
+---
+
+### **A Mini Thiessen Family Tour**
+
+Our first stop was Red Deer, where we visited Barton’s Uncle Eddy and his wife, Anne.
+
+It felt fitting that the beginning of a 35,000-km journey from Canada toward the bottom of South America would start with a little tour through Barton’s family history.
+
+And things got even more nostalgic when we reached DeBolt, the tiny northern Alberta community where Barton’s dad grew up.
+
+We followed gravel roads out to the old Thiessen family farm, which Barton’s grandparents sold in 1994. Amazingly, the same family still owns it today, and they very kindly welcomed a couple of strangers who showed up with a giant green expedition truck, a baby and a Thiessen family history lesson.
+
+Then came the best surprise. Inside the garage was Nikolai (Nicholas) Thiessen’s old GMC truck.
+
+Still there. Decades later.
+
+Standing beside Barton, looking at his grandfather’s old GMC parked on the farm where his dad grew up, with Mousse sitting outside waiting to carry the next generation of Thiessens across the Americas, was pretty special.
+
+Two trucks. A few generations. Very different suspension systems.
+
+---
+
+### **Edmonton: Pizza, Friends & Northern Intelligence**
+
+Next stop: Edmonton, where we visited our friends Nadia and Mark and their kids, Ellie, Simon and Jacob.
+
+Nadia and Mark lived in Inuvik for seven years, which means that compared with us, they are essentially northern expedition professionals. We arrived filled with questions. Over pizza, they downloaded as much northern wisdom into our brains as possible. They generously offered us a place to stay for the night, but apparently we had already developed a serious case of new-truck expedition fever.
+
+We wanted NORTH. More kilometres. More wilderness. And, most importantly, we had a deadline: Dawson City for Barton’s birthday.
+
+So we hugged everyone goodbye, climbed back into Mousse and kept driving.
+
+---
+
+### **Our First Proper Side-of-the-Road Sleep**
+
+Eventually, enthusiasm lost its battle against our eyelids.
+
+There were no towns nearby and this was precisely why we had spent 18 months building a house on wheels. So we opened iOverlander, found a quiet, flat gravel pullout in the middle of nowhere, parked Mousse, closed the blinds and went to sleep.
+
+No reservation. No check-in. No checkout time. No fee. Five stars.
+
+---
+
+### **Henri’s First Swim**
+
+The next day, we continued north through British Columbia toward the Yukon. But there was one mandatory stop along the way: Liard River Hot Springs. The weather could not have been less inviting.
+
+Cold. Pouring rain.
+
+And between us and the glorious steaming hot springs was a long wooden boardwalk through the boreal forest. Henri had opinions. Strong ones. We bundled him up and marched through the rain while he screamed with the conviction of a baby whose parents had clearly lost all ability to make rational decisions.
+
+Then we reached the hot springs. We slipped into the warm water.
+
+And…
+
+Silence. Instantly. His eyes went huge. He relaxed. He floated. And just like that, in a natural hot spring in the middle of northern British Columbia, surrounded by forest, steam and pouring rain, Henri had his very first swim. He absolutely loved it.
+
+---
+
+### **Whitehorse & The Laundromat Incident**
+
+On August 31, we crossed into the Yukon and rolled into Whitehorse. A glamorous milestone in any great overland expedition. Naturally, we celebrated by…
+
+doing laundry ! (We didn't get the washing machine Joannie wanted... so we will spend a couple hours every week at a laundromat)
+
+Overlanding, as it turns out, is approximately 30% breathtaking landscapes, 20% driving, 10% adventure and 40% trying to figure out where to wash your underwear ! haha Okay, Joannie's exaggerating.
+
+We decided to divide and conquer. Barton took Mousse to run errands around Whitehorse while Joannie stayed at the laundromat with Henri.
+
+This was a mistake.
+
+Because the moment Barton disappeared with the truck... and, importantly, the diaper bag... Henri decided it was time.
+
+Not for a normal poop. Not even for a respectable blowout. This was an event. The pee escaped the diaper, it conquered the pyjamas. And somehow, in the chaos that followed, our beautiful little son managed to leave a puddle of pee across the laundromat folding counter.
+
+Meanwhile, Joannie was trying to manage multiple washing machines, deal with a half-naked baby, no clean PJ (obviously in the washing machine!) and find her cellphone (which, as anyone who travels with her knows, she loses approximately ten times per day in a 10 meter square area).
+
+She needed to call Barton. No phone.  
+She needed diapers. No diaper bag.  
+She needed paper towels. Where were the paper towels?!
+
+She turned back toward the counter.
+
+And then… She saw her.
+
+A lovely, completely innocent woman had walked to the counter with an enormous pile of freshly washed, beautifully warm, perfectly clean laundry. Before she could say anything, she placed the entire pile…
+
+directly into Henri’s puddle of pee.
+
+Joannie froze.
+
+The lady started folding. Shirt. Fold. Pants. Fold. Another shirt. Fold.  
+Then she touched the bottom of the pile. Paused. And said, very pleasantly: *“Oh… it’s a bit wet here. That’s too bad!”*
+
+This was Joannie's moment.
+
+She could tell her the truth. She could confess. She could explain that the mysterious moisture soaking into her freshly laundered clothing had, moments earlier, been inside her infant son. She looked at this sweet woman. She looked at her laundry. She looked at Henri.
+
+And…
+
+She said nothing.
+
+She smiled sympathetically.
+
+Yes. How unfortunate. Mysterious laundromat moisture. Who can explain these things?
+
+Then she vigorously cleaned every remaining square centimetre of that counter while silently accepting that she had just failed some important test of Canadian citizenship.
+
+To the lovely woman at the Whitehorse laundromat she wants to say: *I am so, so sorry.*
+
+---
+
+### **Yukon Hospitality & Yet Another Idea**
+
+After surviving what will henceforth be known as The Whitehorse Laundromat Incident, we visited an acquaintance in town, a wonderful family physician/ER doctor, and his family.
+
+They welcomed us into their home for a delicious supper, and we spent part of the evening talking and swapping expedition stories.
+
+We also learned about wilderness river trips in the Yukon. Which naturally led us to think: you know what would be fun?
+
+A 10-day wilderness canoe or kayak expedition down a Yukon river with the family.
+
+Because apparently embarking on a 35,000-km overland expedition with a newborn has not provided us with quite enough logistical complexity.
+
+So that idea has now been safely filed under: *Future Adventures That Sound Completely Reasonable After Dinner and the dopamine high of the start of a new adventure.*
+
+---
+
+### **Next Stop: Dawson City**
+
+With full bellies, mostly clean laundry, one slightly guilty mother and one blissfully unaware baby, we climbed back into Mousse and headed north toward Pelly Crossing.
+
+Tomorrow is Barton’s birthday.
+
+And if everything goes according to plan, we will celebrate it in Dawson City, in the heart of the Klondike.
+
+Mousse is finally on the loose.
+
+And somehow, we’re only a few days in.`,
+    coverImage: '/hot spring.jpeg',
+    gallery: [
+      {
+        url: '/hot spring.jpeg',
+        caption: 'Henri’s very first swim at Liard River Hot Springs in the warm mineral waters surrounded by northern wilderness.',
+        type: 'image'
+      },
+      {
+        url: '/departure.jpeg',
+        caption: 'Expedition crew rolling through northern BC and into the Yukon Territory.',
+        type: 'image'
+      },
+      {
+        url: '/Mousse1.jpeg',
+        caption: 'Mousse parked under the dramatic northern skies en route to Whitehorse.',
+        type: 'image'
+      },
+      {
+        url: '/Family.jpeg',
+        caption: 'Family travel moments with baby Henri exploring the Canadian North.',
+        type: 'image'
+      },
+      {
+        url: '/Runner.jpeg',
+        caption: 'Trail stops and fresh mountain air along the Alaska Highway corridor.',
+        type: 'image'
+      }
+    ],
+    metrics: {
+      elevationM: 670,
+      tempC: 14,
+      kmTraveled: 2150,
+      henriAge: '2.5 months',
+      mbaModule: 'Operations & Remote Logistics'
+    },
+    locationInsights: {
+      population: '28,201 (Whitehorse, Yukon)',
+      interestingFacts: [
+        'Named after the White Horse Rapids on the Yukon River, which resembled the mane of a white horse before the dam was constructed.',
+        'Home to the iconic S.S. Klondike sternwheeler and the gateway to the Klondike Gold Rush Trail.'
+      ],
+      culturalContext: 'Located on the traditional territories of the Kwanlin Dün First Nation and Ta\'an Kwäch\'än Council.',
+      activityTips: 'Stocking up on fresh supplies, dipping in Liard Hot Springs, and prepping for the Dempster Highway.'
+    },
+    mbaHighlight: 'Testing real-time crisis management: juggling laundromat blowouts, lost phones, and supply runs while coordinating next leg logistics!',
+    henriHighlight: 'Henri’s very first swim at Liard River Hot Springs in pouring rain, and an infamous laundromat milestone in Whitehorse!',
+    tags: ['Yukon', 'Whitehorse', 'Liard Hot Springs', 'Family Farm', 'DeBolt', 'Overland Journey', 'Henri First Swim'],
+    likesCount: 0,
+    commentsCount: 0
+  },
+
+  // Entry 1 - Departure
   {
     id: 'log-departure-mousse',
     title: 'The Grand Departure in Mousse: Embarking on 35,000 km from Newfoundland to the Americas',
@@ -191,7 +409,7 @@ Travelling with our newest addition, baby Henri (born June 2026), our expedition
 
 Henri is settling into his custom truck crib with wide eyes, and Mousse’s off-grid solar power and heated living quarters feel like the perfect mobile family home.
 
-From here, our compass points north up the Alaska Highway and Dempster Highway toward the Arctic Ocean at Tuktoyaktuk. Follow along with us on our live GPS map!`,
+From here, our compass points north up the Alaska Highway and Dempster Highway toward the Arctic Ocean at Tuktoyaktuk. Follow along with us on our route map!`,
     coverImage: '/departure.jpeg',
     gallery: [
       {
@@ -240,30 +458,30 @@ From here, our compass points north up the Alaska Highway and Dempster Highway t
 ];
 
 export const INITIAL_LIVE_LOCATION: LiveLocation = {
-  lat: 49.6956,
-  lng: -112.8451,
-  altitudeM: 910,
+  lat: 62.8286,
+  lng: -136.5772,
+  altitudeM: 580,
   speedKmh: 0,
-  heading: 0,
+  heading: 340,
   timestamp: new Date().toISOString(),
   accuracyM: 5.0,
-  batteryPercent: 98,
+  batteryPercent: 96,
   isSharing: true,
-  statusMessage: 'Picked up Mousse in Lethbridge, Alberta! Truck organized, baby Henri snug in his custom crib, Starlink active, and setting off on the 35,000 km expedition.',
-  lastCity: 'Lethbridge, Alberta',
-  nextMilestone: 'Banff National Park & Alaska Highway',
-  trackingMode: 'live_browser_gps',
+  statusMessage: 'En route to Pelly Crossing & Dawson City, Yukon! Left Whitehorse after hot springs swim, laundromat adventures, and wonderful dinner with medical colleagues.',
+  lastCity: 'Pelly Crossing & Heading to Dawson City, Yukon',
+  nextMilestone: 'Dawson City (Barton\'s Birthday!) & Dempster Hwy',
+  trackingMode: 'manual_checkin',
   weather: {
-    tempC: 22,
-    condition: 'Sunny & Clear Big Sky',
-    icon: 'sun'
+    tempC: 14,
+    condition: 'Crisp Northern Sky & Boreal Forest',
+    icon: 'cloud-sun'
   }
 };
 
 export const INITIAL_WAYPOINTS: Waypoint[] = [
   {
     id: 'lethbridge',
-    name: 'Lethbridge, Alberta',
+    name: 'Lethbridge & Calgary, AB',
     region: 'Truck Pickup & Launch Point',
     country: 'Canada',
     leg: 'arctic_yukon',
@@ -272,27 +490,45 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     date: 'August 28, 2026',
     status: 'completed',
     elevationM: 910,
-    summary: 'Picked up our custom overland truck in Lethbridge on August 27th, packed baby Henri’s gear, and embarked on our grand journey up North on August 28th!',
+    summary: 'Picked up our custom overland truck in Calgary area, visited family in Red Deer and DeBolt, and embarked on our grand journey up North on August 28th!',
     henriNote: 'Henri testing out his custom truck crib for the very first night.',
     mbaNote: 'Configured Starlink and reviewed our first road-term syllabus.',
-    thumbnail: 'https://images.unsplash.com/photo-1596484552834-6a58f850e0a1?auto=format&fit=crop&w=600&q=80',
+    thumbnail: '/departure.jpeg',
     distanceFromStartKm: 0,
     relatedLogId: 'log-departure-mousse'
   },
   {
     id: 'whitehorse',
-    name: 'Whitehorse, Yukon',
+    name: 'Whitehorse & Pelly Crossing, Yukon',
     region: 'Yukon Territory',
     country: 'Canada',
     leg: 'arctic_yukon',
     lat: 60.7212,
     lng: -135.0568,
-    date: 'September 2026',
-    status: 'upcoming',
+    date: 'August 31, 2026',
+    status: 'completed',
     elevationM: 670,
-    summary: 'Planned: Visiting medical friends in Whitehorse and prepping the 4x4 rig for the Dempster Highway gravel run.',
+    summary: 'Reached Yukon! Soaked in Liard Hot Springs in pouring cold rain (Henri’s first swim!), survived an infamous laundromat blowout, and celebrated with medical friends in Whitehorse before rolling north toward Pelly Crossing and Dawson City for Barton’s birthday.',
+    henriNote: 'Henri’s very first swim at Liard Hot Springs and an epic laundromat counter pee incident!',
+    mbaNote: 'Live operations management: troubleshooting errands, Starlink logistics, and gear prep on the road.',
+    thumbnail: '/hot spring.jpeg',
+    distanceFromStartKm: 2150,
+    relatedLogId: 'log-2-alberta-to-yukon'
+  },
+  {
+    id: 'dawson_city',
+    name: 'Dawson City (Barton\'s Birthday!)',
+    region: 'Klondike & Top of the World Hwy',
+    country: 'Canada',
+    leg: 'arctic_yukon',
+    lat: 64.0601,
+    lng: -139.4320,
+    date: 'September 2, 2026',
+    status: 'upcoming',
+    elevationM: 320,
+    summary: 'Celebrating Barton’s birthday in the historic Klondike gold rush capital before tackling the Dempster Highway to the Arctic Ocean!',
     thumbnail: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 2150
+    distanceFromStartKm: 2680
   },
   {
     id: 'tuktoyaktuk',
@@ -391,6 +627,14 @@ export const INITIAL_MEDIA: MediaItem[] = [];
 export const INITIAL_COMMENTS: CommentItem[] = [];
 
 export const INITIAL_RIG_PHOTOS: RigPhoto[] = [
+  {
+    id: 'rig-photo-sunset',
+    title: 'Mousse at Golden Sunset',
+    caption: 'Our custom moss-green Ford F550 expedition rig Mousse glowing under the golden sunset as the 35,000 km Arctic to Antarctica journey begins.',
+    url: '/moussesunset.jpeg',
+    category: 'exterior',
+    uploadedAt: 'August 2026'
+  },
   {
     id: 'rig-photo-1',
     title: 'The 2026 Ford F550 Expedition Rig (Mousse)',

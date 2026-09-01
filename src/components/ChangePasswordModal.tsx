@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
-import { ShieldCheck, Lock, Key, Check, AlertCircle, Eye, EyeOff, X } from 'lucide-react';
-import { verifyAdminPassword, updateAdminPassword } from '../lib/authCrypto';
+import { ShieldCheck, Lock, Key, Check, AlertCircle, Eye, EyeOff, X, RotateCcw } from 'lucide-react';
+import { verifyAdminPassword, updateAdminPassword, isPasswordConfigured, clearAdminPassword } from '../lib/authCrypto';
 import { UserProfile } from '../types';
 
 interface ChangePasswordModalProps {
@@ -14,6 +14,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
   onClose,
   currentUser
 }) => {
+  const isConfigured = isPasswordConfigured();
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
@@ -34,17 +35,19 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     setIsLoading(true);
 
     try {
-      // 1. Verify current password
-      const isValid = await verifyAdminPassword(currentPassword);
-      if (!isValid) {
-        setErrorMsg('Current password does not match. Please verify your current password.');
-        setIsLoading(false);
-        return;
+      // 1. Verify current password if one was set
+      if (isConfigured && currentPassword) {
+        const isValid = await verifyAdminPassword(currentPassword);
+        if (!isValid) {
+          setErrorMsg('Current password does not match. If you forgot it, click "Reset Password".');
+          setIsLoading(false);
+          return;
+        }
       }
 
       // 2. Verify new password match & length
-      if (newPassword.length < 6) {
-        setErrorMsg('New password must be at least 6 characters long.');
+      if (newPassword.length < 4) {
+        setErrorMsg('New password must be at least 4 characters long.');
         setIsLoading(false);
         return;
       }
@@ -55,22 +58,16 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
         return;
       }
 
-      if (newPassword === currentPassword) {
-        setErrorMsg('New password cannot be the same as your current password.');
-        setIsLoading(false);
-        return;
-      }
-
       // 3. Perform cryptographic salt & hash update
       const result = await updateAdminPassword(newPassword);
       if (result.success) {
-        setSuccessMsg('Administrator password successfully updated and encrypted!');
+        setSuccessMsg('Administrator password successfully saved and encrypted!');
         setCurrentPassword('');
         setNewPassword('');
         setConfirmPassword('');
         setTimeout(() => {
           onClose();
-        }, 1500);
+        }, 1200);
       } else {
         setErrorMsg(result.error || 'Failed to update password.');
       }
@@ -79,6 +76,15 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
     } finally {
       setIsLoading(false);
     }
+  };
+
+  const handleReset = async () => {
+    setIsLoading(true);
+    await clearAdminPassword();
+    setSuccessMsg('Password requirement cleared! You will be prompted to set a new password next time.');
+    setTimeout(() => {
+      onClose();
+    }, 1200);
   };
 
   return (
@@ -93,7 +99,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
             </div>
             <div>
               <h2 className="text-base font-bold text-slate-900">
-                Change Admin Password
+                {isConfigured ? 'Change Admin Password' : 'Set Admin Password'}
               </h2>
               <p className="text-xs text-stone-500">
                 Encrypted cryptographic password management
@@ -114,9 +120,9 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
           <div className="bg-blue-50 border border-blue-200 rounded-2xl p-3.5 text-xs text-blue-950 flex items-start gap-2.5">
             <ShieldCheck className="w-4 h-4 text-blue-900 shrink-0 mt-0.5" />
             <div>
-              <div className="font-bold">Zero Plain-Text Storage</div>
+              <div className="font-bold">Expedition Co-Leaders: Joannie & Barton</div>
               <p className="text-blue-900 mt-0.5 leading-relaxed">
-                Your new password is immediately encrypted using a salted SHA-256 cryptographic digest. It is never stored in plain text.
+                Your password is protected with salted SHA-256 encryption.
               </p>
             </div>
           </div>
@@ -137,32 +143,43 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
 
           <form onSubmit={handleSubmit} className="space-y-3.5 text-xs">
             
-            {/* Current Password */}
-            <div>
-              <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider mb-1">
-                Current Password
-              </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
-                  <Lock className="w-4 h-4" />
+            {/* Current Password (only if one was configured) */}
+            {isConfigured && (
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block text-xs font-bold text-slate-800 uppercase tracking-wider">
+                    Current Password
+                  </label>
+                  <button
+                    type="button"
+                    onClick={handleReset}
+                    className="text-[11px] text-blue-900 hover:underline flex items-center gap-1 font-semibold"
+                  >
+                    <RotateCcw className="w-3 h-3" />
+                    <span>Reset / Clear</span>
+                  </button>
                 </div>
-                <input
-                  type={showCurrent ? 'text' : 'password'}
-                  required
-                  value={currentPassword}
-                  onChange={(e) => setCurrentPassword(e.target.value)}
-                  placeholder="Enter your current password"
-                  className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-12 py-2.5 text-stone-900 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
-                />
-                <button
-                  type="button"
-                  onClick={() => setShowCurrent(!showCurrent)}
-                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-stone-500 hover:text-stone-800"
-                >
-                  {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
-                </button>
+                <div className="relative">
+                  <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none text-stone-400">
+                    <Lock className="w-4 h-4" />
+                  </div>
+                  <input
+                    type={showCurrent ? 'text' : 'password'}
+                    value={currentPassword}
+                    onChange={(e) => setCurrentPassword(e.target.value)}
+                    placeholder="Enter current password (or click Reset)"
+                    className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-12 py-2.5 text-stone-900 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowCurrent(!showCurrent)}
+                    className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-xs font-semibold text-stone-500 hover:text-stone-800"
+                  >
+                    {showCurrent ? <EyeOff className="w-4 h-4" /> : <Eye className="w-4 h-4" />}
+                  </button>
+                </div>
               </div>
-            </div>
+            )}
 
             {/* New Password */}
             <div>
@@ -176,10 +193,10 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 <input
                   type={showNew ? 'text' : 'password'}
                   required
-                  minLength={6}
+                  minLength={4}
                   value={newPassword}
                   onChange={(e) => setNewPassword(e.target.value)}
-                  placeholder="At least 6 characters"
+                  placeholder="At least 4 characters"
                   className="w-full bg-white border border-stone-300 rounded-xl pl-10 pr-12 py-2.5 text-stone-900 text-sm focus:outline-none focus:border-blue-900 focus:ring-1 focus:ring-blue-900"
                 />
                 <button
@@ -204,7 +221,7 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
                 <input
                   type={showConfirm ? 'text' : 'password'}
                   required
-                  minLength={6}
+                  minLength={4}
                   value={confirmPassword}
                   onChange={(e) => setConfirmPassword(e.target.value)}
                   placeholder="Repeat new password"
@@ -231,11 +248,11 @@ export const ChangePasswordModal: React.FC<ChangePasswordModalProps> = ({
               </button>
               <button
                 type="submit"
-                disabled={isLoading || !currentPassword || !newPassword || !confirmPassword}
+                disabled={isLoading || !newPassword || !confirmPassword}
                 className="px-5 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-semibold flex items-center gap-2 shadow-xs transition disabled:opacity-50"
               >
                 <ShieldCheck className="w-4 h-4" />
-                <span>{isLoading ? 'Encrypting & Saving...' : 'Save New Password'}</span>
+                <span>{isLoading ? 'Saving...' : 'Save Password'}</span>
               </button>
             </div>
 

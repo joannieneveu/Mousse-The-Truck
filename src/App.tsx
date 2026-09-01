@@ -24,7 +24,7 @@ import { TravelLogList } from './components/TravelLogList';
 import { TravelLogDetail } from './components/TravelLogDetail';
 import { MediaGallery } from './components/MediaGallery';
 import { RigSpecs } from './components/RigSpecs';
-import { LiveLocationTracker } from './components/LiveLocationTracker';
+import { LocationPinModal } from './components/LocationPinModal';
 import { SubscribeModal } from './components/SubscribeModal';
 import { SubscriberAdminModal } from './components/SubscriberAdminModal';
 import { AuthModal } from './components/AuthModal';
@@ -36,7 +36,6 @@ import {
   BookOpen, 
   Camera, 
   Users, 
-  Radio, 
   Mail, 
   Heart, 
   Baby, 
@@ -48,7 +47,7 @@ import {
 
 function AppContent() {
   const { t, language } = useLanguage();
-  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'journal' | 'gallery' | 'rig' | 'live'>('home');
+  const [activeTab, setActiveTab] = useState<'home' | 'map' | 'journal' | 'gallery' | 'rig'>('home');
   const [waypoints, setWaypoints] = useState<Waypoint[]>(INITIAL_WAYPOINTS);
   const [liveLocation, setLiveLocation] = useState<LiveLocation>(INITIAL_LIVE_LOCATION);
   const [travelLogs, setTravelLogs] = useState<TravelLog[]>(INITIAL_TRAVEL_LOGS);
@@ -62,7 +61,7 @@ function AppContent() {
   const [isAdminSubscribersOpen, setIsAdminSubscribersOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
-  const [isCheckinModalOpen, setIsCheckinModalOpen] = useState<boolean>(false);
+  const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
 
   // Load state from backend on mount
   useEffect(() => {
@@ -374,11 +373,10 @@ function AppContent() {
         currentUser={currentUser}
         pendingSubscribersCount={pendingSubscribersCount}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
-        onOpenCheckinModal={() => setIsCheckinModalOpen(true)}
+        onOpenPinModal={() => setIsPinModalOpen(true)}
         onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
         onOpenAdminSubscribersModal={() => setIsAdminSubscribersOpen(true)}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
-        onToggleLocationSharing={handleToggleLocationSharing}
       />
 
       {/* Main App Content Views */}
@@ -407,6 +405,7 @@ function AppContent() {
           <InteractiveMap
             waypoints={waypoints}
             liveLocation={liveLocation}
+            isAdmin={Boolean(currentUser?.isAdmin)}
             onSelectWaypoint={(wp) => {
               // Find related log if exists
               const relatedLog = travelLogs.find(l => l.waypointId === wp.id || l.locationName.toLowerCase().includes(wp.name.toLowerCase()));
@@ -415,12 +414,11 @@ function AppContent() {
                 setActiveTab('journal');
               }
             }}
-            onOpenLiveModal={() => setIsCheckinModalOpen(true)}
+            onOpenPinModal={() => setIsPinModalOpen(true)}
             onOpenNewLog={(coords, locName) => {
               setActiveTab('journal');
               setSelectedLog(null);
             }}
-            onToggleLocationSharing={handleToggleLocationSharing}
             onSimulateLeg={(leg) => {
               const legWaypoints = waypoints.filter(w => w.leg === leg);
               if (legWaypoints.length > 0) {
@@ -480,17 +478,6 @@ function AppContent() {
             onUploadRigPhoto={handleUploadRigPhoto}
             isAdmin={currentUser?.isAdmin}
           />
-        )}
-
-        {/* VIEW 5: LIVE GPS TRACKER */}
-        {activeTab === 'live' && (
-          <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8 py-8 animate-in fade-in duration-300">
-            <LiveLocationTracker
-              liveLocation={liveLocation}
-              currentUser={currentUser}
-              onUpdateLocation={handleUpdateLiveLocation}
-            />
-          </div>
         )}
 
       </main>
@@ -630,32 +617,13 @@ function AppContent() {
         currentUser={currentUser}
       />
 
-      {/* 4. GPS Check-in Modal */}
-      {isCheckinModalOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-900/60 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200">
-          <div className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-xl w-full p-6 shadow-2xl space-y-4 my-8">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-              <div className="flex items-center gap-2">
-                <Radio className="w-5 h-5 text-blue-900" />
-                <h3 className="font-serif font-bold text-lg text-stone-900">
-                  {language === 'fr' ? 'État satellite GPS & Pointage' : 'GPS Satellite Status & Check-In'}
-                </h3>
-              </div>
-              <button
-                onClick={() => setIsCheckinModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 flex items-center justify-center text-xs"
-              >
-                ✕
-              </button>
-            </div>
-            
-            <LiveLocationTracker
-              liveLocation={liveLocation}
-              onUpdateLocation={handleUpdateLiveLocation}
-              onClose={() => setIsCheckinModalOpen(false)}
-            />
-          </div>
-        </div>
+      {/* 4. Manual Expedition Location Pin Modal (Admin Only) */}
+      {isPinModalOpen && (
+        <LocationPinModal
+          currentLocation={liveLocation}
+          onUpdateLocation={handleUpdateLiveLocation}
+          onClose={() => setIsPinModalOpen(false)}
+        />
       )}
 
     </div>

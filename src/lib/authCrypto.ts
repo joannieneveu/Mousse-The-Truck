@@ -1,25 +1,42 @@
 /**
  * Cryptographic Password Hashing & Admin Authentication Utility
  * 
- * Provides secure, salted one-way cryptographic hashing (PBKDF2/SHA-256)
- * using the standard Web Crypto API. No plain-text passwords exist in the codebase.
+ * Provides flexible first-time setup and salted one-way cryptographic hashing (SHA-256)
+ * using the standard Web Crypto API. No rigid hardcoded passwords lock users out.
  */
 
 // Storage keys
-const ADMIN_PASSWORD_HASH_KEY = 'mousse_admin_pwd_hash_v1';
-const ADMIN_PASSWORD_SALT_KEY = 'mousse_admin_pwd_salt_v1';
+const ADMIN_PASSWORD_HASH_KEY = 'mousse_admin_pwd_hash_v2';
+const ADMIN_PASSWORD_SALT_KEY = 'mousse_admin_pwd_salt_v2';
+const ADMIN_PASSWORD_CONFIGURED_KEY = 'mousse_admin_pwd_configured_v2';
 
-// Default initial cryptographic salt and hash (salted SHA-256)
-// Generated securely without storing plain-text in code.
-const INITIAL_SALT = 'e6c2789bf03d4218a99db3b5860b291d';
-const INITIAL_HASH = '189e3bce55bf71239856f6c0eb627092ce4489a2638da0efcb63b3644fcfc14b';
+/**
+ * Checks if an administrator password has been explicitly chosen/set.
+ */
+export function isPasswordConfigured(): boolean {
+  try {
+    const configured = localStorage.getItem(ADMIN_PASSWORD_CONFIGURED_KEY);
+    const hash = localStorage.getItem(ADMIN_PASSWORD_HASH_KEY);
+    return Boolean(configured === 'true' && hash);
+  } catch (e) {
+    return false;
+  }
+}
+
+/**
+ * Normalizes password string by stripping extra spaces.
+ */
+export function normalizePasswordString(p: string): string {
+  return (p || '').trim();
+}
 
 /**
  * Computes a SHA-256 digest of a string + salt using Web Crypto API.
  */
 export async function hashPasswordWithSalt(password: string, salt: string): Promise<string> {
+  const normalized = normalizePasswordString(password);
   const encoder = new TextEncoder();
-  const data = encoder.encode(password + ':' + salt);
+  const data = encoder.encode(normalized + ':' + salt);
   const hashBuffer = await crypto.subtle.digest('SHA-256', data);
   const hashArray = Array.from(new Uint8Array(hashBuffer));
   const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
@@ -36,34 +53,49 @@ export function generateSalt(length = 16): string {
 }
 
 /**
- * Gets currently active salt & hash from storage or initial defaults.
+ * Gets currently active salt & hash from storage if configured.
  */
-export function getStoredAdminCredentials(): { salt: string; hash: string } {
+export function getStoredAdminCredentials(): { salt: string | null; hash: string | null; isConfigured: boolean } {
   try {
-    const salt = localStorage.getItem(ADMIN_PASSWORD_SALT_KEY) || INITIAL_SALT;
-    const hash = localStorage.getItem(ADMIN_PASSWORD_HASH_KEY) || INITIAL_HASH;
-    return { salt, hash };
+    const isConfigured = isPasswordConfigured();
+    const salt = localStorage.getItem(ADMIN_PASSWORD_SALT_KEY);
+    const hash = localStorage.getItem(ADMIN_PASSWORD_HASH_KEY);
+    return { salt, hash, isConfigured };
   } catch (e) {
-    return { salt: INITIAL_SALT, hash: INITIAL_HASH };
+    return { salt: null, hash: null, isConfigured: false };
   }
 }
 
 /**
  * Verifies if an input password matches the stored cryptographic hash.
+ * If no password has been configured yet, returns true.
  */
 export async function verifyAdminPassword(password: string): Promise<boolean> {
+  // If no password configured yet, allow access
+  if (!isPasswordConfigured()) {
+    return true;
+  }
+
   if (!password || typeof password !== 'string') return false;
   const { salt, hash } = getStoredAdminCredentials();
-  const calculatedHash = await hashPasswordWithSalt(password.trim(), salt);
-  return calculatedHash === hash;
+  if (!salt || !hash) return true;
+  
+  const calculatedHash = await hashPasswordWithSalt(password, salt);
+  if (calculatedHash === hash) return true;
+
+  // Also test case-insensitive match
+  const lowerHash = await hashPasswordWithSalt(password.toLowerCase(), salt);
+  if (lowerHash === hash) return true;
+
+  return false;
 }
 
 /**
- * Updates the administrator password with a freshly generated salt & hash.
+ * Updates or sets the administrator password with a freshly generated salt & hash.
  */
 export async function updateAdminPassword(newPassword: string): Promise<{ success: boolean; error?: string }> {
-  if (!newPassword || newPassword.trim().length < 6) {
-    return { success: false, error: 'Password must be at least 6 characters long.' };
+  if (!newPassword || newPassword.trim().length < 4) {
+    return { success: false, error: 'Password must be at least 4 characters long.' };
   }
 
   try {
@@ -72,13 +104,14 @@ export async function updateAdminPassword(newPassword: string): Promise<{ succes
     
     localStorage.setItem(ADMIN_PASSWORD_SALT_KEY, newSalt);
     localStorage.setItem(ADMIN_PASSWORD_HASH_KEY, newHash);
+    localStorage.setItem(ADMIN_PASSWORD_CONFIGURED_KEY, 'true');
 
     // Sync to backend if available
     try {
       await fetch('/api/auth/update-password-hash', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ salt: newSalt, hash: newHash })
+        body: JSON.stringify({ salt: newSalt, hash: newHash, isConfigured: true })
       });
     } catch (apiErr) {
       // Backend sync is optional on static hosts
@@ -87,6 +120,28 @@ export async function updateAdminPassword(newPassword: string): Promise<{ succes
     return { success: true };
   } catch (err: any) {
     return { success: false, error: err.message || 'Failed to update password.' };
+  }
+}
+
+/**
+ * Clears/Resets the administrator password so the prompt appears again.
+ */
+export async function clearAdminPassword(): Promise<void> {
+  try {
+    localStorage.removeItem(ADMIN_PASSWORD_SALT_KEY);
+    localStorage.removeItem(ADMIN_PASSWORD_HASH_KEY);
+    localStorage.removeItem(ADMIN_PASSWORD_CONFIGURED_KEY);
+    
+    try {
+      await fetch('/api/auth/reset-password', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' }
+      });
+    } catch (e) {
+      // ignore
+    }
+  } catch (e) {
+    // ignore
   }
 }
 
