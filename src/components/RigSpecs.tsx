@@ -87,16 +87,16 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
       category: 'exterior' as const
     },
     {
-      title: 'Henri’s Removable Modular Countertop Cot',
-      url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1200&q=80',
-      caption: 'Custom made removable modular cot sitting on the counter top next to the dinette.',
-      category: 'henri_cot' as const
+      title: '1100W High-Efficiency Solar Panel Array',
+      url: '/solar panel.jpeg',
+      caption: '1100W roof solar panel array delivering off-grid clean energy to the EcoFlow power kit.',
+      category: 'solar_power' as const
     },
     {
-      title: 'Starlink & Weboost Expedition Workstation',
-      url: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=1200&q=80',
-      caption: 'High-speed Starlink Satellite & Weboost Drive Reach Overland for remote Executive MBA studies.',
-      category: 'workstation' as const
+      title: 'Mousse Interior Living Quarters',
+      url: '/interior1.jpeg',
+      caption: 'Custom 4-season habitat interior layout, dinette area, and optimized storage.',
+      category: 'interior' as const
     }
   ];
 
@@ -403,11 +403,11 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
                   Image URL *
                 </label>
                 <input
-                  type="url"
+                  type="text"
                   required
                   value={uploadUrl}
                   onChange={(e) => setUploadUrl(e.target.value)}
-                  placeholder="https://... (or select a preset below)"
+                  placeholder="/interior1.jpeg or https://..."
                   className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
                 />
               </div>

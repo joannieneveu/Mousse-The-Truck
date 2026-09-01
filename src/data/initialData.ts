@@ -662,27 +662,43 @@ export const INITIAL_RIG_PHOTOS: RigPhoto[] = [
     uploadedAt: 'August 2026'
   },
   {
-    id: 'rig-photo-2',
-    title: 'Interior Living & Henri’s Modular Cot',
-    caption: 'Custom made removable modular cot sitting on the countertop next to the dinette with OKSTENCK 360° pneumatic table.',
-    url: 'https://images.unsplash.com/photo-1513694203232-719a280e022f?auto=format&fit=crop&w=1200&q=80',
-    category: 'interior',
-    uploadedAt: 'August 2026'
-  },
-  {
-    id: 'rig-photo-3',
-    title: '1100W Solar Roof & Starlink + Weboost',
-    caption: '1100W high-efficiency solar panel array, Starlink Satellite high-speed terminal, and Weboost Drive Reach Overland cell signal booster.',
-    url: 'https://images.unsplash.com/photo-1508873696983-2df5293cb32f?auto=format&fit=crop&w=1200&q=80',
+    id: 'rig-photo-solar',
+    title: '1100W High-Efficiency Solar Panel Array',
+    caption: '1100W roof-mounted solar panel array delivering off-grid clean energy to our 15 kWh EcoFlow power independence kit.',
+    url: '/solar panel.jpeg',
     category: 'solar_power',
     uploadedAt: 'August 2026'
   },
   {
-    id: 'rig-photo-4',
-    title: 'Off-Grid Galley & Infinity Summit Shower',
-    caption: 'Torva sink, Vitrifrigo Slim 150 fridge, Toshiba 8-in-1 combo oven, Clesana C1 swivel toilet, and Infinity Shower Summit.',
-    url: 'https://images.unsplash.com/photo-1556911220-e15b29be8c8f?auto=format&fit=crop&w=1200&q=80',
-    category: 'kitchen',
+    id: 'rig-photo-interior-1',
+    title: 'Interior Living Quarters – View 1',
+    caption: 'Custom 4-season habitat interior layout, dinette area, and optimized storage inside Mousse.',
+    url: '/interior1.jpeg',
+    category: 'interior',
+    uploadedAt: 'August 2026'
+  },
+  {
+    id: 'rig-photo-interior-2',
+    title: 'Interior Galley & Kitchenette – View 2',
+    caption: 'Off-grid galley setup, kitchen prep counters, and functional cabinetry for life on the road.',
+    url: '/interior2.jpeg',
+    category: 'interior',
+    uploadedAt: 'August 2026'
+  },
+  {
+    id: 'rig-photo-interior-3',
+    title: 'Interior Workstation & Seating – View 3',
+    caption: 'Comfortable dining seating and workstation setup with 360° pneumatic table for remote MBA coursework.',
+    url: '/interior3.jpeg',
+    category: 'interior',
+    uploadedAt: 'August 2026'
+  },
+  {
+    id: 'rig-photo-interior-4',
+    title: 'Interior Living & Nursery Quarters – View 4',
+    caption: 'Warm insulated living space and sleeping quarters configured for Joannie, Barton, and baby Henri.',
+    url: '/interior4.jpeg',
+    category: 'interior',
     uploadedAt: 'August 2026'
   }
 ];
