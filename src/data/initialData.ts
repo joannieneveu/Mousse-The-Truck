@@ -158,14 +158,6 @@ export const INITIAL_SUBSCRIBERS: Subscriber[] = [
     status: 'approved',
     subscribedAt: 'June 15, 2026',
     approvedAt: 'June 16, 2026'
-  },
-  {
-    id: 'sub-7',
-    name: 'Marcus Vance',
-    email: 'marcus.vance@overlandtravelers.net',
-    relationshipNote: 'Met at Yukon campground',
-    status: 'pending',
-    subscribedAt: 'August 28, 2026'
   }
 ];
 

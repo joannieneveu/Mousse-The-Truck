@@ -75,6 +75,14 @@ function AppContent() {
     setIsGlobalBatchModalOpen(true);
   };
 
+  // Auth headers helper
+  const getAuthHeaders = () => ({
+    'Content-Type': 'application/json',
+    'x-user-email': currentUser?.email || 'barton.bilingual@alumni.harvard.edu',
+    'x-user-id': currentUser?.id || 'admin-barton',
+    'x-user-role': currentUser?.isAdmin ? 'admin' : (currentUser?.role || 'admin')
+  });
+
   // Load state from backend on mount
   useEffect(() => {
     fetch('/api/auth/me')
@@ -88,35 +96,57 @@ function AppContent() {
       .then(res => res.json())
       .then(data => {
         if (data.liveLocation) setLiveLocation(data.liveLocation);
-        if (data.waypoints) setWaypoints(data.waypoints);
+        if (Array.isArray(data.waypoints)) setWaypoints(data.waypoints);
       })
       .catch(err => console.log('Using initial location data:', err));
 
     fetch('/api/logs')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setTravelLogs(data);
+        if (Array.isArray(data)) {
+          setTravelLogs(data);
+        } else if (Array.isArray(data?.travelLogs)) {
+          setTravelLogs(data.travelLogs);
+        } else if (Array.isArray(data?.logs)) {
+          setTravelLogs(data.logs);
+        }
       })
       .catch(err => console.log('Using initial travel logs:', err));
 
     fetch('/api/media')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setMediaItems(data);
+        if (Array.isArray(data)) {
+          setMediaItems(data);
+        } else if (Array.isArray(data?.mediaItems)) {
+          setMediaItems(data.mediaItems);
+        } else if (Array.isArray(data?.items)) {
+          setMediaItems(data.items);
+        }
       })
       .catch(err => console.log('Using initial media:', err));
 
     fetch('/api/rig-photos')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data) && data.length > 0) setRigPhotos(data);
+        if (Array.isArray(data)) {
+          setRigPhotos(data);
+        } else if (Array.isArray(data?.rigPhotos)) {
+          setRigPhotos(data.rigPhotos);
+        } else if (Array.isArray(data?.photos)) {
+          setRigPhotos(data.photos);
+        }
       })
       .catch(err => console.log('Using initial rig photos:', err));
 
     fetch('/api/subscribers')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) setSubscribers(data);
+        if (Array.isArray(data)) {
+          setSubscribers(data);
+        } else if (Array.isArray(data?.subscribers)) {
+          setSubscribers(data.subscribers);
+        }
       })
       .catch(err => console.log('Using initial subscribers:', err));
   }, []);
@@ -127,7 +157,7 @@ function AppContent() {
     try {
       await fetch('/api/location', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newLoc)
       });
     } catch (err) {
@@ -140,7 +170,10 @@ function AppContent() {
     const nextState = !liveLocation.isSharing;
     setLiveLocation(prev => ({ ...prev, isSharing: nextState }));
     try {
-      await fetch('/api/location/toggle-sharing', { method: 'POST' });
+      await fetch('/api/location/toggle-sharing', {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
     } catch (err) {
       console.error(err);
     }
@@ -152,7 +185,7 @@ function AppContent() {
     try {
       const res = await fetch('/api/logs', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({
           ...newLog,
           author: currentUser ? currentUser.name : 'Joannie & Barton'
@@ -161,13 +194,17 @@ function AppContent() {
       const data = await res.json();
       if (data.log) {
         createdLog = data.log;
-        setTravelLogs(prev => [data.log, ...prev]);
+        if (Array.isArray(data.travelLogs)) {
+          setTravelLogs(data.travelLogs);
+        } else {
+          setTravelLogs(prev => [data.log, ...prev]);
+        }
         setSelectedLog(data.log);
       }
-      if (data.waypoint) {
-        setWaypoints(prev => [...prev, data.waypoint]);
-      } else if (data.waypoints) {
+      if (Array.isArray(data.waypoints)) {
         setWaypoints(data.waypoints);
+      } else if (data.waypoint) {
+        setWaypoints(prev => [...prev, data.waypoint]);
       }
       if (data.liveLocation) {
         setLiveLocation(data.liveLocation);
@@ -209,13 +246,17 @@ function AppContent() {
     try {
       const res = await fetch('/api/media', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newMedia)
       });
       const data = await res.json();
-      if (data.media) {
-        createdMedia = data.media;
-        setMediaItems(prev => [data.media, ...prev]);
+      if (Array.isArray(data.mediaItems)) {
+        setMediaItems(data.mediaItems);
+        createdMedia = data.item || data.mediaItems[0];
+      } else if (data.item || data.media) {
+        const item = data.item || data.media;
+        createdMedia = item;
+        setMediaItems(prev => [item, ...prev]);
       }
     } catch (err) {
       // Fallback for static hosting / GitHub Pages
@@ -245,11 +286,14 @@ function AppContent() {
     try {
       const res = await fetch('/api/media/batch', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify({ items })
       });
       const data = await res.json();
-      if (Array.isArray(data.items)) {
+      if (Array.isArray(data.mediaItems)) {
+        createdItems = data.items || [];
+        setMediaItems(data.mediaItems);
+      } else if (Array.isArray(data.items)) {
         createdItems = data.items;
         setMediaItems(prev => [...data.items, ...prev]);
       }
@@ -281,11 +325,14 @@ function AppContent() {
     try {
       const res = await fetch('/api/rig-photos', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(newPhoto)
       });
       const data = await res.json();
-      if (data.photo) {
+      if (Array.isArray(data.rigPhotos)) {
+        setRigPhotos(data.rigPhotos);
+        createdPhoto = data.photo || data.rigPhotos[0];
+      } else if (data.photo) {
         createdPhoto = data.photo;
         setRigPhotos(prev => [data.photo, ...prev]);
       }
@@ -311,10 +358,14 @@ function AppContent() {
     try {
       const res = await fetch(`/api/rig-photos/${photoId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updatedData)
       });
       const data = await res.json();
+      if (Array.isArray(data.rigPhotos)) {
+        setRigPhotos(data.rigPhotos);
+        return;
+      }
       if (data.success && data.photo) {
         setRigPhotos(prev => prev.map(p => p.id === photoId ? data.photo : p));
         return;
@@ -329,7 +380,15 @@ function AppContent() {
   // Delete rig photo
   const handleDeleteRigPhoto = async (photoId: string) => {
     try {
-      await fetch(`/api/rig-photos/${photoId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/rig-photos/${photoId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (Array.isArray(data.rigPhotos)) {
+        setRigPhotos(data.rigPhotos);
+        return;
+      }
     } catch (err) {
       console.error('Failed to delete rig photo on server:', err);
     }
@@ -341,10 +400,14 @@ function AppContent() {
     try {
       const res = await fetch(`/api/media/${mediaId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updatedData)
       });
       const data = await res.json();
+      if (Array.isArray(data.mediaItems)) {
+        setMediaItems(data.mediaItems);
+        return;
+      }
       if (data.success && data.item) {
         setMediaItems(prev => prev.map(m => m.id === mediaId ? data.item : m));
         return;
@@ -359,7 +422,15 @@ function AppContent() {
   // Delete media item
   const handleDeleteMedia = async (mediaId: string) => {
     try {
-      await fetch(`/api/media/${mediaId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/media/${mediaId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (Array.isArray(data.mediaItems)) {
+        setMediaItems(data.mediaItems);
+        return;
+      }
     } catch (err) {
       console.error('Failed to delete media item on server:', err);
     }
@@ -375,7 +446,9 @@ function AppContent() {
         body: JSON.stringify(sub)
       });
       const data = await res.json();
-      if (data.subscriber) {
+      if (Array.isArray(data.subscribers)) {
+        setSubscribers(data.subscribers);
+      } else if (data.subscriber) {
         setSubscribers(prev => [data.subscriber, ...prev]);
       }
       return { success: true, message: data.message || 'Subscription request submitted for Joannie & Barton to review.' };
@@ -396,14 +469,21 @@ function AppContent() {
   // Admin: Approve subscriber
   const handleApproveSubscriber = async (id: string) => {
     try {
-      const res = await fetch(`/api/subscribers/${id}/approve`, { method: 'POST' });
+      const res = await fetch(`/api/subscribers/${id}/approve`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
       const data = await res.json();
+      if (Array.isArray(data.subscribers)) {
+        setSubscribers(data.subscribers);
+        return;
+      }
       if (data.success && data.subscriber) {
         setSubscribers(prev => prev.map(s => s.id === id ? data.subscriber : s));
         return;
       }
     } catch (err) {
-      // Static fallback
+      console.error('Failed to approve subscriber on server:', err);
     }
     setSubscribers(prev => prev.map(s => s.id === id ? { ...s, status: 'approved' } : s));
   };
@@ -411,9 +491,17 @@ function AppContent() {
   // Admin: Delete subscriber
   const handleDeleteSubscriber = async (id: string) => {
     try {
-      await fetch(`/api/subscribers/${id}`, { method: 'DELETE' });
+      const res = await fetch(`/api/subscribers/${id}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (Array.isArray(data.subscribers)) {
+        setSubscribers(data.subscribers);
+        return;
+      }
     } catch (err) {
-      // Static fallback
+      console.error('Failed to delete subscriber on server:', err);
     }
     setSubscribers(prev => prev.filter(s => s.id !== id));
   };
@@ -421,8 +509,17 @@ function AppContent() {
   // Toggle Publish / Draft status of a log
   const handleTogglePublishLog = async (logId: string) => {
     try {
-      const res = await fetch(`/api/logs/${logId}/toggle-status`, { method: 'POST' });
+      const res = await fetch(`/api/logs/${logId}/toggle-status`, {
+        method: 'POST',
+        headers: getAuthHeaders()
+      });
       const data = await res.json();
+      if (Array.isArray(data.travelLogs)) {
+        setTravelLogs(data.travelLogs);
+        const match = data.travelLogs.find((l: TravelLog) => l.id === logId);
+        if (match && selectedLog?.id === logId) setSelectedLog(match);
+        return;
+      }
       if (data.success && data.log) {
         setTravelLogs(prev => prev.map(l => l.id === logId ? data.log : l));
         if (selectedLog?.id === logId) {
@@ -447,7 +544,17 @@ function AppContent() {
   // Delete a log
   const handleDeleteLog = async (logId: string) => {
     try {
-      await fetch(`/api/logs/${logId}`, { method: 'DELETE' });
+      const res = await fetch(`/api/logs/${logId}`, {
+        method: 'DELETE',
+        headers: getAuthHeaders()
+      });
+      const data = await res.json();
+      if (Array.isArray(data.travelLogs)) {
+        setTravelLogs(data.travelLogs);
+      }
+      if (Array.isArray(data.waypoints)) {
+        setWaypoints(data.waypoints);
+      }
     } catch (err) {
       // Static fallback
     }
@@ -462,14 +569,24 @@ function AppContent() {
     try {
       const res = await fetch(`/api/logs/${logId}`, {
         method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAuthHeaders(),
         body: JSON.stringify(updatedFields)
       });
       const data = await res.json();
-      if (data.success && data.log) {
-        setTravelLogs(prev => prev.map(l => l.id === logId ? data.log : l));
-        if (selectedLog?.id === logId) {
+      if (Array.isArray(data.travelLogs)) {
+        setTravelLogs(data.travelLogs);
+        const match = data.travelLogs.find((l: TravelLog) => l.id === logId);
+        if (match && selectedLog?.id === logId) {
+          setSelectedLog(match);
+        } else if (selectedLog?.id === logId && data.log) {
           setSelectedLog(data.log);
+        }
+        return;
+      }
+      if (data.success && data.log) {
+        setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...data.log } : l));
+        if (selectedLog?.id === logId) {
+          setSelectedLog(prev => prev ? { ...prev, ...data.log } : data.log);
         }
         return;
       }

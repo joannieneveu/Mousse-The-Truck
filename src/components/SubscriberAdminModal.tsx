@@ -10,9 +10,11 @@ import {
   Send,
   Users,
   Search,
-  Sparkles
+  Sparkles,
+  Eye
 } from 'lucide-react';
 import { Subscriber } from '../types';
+import { EmailPreviewModal } from './EmailPreviewModal';
 
 interface SubscriberAdminModalProps {
   isOpen: boolean;
@@ -35,6 +37,7 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
   const [searchQuery, setSearchQuery] = useState('');
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [broadcastSent, setBroadcastSent] = useState(false);
+  const [showEmailPreview, setShowEmailPreview] = useState(false);
 
   if (!isOpen) return null;
 
@@ -114,14 +117,23 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
               Approved subscribers will receive notification emails whenever new journal dispatches are published.
             </p>
           </div>
-          <button
-            onClick={handleSimulateBroadcast}
-            disabled={broadcastSent || approvedSubscribers.length === 0}
-            className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-xl font-medium transition flex items-center gap-1.5 shadow-sm text-xs shrink-0 disabled:opacity-50"
-          >
-            {broadcastSent ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Send className="w-3.5 h-3.5" />}
-            <span>{broadcastSent ? 'Update Dispatched!' : 'Send Test Notification'}</span>
-          </button>
+          <div className="flex items-center gap-2 shrink-0">
+            <button
+              onClick={() => setShowEmailPreview(true)}
+              className="bg-white hover:bg-stone-50 text-blue-950 border border-blue-200 px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-2xs text-xs"
+            >
+              <Eye className="w-3.5 h-3.5 text-blue-800" />
+              <span>Preview Email Template</span>
+            </button>
+            <button
+              onClick={handleSimulateBroadcast}
+              disabled={broadcastSent || approvedSubscribers.length === 0}
+              className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-xl font-medium transition flex items-center gap-1.5 shadow-sm text-xs disabled:opacity-50"
+            >
+              {broadcastSent ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Send className="w-3.5 h-3.5" />}
+              <span>{broadcastSent ? 'Update Dispatched!' : 'Send Test Notification'}</span>
+            </button>
+          </div>
         </div>
 
         {/* Tabs & Search */}
@@ -261,6 +273,16 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
         </div>
 
       </div>
+
+      {/* --- LIVE EMAIL PREVIEW MODAL --- */}
+      {showEmailPreview && (
+        <EmailPreviewModal
+          isOpen={showEmailPreview}
+          onClose={() => setShowEmailPreview(false)}
+          subscribers={subscribers}
+          authorName={adminName}
+        />
+      )}
     </div>
   );
 };

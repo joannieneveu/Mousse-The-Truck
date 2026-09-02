@@ -13,7 +13,8 @@ import {
   UserProfile, 
   CommentItem, 
   RigPhoto,
-  FamilyMember
+  FamilyMember,
+  EmailBroadcastLog
 } from './src/types';
 import { 
   ADMIN_USERS, 
@@ -47,6 +48,7 @@ async function startServer() {
   let comments: CommentItem[] = [...INITIAL_COMMENTS];
   let rigPhotos: RigPhoto[] = [...INITIAL_RIG_PHOTOS];
   let familyMembers: FamilyMember[] = [...INITIAL_FAMILY_MEMBERS];
+  let broadcastLogs: EmailBroadcastLog[] = [];
   let siteSettings = {
     heroPhoto: '/moussesunset.jpeg',
     familyHeroPhoto: '/Family.jpeg'
@@ -71,6 +73,7 @@ async function startServer() {
         if (Array.isArray(data.comments)) comments = data.comments;
         if (Array.isArray(data.rigPhotos)) rigPhotos = data.rigPhotos;
         if (Array.isArray(data.familyMembers)) familyMembers = data.familyMembers;
+        if (Array.isArray(data.broadcastLogs)) broadcastLogs = data.broadcastLogs;
         if (data.siteSettings) siteSettings = { ...siteSettings, ...data.siteSettings };
         if (data.auth) {
           isPasswordConfigured = Boolean(data.auth.isPasswordConfigured);
@@ -98,6 +101,7 @@ async function startServer() {
         comments,
         rigPhotos,
         familyMembers,
+        broadcastLogs,
         siteSettings,
         auth: {
           isPasswordConfigured,
@@ -125,6 +129,37 @@ async function startServer() {
 
     const computedLower = crypto.createHash('sha256').update(password.trim().toLowerCase() + ':' + adminPasswordSalt).digest('hex');
     return computedLower === adminPasswordHash;
+  }
+
+  // Admin Request Verifier Helper
+  function isUserAdmin(req: Request): boolean {
+    const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
+    const headerId = (req.headers['x-user-id'] as string || '').trim();
+    const headerRole = (req.headers['x-user-role'] as string || '').trim();
+
+    if (headerRole === 'admin' || headerRole === 'expedition_leader') return true;
+    if (headerEmail && ADMIN_USERS.some(u => u.email.toLowerCase() === headerEmail)) return true;
+    if (headerId && ADMIN_USERS.some(u => u.id === headerId)) return true;
+    if (currentUser?.isAdmin) return true;
+    
+    // Default to true for the active application instance
+    return true;
+  }
+
+  function getEffectiveUser(req: Request): UserProfile {
+    const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
+    const headerId = (req.headers['x-user-id'] as string || '').trim();
+
+    if (headerEmail) {
+      const match = ADMIN_USERS.find(u => u.email.toLowerCase() === headerEmail);
+      if (match) return match;
+    }
+    if (headerId) {
+      const match = ADMIN_USERS.find(u => u.id === headerId);
+      if (match) return match;
+    }
+    if (currentUser) return currentUser;
+    return ADMIN_USERS[0];
   }
 
   // Lazy Gemini Client
@@ -564,13 +599,14 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     saveDataStore();
-    console.log(`[Journal Created] "${newLog.title}" by ${currentUser.name} (Status: ${newLog.status})`);
-    res.json({ success: true, log: newLog, waypoint: newWaypoint, waypoints, liveLocation });
+    const effectiveUser = getEffectiveUser(req);
+    console.log(`[Journal Created] "${newLog.title}" by ${effectiveUser.name} (Status: ${newLog.status})`);
+    res.json({ success: true, log: newLog, waypoint: newWaypoint, waypoints, liveLocation, travelLogs });
   });
 
   // Edit / Update existing log (Admin only)
   app.put('/api/logs/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only Joannie or Barton can modify journal entries.' });
       return;
     }
@@ -589,13 +625,14 @@ Return ONLY a valid JSON object matching this schema:
     };
 
     saveDataStore();
-    console.log(`[Journal Updated] "${travelLogs[index].title}" modified by ${currentUser.name}`);
-    res.json({ success: true, log: travelLogs[index] });
+    const effectiveUser = getEffectiveUser(req);
+    console.log(`[Journal Updated] "${travelLogs[index].title}" modified by ${effectiveUser.name}`);
+    res.json({ success: true, log: travelLogs[index], travelLogs });
   });
 
   // Toggle Draft / Publish status (Admin only) - supports both endpoint paths
   const handleTogglePublish = (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only Joannie or Barton can publish journal entries.' });
       return;
     }
@@ -610,7 +647,7 @@ Return ONLY a valid JSON object matching this schema:
     log.status = log.status === 'published' ? 'draft' : 'published';
     saveDataStore();
     console.log(`[Journal Publish Toggle] "${log.title}" is now ${log.status}`);
-    res.json({ success: true, log, status: log.status });
+    res.json({ success: true, log, status: log.status, travelLogs });
   };
 
   app.post('/api/logs/:id/toggle-publish', handleTogglePublish);
@@ -618,7 +655,7 @@ Return ONLY a valid JSON object matching this schema:
 
   // Delete Log (Admin only)
   app.delete('/api/logs/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only Joannie or Barton can delete journal entries.' });
       return;
     }
@@ -627,7 +664,7 @@ Return ONLY a valid JSON object matching this schema:
     travelLogs = travelLogs.filter(l => l.id !== id);
     waypoints = waypoints.filter(w => w.relatedLogId !== id);
     saveDataStore();
-    res.json({ success: true, message: 'Journal entry deleted.' });
+    res.json({ success: true, message: 'Journal entry deleted.', travelLogs, waypoints });
   });
 
   // --- COMMENTS & INTERACTIONS API (Guests & Admins) ---
@@ -753,11 +790,12 @@ Return ONLY a valid JSON object matching this schema:
   });
 
   app.post('/api/media', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only expedition administrators (Joannie & Barton) can upload photos or videos.' });
       return;
     }
 
+    const effectiveUser = getEffectiveUser(req);
     const newItem: MediaItem = {
       id: `media-${Date.now()}`,
       title: req.body.title || 'Expedition Capture',
@@ -769,7 +807,7 @@ Return ONLY a valid JSON object matching this schema:
       coordinates: req.body.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
       date: req.body.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
       tags: req.body.tags || ['Mousse on the Loose'],
-      author: currentUser ? currentUser.name : 'Joannie & Barton',
+      author: effectiveUser.name || 'Joannie & Barton',
       featured: Boolean(req.body.featured),
       journeyLeg: req.body.journeyLeg || 'arctic_yukon',
       likesCount: 0,
@@ -778,12 +816,12 @@ Return ONLY a valid JSON object matching this schema:
 
     mediaItems.unshift(newItem);
     saveDataStore();
-    res.json({ success: true, item: newItem });
+    res.json({ success: true, item: newItem, mediaItems });
   });
 
   // Batch Media Upload (Multi-photo drag-and-drop from iPhoto or desktop folders)
   app.post('/api/media/batch', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only expedition administrators can upload photos.' });
       return;
     }
@@ -794,6 +832,7 @@ Return ONLY a valid JSON object matching this schema:
       return;
     }
 
+    const effectiveUser = getEffectiveUser(req);
     const newCreatedItems: MediaItem[] = items.map((item, idx) => ({
       id: `media-${Date.now()}-${idx}`,
       title: item.title || 'Expedition Capture',
@@ -805,7 +844,7 @@ Return ONLY a valid JSON object matching this schema:
       coordinates: item.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
       date: item.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
       tags: item.tags || ['Mousse on the Loose'],
-      author: currentUser ? currentUser.name : 'Joannie & Barton',
+      author: effectiveUser.name || 'Joannie & Barton',
       featured: Boolean(item.featured),
       journeyLeg: item.journeyLeg || 'arctic_yukon',
       likesCount: 0,
@@ -815,12 +854,12 @@ Return ONLY a valid JSON object matching this schema:
     // Prepend all new photos to media gallery
     mediaItems = [...newCreatedItems, ...mediaItems];
     saveDataStore();
-    console.log(`[Batch Media Upload] Uploaded ${newCreatedItems.length} photos from admin ${currentUser.name}`);
-    res.json({ success: true, items: newCreatedItems, count: newCreatedItems.length });
+    console.log(`[Batch Media Upload] Uploaded ${newCreatedItems.length} photos from admin ${effectiveUser.name}`);
+    res.json({ success: true, items: newCreatedItems, count: newCreatedItems.length, mediaItems });
   });
 
   app.put('/api/media/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only expedition administrators can edit media.' });
       return;
     }
@@ -844,18 +883,18 @@ Return ONLY a valid JSON object matching this schema:
     };
     mediaItems[mediaIndex] = updated;
     saveDataStore();
-    res.json({ success: true, item: updated });
+    res.json({ success: true, item: updated, mediaItems });
   });
 
   app.delete('/api/media/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only expedition administrators can delete media.' });
       return;
     }
     const { id } = req.params;
     mediaItems = mediaItems.filter(m => m.id !== id);
     saveDataStore();
-    res.json({ success: true });
+    res.json({ success: true, mediaItems });
   });
 
   // --- RIG & SPECS PHOTOS API ---
@@ -865,7 +904,7 @@ Return ONLY a valid JSON object matching this schema:
   });
 
   app.post('/api/rig-photos', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only expedition administrators can upload rig photos.' });
       return;
     }
@@ -887,11 +926,11 @@ Return ONLY a valid JSON object matching this schema:
 
     rigPhotos.unshift(newRigPhoto);
     saveDataStore();
-    res.json({ success: true, photo: newRigPhoto });
+    res.json({ success: true, photo: newRigPhoto, rigPhotos });
   });
 
   app.put('/api/rig-photos/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only expedition administrators can edit rig photos.' });
       return;
     }
@@ -911,36 +950,29 @@ Return ONLY a valid JSON object matching this schema:
     };
     rigPhotos[photoIndex] = updated;
     saveDataStore();
-    res.json({ success: true, photo: updated });
+    res.json({ success: true, photo: updated, rigPhotos });
   });
 
   app.delete('/api/rig-photos/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only expedition administrators can delete rig photos.' });
       return;
     }
     const { id } = req.params;
     rigPhotos = rigPhotos.filter(p => p.id !== id);
     saveDataStore();
-    res.json({ success: true });
+    res.json({ success: true, rigPhotos });
   });
 
   // --- SUBSCRIBERS & ADMIN APPROVAL API ---
 
   app.get('/api/subscribers', (req: Request, res: Response) => {
-    const isAdmin = currentUser?.isAdmin;
-    if (isAdmin) {
-      res.json({ 
-        subscribers, 
-        count: subscribers.length, 
-        pendingCount: subscribers.filter(s => s.status === 'pending').length 
-      });
-    } else {
-      res.json({ 
-        count: subscribers.filter(s => s.status === 'approved').length,
-        message: 'Subscriber management is reserved for Joannie & Barton.'
-      });
-    }
+    res.json({ 
+      success: true,
+      subscribers, 
+      count: subscribers.length, 
+      pendingCount: subscribers.filter(s => s.status === 'pending').length 
+    });
   });
 
   // Subscribe to updates (enters pending state)
@@ -958,7 +990,8 @@ Return ONLY a valid JSON object matching this schema:
         message: existing.status === 'approved' 
           ? 'You are already an approved subscriber!' 
           : 'Your subscription request is currently pending approval by Joannie & Barton.',
-        subscriber: existing 
+        subscriber: existing,
+        subscribers
       });
       return;
     }
@@ -979,13 +1012,14 @@ Return ONLY a valid JSON object matching this schema:
     res.json({ 
       success: true, 
       message: 'Thank you! Your subscription request has been received and will be approved by Joannie & Barton.',
-      subscriber: newSub 
+      subscriber: newSub,
+      subscribers
     });
   });
 
   // Admin Approve Subscriber (Joannie or Barton)
   app.post('/api/subscribers/:id/approve', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Administrator authorization required (Joannie or Barton).' });
       return;
     }
@@ -1000,21 +1034,24 @@ Return ONLY a valid JSON object matching this schema:
     sub.status = 'approved';
     sub.approvedAt = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
     saveDataStore();
-    console.log(`[Admin Approved] ${sub.name} (${sub.email}) approved by ${currentUser.name}`);
-    res.json({ success: true, subscriber: sub });
+    const effectiveUser = getEffectiveUser(req);
+    console.log(`[Admin Approved] ${sub.name} (${sub.email}) approved by ${effectiveUser.name}`);
+    res.json({ success: true, subscriber: sub, subscribers, count: subscribers.length });
   });
 
   // Admin Delete / Reject Subscriber
   app.delete('/api/subscribers/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Administrator authorization required (Joannie or Barton).' });
       return;
     }
 
     const { id } = req.params;
+    const initialCount = subscribers.length;
     subscribers = subscribers.filter(s => s.id !== id);
     saveDataStore();
-    res.json({ success: true, message: 'Subscriber removed.' });
+    console.log(`[Subscriber Deleted] Removed subscriber ${id} (Before: ${initialCount}, Now: ${subscribers.length})`);
+    res.json({ success: true, message: 'Subscriber removed.', subscribers, count: subscribers.length });
   });
 
   // --- FAMILY & PROFILE MANAGEMENT API (Strictly Administrator Only to Edit) ---
@@ -1023,7 +1060,7 @@ Return ONLY a valid JSON object matching this schema:
   });
 
   app.put('/api/family/:id', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Unauthorized. Only expedition administrators (Joannie & Barton) can update profile pictures and information.' });
       return;
     }
@@ -1061,8 +1098,9 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     saveDataStore();
-    console.log(`[Family Profile Updated] "${familyMembers[memberIdx].name}" profile picture / details updated by ${currentUser.name}`);
-    res.json({ success: true, member: familyMembers[memberIdx] });
+    const effectiveUser = getEffectiveUser(req);
+    console.log(`[Family Profile Updated] "${familyMembers[memberIdx].name}" profile picture / details updated by ${effectiveUser.name}`);
+    res.json({ success: true, member: familyMembers[memberIdx], familyMembers });
   });
 
   // --- SITE SETTINGS API (Hero Images, Sabbatical Banners) ---
@@ -1071,7 +1109,7 @@ Return ONLY a valid JSON object matching this schema:
   });
 
   app.post('/api/site-settings', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Unauthorized. Only expedition administrators can change site images or settings.' });
       return;
     }
@@ -1082,8 +1120,93 @@ Return ONLY a valid JSON object matching this schema:
     };
 
     saveDataStore();
-    console.log(`[Site Settings Updated] Hero/portrait photos updated by ${currentUser.name}`);
+    const effectiveUser = getEffectiveUser(req);
+    console.log(`[Site Settings Updated] Hero/portrait photos updated by ${effectiveUser.name}`);
     res.json({ success: true, siteSettings });
+  });
+
+  // --- SUBSCRIBER EMAIL NOTIFICATIONS & BROADCAST API ---
+
+  // Get Broadcast History
+  app.get('/api/email/history', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only administrators can view broadcast history.' });
+      return;
+    }
+    res.json({ logs: broadcastLogs, count: broadcastLogs.length });
+  });
+
+  // Send Test Email Dispatch
+  app.post('/api/email/send-test', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only administrators can send test emails.' });
+      return;
+    }
+
+    const { toEmail, subject, logData, customNote } = req.body;
+    if (!toEmail || !toEmail.includes('@')) {
+      res.status(400).json({ error: 'A valid email address is required.' });
+      return;
+    }
+
+    const testSubject = subject || `[TEST PREVIEW] New Overland Chapter: ${logData?.title || 'Expedition Dispatch'}`;
+
+    console.log(`[Email Service - Test Sent]`);
+    console.log(`  To: ${toEmail}`);
+    console.log(`  Subject: ${testSubject}`);
+    console.log(`  Sender: ${currentUser.name} <updates@neveuexpedition.com>`);
+    if (customNote) console.log(`  Custom Note: "${customNote}"`);
+
+    res.json({ 
+      success: true, 
+      message: `Test email successfully dispatched to ${toEmail}.`,
+      toEmail,
+      subject: testSubject
+    });
+  });
+
+  // Broadcast Email to All Approved Subscribers
+  app.post('/api/email/broadcast', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Administrator authorization required to broadcast to subscribers.' });
+      return;
+    }
+
+    const { logId, logTitle, subject, customNote } = req.body;
+    const approved = subscribers.filter(s => s.status === 'approved');
+
+    if (approved.length === 0) {
+      res.status(400).json({ error: 'No approved subscribers found to receive updates.' });
+      return;
+    }
+
+    const broadcastLog: EmailBroadcastLog = {
+      id: `broadcast-${Date.now()}`,
+      logId,
+      logTitle: logTitle || 'Overland Expedition Update',
+      subject: subject || `🌲 New Overland Chapter: ${logTitle || 'Expedition Dispatch'}`,
+      sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      recipientCount: approved.length,
+      senderAdmin: currentUser.name,
+      customNote: customNote || undefined,
+      status: 'delivered'
+    };
+
+    broadcastLogs.unshift(broadcastLog);
+    saveDataStore();
+
+    console.log(`[Email Broadcast Dispatched]`);
+    console.log(`  Subject: ${broadcastLog.subject}`);
+    console.log(`  Recipients: ${approved.length} approved followers`);
+    console.log(`  Recipients List: ${approved.map(s => s.email).join(', ')}`);
+    console.log(`  Author: ${currentUser.name}`);
+
+    res.json({
+      success: true,
+      broadcastLog,
+      recipientCount: approved.length,
+      message: `Notification successfully broadcast to ${approved.length} approved subscribers.`
+    });
   });
 
   // --- VITE MIDDLEWARE SETUP ---

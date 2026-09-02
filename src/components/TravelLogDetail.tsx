@@ -41,11 +41,13 @@ import {
   ChevronLeft, 
   ChevronRight, 
   Maximize2, 
-  Layers 
+  Layers,
+  Mail 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { RichTextRenderer } from '../utils/richTextRenderer';
 import { JournalEditorModal } from './JournalEditorModal';
+import { EmailPreviewModal } from './EmailPreviewModal';
 
 interface TravelLogDetailProps {
   log: TravelLog;
@@ -97,6 +99,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [editingPhotoIdx, setEditingPhotoIdx] = useState<number | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState<string>('');
   const [isSavingCaption, setIsSavingCaption] = useState<boolean>(false);
+  const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
 
   const galleryList = log.gallery || [];
 
@@ -403,7 +406,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Admin Edit, Publish Toggle & Delete */}
+          {/* Admin Edit, Publish Toggle, Email Newsletter & Delete */}
           {currentUser?.isAdmin && (
             <div className="flex items-center gap-1.5 mr-2">
               <button
@@ -413,6 +416,15 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Edit Entry</span>
+              </button>
+
+              <button
+                onClick={() => setIsEmailModalOpen(true)}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 shadow-xs transition"
+                title="Preview and dispatch email notification to approved subscribers"
+              >
+                <Mail className="w-3.5 h-3.5 text-amber-900" />
+                <span className="hidden sm:inline">Email Subscribers</span>
               </button>
 
               <button
@@ -1346,6 +1358,16 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
             </form>
           </div>
         </div>
+      )}
+
+      {/* --- LIVE EMAIL PREVIEW & DISPATCH MODAL --- */}
+      {isEmailModalOpen && (
+        <EmailPreviewModal
+          isOpen={isEmailModalOpen}
+          onClose={() => setIsEmailModalOpen(false)}
+          logData={log}
+          authorName={currentUser?.name || log.author}
+        />
       )}
 
     </article>

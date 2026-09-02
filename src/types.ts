@@ -196,6 +196,33 @@ export interface RigSpecCategory {
   specs: { label: string; value: string; details?: string }[];
 }
 
+export interface EmailBroadcastLog {
+  id: string;
+  logId?: string;
+  logTitle: string;
+  subject: string;
+  sentAt: string;
+  recipientCount: number;
+  senderAdmin: string;
+  customNote?: string;
+  status: 'delivered' | 'simulated';
+}
+
+export interface EmailPreviewData {
+  subject: string;
+  htmlContent: string;
+  plainText: string;
+  recipientCount: number;
+  recipients: { name: string; email: string }[];
+  sender: string;
+  logTitle: string;
+  locationName: string;
+  coverImage: string;
+  excerpt: string;
+  author: string;
+  date: string;
+}
+
 export type GoogleMapLayerType = 
   | 'google_roadmap' 
   | 'google_satellite' 

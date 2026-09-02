@@ -36,10 +36,13 @@ import {
   Plus, 
   Columns,
   Type,
-  FolderOpen
+  FolderOpen,
+  Mail
 } from 'lucide-react';
 import { RichTextRenderer } from '../utils/richTextRenderer';
 import { extractPhotosFromDropEvent, extractPhotosFromFileInput, ProcessedPhoto } from '../utils/photoDropHelper';
+import { EmailPreviewModal } from './EmailPreviewModal';
+import { Subscriber } from '../types';
 
 interface JournalEditorModalProps {
   initialLog?: TravelLog | null; // If provided, we are editing; if null, creating
@@ -48,6 +51,7 @@ interface JournalEditorModalProps {
   onSave: (logData: Partial<TravelLog> & { addLocationPing?: boolean; updateLiveCity?: boolean; region?: string }) => Promise<void>;
   liveLocation?: LiveLocation;
   authorName?: string;
+  subscribers?: Subscriber[];
 }
 
 const COLOR_PALETTE = [
@@ -75,7 +79,8 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   onClose,
   onSave,
   liveLocation,
-  authorName = 'Joannie & Barton'
+  authorName = 'Joannie & Barton',
+  subscribers
 }) => {
   const isEditing = Boolean(initialLog);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -129,7 +134,28 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const [showHighlightPicker, setShowHighlightPicker] = useState<boolean>(false);
   const [customColor, setCustomColor] = useState<string>('#1E3A8A');
 
+  // Subscriber Email Notification States
+  const [subscribersList, setSubscribersList] = useState<Subscriber[]>(subscribers || []);
+  const [showEmailPreview, setShowEmailPreview] = useState<boolean>(false);
+  const [notifySubscribersOnPublish, setNotifySubscribersOnPublish] = useState<boolean>(true);
+
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  // Load subscribers if not passed as prop
+  React.useEffect(() => {
+    if (subscribers && subscribers.length > 0) {
+      setSubscribersList(subscribers);
+    } else {
+      fetch('/api/subscribers')
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data.subscribers)) {
+            setSubscribersList(data.subscribers);
+          }
+        })
+        .catch(() => {});
+    }
+  }, [subscribers]);
 
   if (!isOpen) return null;
 
@@ -343,6 +369,24 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
 
     try {
       await onSave(logPayload);
+
+      // If publishing live and notify subscribers is enabled, trigger broadcast dispatch
+      if (status === 'published' && notifySubscribersOnPublish) {
+        try {
+          await fetch('/api/email/broadcast', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              logId: initialLog?.id || `log-${Date.now()}`,
+              logTitle: title.trim(),
+              subject: `🌲 New Overland Chapter: ${title.trim()}`
+            })
+          });
+        } catch (err) {
+          console.error('Failed to trigger email broadcast:', err);
+        }
+      }
+
       onClose();
     } catch (err) {
       console.error(err);
@@ -405,25 +449,37 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
               </p>
             </div>
 
-            <div className="flex items-center gap-2 bg-white border border-amber-200 p-1 rounded-xl shrink-0">
+            <div className="flex flex-wrap items-center gap-2 shrink-0">
               <button
                 type="button"
-                onClick={() => setStatus('draft')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  status === 'draft' ? 'bg-amber-600 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'
-                }`}
+                onClick={() => setShowEmailPreview(true)}
+                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-200/80 hover:bg-amber-300 text-amber-950 border border-amber-300 flex items-center gap-1.5 shadow-xs transition"
+                title="Preview what approved subscribers will receive in their inbox"
               >
-                Save as Draft
+                <Mail className="w-3.5 h-3.5 text-amber-900" />
+                <span>Preview Subscriber Email</span>
               </button>
-              <button
-                type="button"
-                onClick={() => setStatus('published')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
-                  status === 'published' ? 'bg-emerald-700 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'
-                }`}
-              >
-                Publish Live
-              </button>
+
+              <div className="flex items-center gap-1 bg-white border border-amber-200 p-1 rounded-xl">
+                <button
+                  type="button"
+                  onClick={() => setStatus('draft')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    status === 'draft' ? 'bg-amber-600 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'
+                  }`}
+                >
+                  Save as Draft
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setStatus('published')}
+                  className={`px-3 py-1.5 rounded-lg text-xs font-semibold transition ${
+                    status === 'published' ? 'bg-emerald-700 text-white shadow-xs' : 'text-stone-600 hover:bg-stone-100'
+                  }`}
+                >
+                  Publish Live
+                </button>
+              </div>
             </div>
           </div>
 
@@ -1311,37 +1367,82 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons */}
-          <div className="flex items-center justify-end gap-3 pt-4 border-t border-stone-200 shrink-0">
-            <button
-              type="button"
-              onClick={onClose}
-              className="px-5 py-2.5 border border-stone-300 hover:bg-stone-100 text-stone-700 rounded-xl text-xs font-semibold transition"
-            >
-              Cancel
-            </button>
-            <button
-              type="submit"
-              disabled={isSubmitting || !title.trim() || !content.trim()}
-              className="px-6 py-2.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2"
-            >
-              {isSubmitting ? (
-                <>
-                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                  <span>Saving...</span>
-                </>
-              ) : (
-                <>
-                  <Check className="w-4 h-4" />
-                  <span>{isEditing ? 'Save & Update Journal Entry' : (status === 'published' ? 'Publish Journal Entry' : 'Save as Private Draft')}</span>
-                </>
-              )}
-            </button>
+          {/* Action Buttons & Notification Setting */}
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-stone-200 shrink-0">
+            {status === 'published' ? (
+              <label className="flex items-center gap-2 cursor-pointer text-stone-700 select-none">
+                <input
+                  type="checkbox"
+                  checked={notifySubscribersOnPublish}
+                  onChange={(e) => setNotifySubscribersOnPublish(e.target.checked)}
+                  className="rounded border-stone-300 text-blue-900 focus:ring-blue-900 w-4 h-4"
+                />
+                <span className="text-xs font-semibold flex items-center gap-1 text-stone-800">
+                  <Mail className="w-3.5 h-3.5 text-blue-900" />
+                  <span>Notify {subscribersList.filter(s => s.status === 'approved').length} approved subscribers by email</span>
+                </span>
+              </label>
+            ) : (
+              <div className="text-[11px] text-stone-500 italic">
+                Draft mode: No subscriber email will be broadcast until published live.
+              </div>
+            )}
+
+            <div className="flex items-center gap-3">
+              <button
+                type="button"
+                onClick={onClose}
+                className="px-5 py-2.5 border border-stone-300 hover:bg-stone-100 text-stone-700 rounded-xl text-xs font-semibold transition"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isSubmitting || !title.trim() || !content.trim()}
+                className="px-6 py-2.5 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-bold shadow-md transition disabled:opacity-50 flex items-center gap-2"
+              >
+                {isSubmitting ? (
+                  <>
+                    <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                    <span>Saving...</span>
+                  </>
+                ) : (
+                  <>
+                    <Check className="w-4 h-4" />
+                    <span>{isEditing ? 'Save & Update Journal Entry' : (status === 'published' ? 'Publish Journal Entry' : 'Save as Private Draft')}</span>
+                  </>
+                )}
+              </button>
+            </div>
           </div>
 
         </form>
 
       </div>
+
+      {/* --- LIVE SUBSCRIBER EMAIL PREVIEW MODAL --- */}
+      {showEmailPreview && (
+        <EmailPreviewModal
+          isOpen={showEmailPreview}
+          onClose={() => setShowEmailPreview(false)}
+          logData={{
+            title: title || 'Untitled Expedition Dispatch',
+            date: date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            locationName: locationName || 'Overland Route',
+            country: country || 'North America',
+            category,
+            content: content || 'Draft journal entry content...',
+            coverImage: coverImage || '/hot spring.jpeg',
+            gallery,
+            henriHighlight: category === 'henri_milestones' ? henriHighlight : undefined,
+            mbaHighlight: category === 'adventures_mba' ? mbaHighlight : undefined,
+            visitorHighlight: category === 'visits_along_the_way' ? visitorHighlight : undefined,
+            readingTime: `${Math.max(2, Math.ceil(content.split(/\s+/).length / 180))} min read`
+          }}
+          subscribers={subscribersList}
+          authorName={authorName}
+        />
+      )}
     </div>
   );
 };
