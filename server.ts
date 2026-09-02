@@ -1,5 +1,6 @@
 import express, { Request, Response } from 'express';
 import path from 'path';
+import fs from 'fs';
 import crypto from 'crypto';
 import { createServer as createViteServer } from 'vite';
 import { GoogleGenAI } from '@google/genai';
@@ -11,7 +12,8 @@ import {
   Subscriber, 
   UserProfile, 
   CommentItem, 
-  RigPhoto
+  RigPhoto,
+  FamilyMember
 } from './src/types';
 import { 
   ADMIN_USERS, 
@@ -21,7 +23,8 @@ import {
   INITIAL_MEDIA, 
   INITIAL_SUBSCRIBERS, 
   INITIAL_COMMENTS, 
-  INITIAL_RIG_PHOTOS
+  INITIAL_RIG_PHOTOS,
+  INITIAL_FAMILY_MEMBERS
 } from './src/data/initialData';
 
 async function startServer() {
@@ -31,7 +34,10 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
-  // In-Memory Database State
+  // Persistent Data Store File
+  const DATA_FILE = path.join(process.cwd(), 'expedition_data_store.json');
+
+  // Database State
   let currentUser: UserProfile | null = ADMIN_USERS[0]; // Default Joannie (Admin)
   let liveLocation: LiveLocation = { ...INITIAL_LIVE_LOCATION };
   let waypoints: Waypoint[] = [...INITIAL_WAYPOINTS];
@@ -40,11 +46,74 @@ async function startServer() {
   let subscribers: Subscriber[] = [...INITIAL_SUBSCRIBERS];
   let comments: CommentItem[] = [...INITIAL_COMMENTS];
   let rigPhotos: RigPhoto[] = [...INITIAL_RIG_PHOTOS];
+  let familyMembers: FamilyMember[] = [...INITIAL_FAMILY_MEMBERS];
+  let siteSettings = {
+    heroPhoto: '/moussesunset.jpeg',
+    familyHeroPhoto: '/Family.jpeg'
+  };
 
   // Cryptographic Salt & Hash for Admin Authentication
   let isPasswordConfigured = false;
   let adminPasswordSalt: string | null = null;
   let adminPasswordHash: string | null = null;
+
+  // Load persistent data store on startup
+  function loadDataStore() {
+    try {
+      if (fs.existsSync(DATA_FILE)) {
+        const raw = fs.readFileSync(DATA_FILE, 'utf-8');
+        const data = JSON.parse(raw);
+        if (data.liveLocation) liveLocation = data.liveLocation;
+        if (Array.isArray(data.waypoints)) waypoints = data.waypoints;
+        if (Array.isArray(data.travelLogs)) travelLogs = data.travelLogs;
+        if (Array.isArray(data.mediaItems)) mediaItems = data.mediaItems;
+        if (Array.isArray(data.subscribers)) subscribers = data.subscribers;
+        if (Array.isArray(data.comments)) comments = data.comments;
+        if (Array.isArray(data.rigPhotos)) rigPhotos = data.rigPhotos;
+        if (Array.isArray(data.familyMembers)) familyMembers = data.familyMembers;
+        if (data.siteSettings) siteSettings = { ...siteSettings, ...data.siteSettings };
+        if (data.auth) {
+          isPasswordConfigured = Boolean(data.auth.isPasswordConfigured);
+          adminPasswordSalt = data.auth.adminPasswordSalt || null;
+          adminPasswordHash = data.auth.adminPasswordHash || null;
+        }
+        console.log('[DataStore] Loaded persistent expedition data store from disk.');
+      } else {
+        saveDataStore();
+      }
+    } catch (err) {
+      console.error('[DataStore] Error loading data store, using defaults:', err);
+    }
+  }
+
+  // Save persistent data store to disk
+  function saveDataStore() {
+    try {
+      const data = {
+        liveLocation,
+        waypoints,
+        travelLogs,
+        mediaItems,
+        subscribers,
+        comments,
+        rigPhotos,
+        familyMembers,
+        siteSettings,
+        auth: {
+          isPasswordConfigured,
+          adminPasswordSalt,
+          adminPasswordHash
+        },
+        lastSaved: new Date().toISOString()
+      };
+      fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+    } catch (err) {
+      console.error('[DataStore] Error saving persistent data store to disk:', err);
+    }
+  }
+
+  // Initialize data store from disk
+  loadDataStore();
 
   function verifyPasswordHash(password: string): boolean {
     if (!isPasswordConfigured) return true;
@@ -101,6 +170,7 @@ async function startServer() {
     const targetAdmin = ADMIN_USERS.find(u => u.email.toLowerCase() === (adminEmail || '').trim().toLowerCase()) || ADMIN_USERS[0];
     currentUser = targetAdmin;
 
+    saveDataStore();
     console.log(`[Auth] Administrator password created by ${targetAdmin.name}`);
     res.json({ success: true, user: currentUser, isPasswordConfigured: true });
   });
@@ -110,6 +180,7 @@ async function startServer() {
     adminPasswordSalt = null;
     adminPasswordHash = null;
     isPasswordConfigured = false;
+    saveDataStore();
     console.log('[Auth] Administrator password cleared/reset. Prompt will appear on next sign-in.');
     res.json({ success: true, isPasswordConfigured: false });
   });
@@ -131,6 +202,7 @@ async function startServer() {
         adminPasswordHash = hash;
         isPasswordConfigured = true;
         currentUser = adminMatch;
+        saveDataStore();
         console.log(`[Auth] Administrator password configured and logged in: ${currentUser.name}`);
         res.json({ success: true, user: currentUser, isAdmin: true, isPasswordConfigured: true });
         return;
@@ -192,6 +264,7 @@ async function startServer() {
           status: 'approved',
           subscribedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
         });
+        saveDataStore();
         console.log(`[Subscription Auto-Added] ${guestUser.name} (${cleanEmail}) subscribed for email alerts`);
       }
     }
@@ -219,6 +292,7 @@ async function startServer() {
     adminPasswordSalt = newSalt;
     adminPasswordHash = newHash;
     isPasswordConfigured = true;
+    saveDataStore();
 
     console.log('[Auth] Admin password successfully updated and salted/hashed.');
     res.json({ success: true, message: 'Password successfully updated and encrypted.' });
@@ -231,6 +305,7 @@ async function startServer() {
       adminPasswordSalt = salt;
       adminPasswordHash = hash;
       isPasswordConfigured = isConfigured !== undefined ? Boolean(isConfigured) : true;
+      saveDataStore();
       res.json({ success: true });
       return;
     }
@@ -375,6 +450,7 @@ Return ONLY a valid JSON object matching this schema:
       isSharing: isSharing !== undefined ? Boolean(isSharing) : true
     };
 
+    saveDataStore();
     console.log(`[Location Pin Updated] Location: ${lat}, ${lng} (${lastCity || 'Unknown City'})`);
     res.json({ success: true, liveLocation });
   });
@@ -388,6 +464,7 @@ Return ONLY a valid JSON object matching this schema:
 
     const { enabled } = req.body;
     liveLocation.isSharing = typeof enabled === 'boolean' ? enabled : !liveLocation.isSharing;
+    saveDataStore();
     res.json({ success: true, isSharing: liveLocation.isSharing, liveLocation });
   });
 
@@ -486,6 +563,7 @@ Return ONLY a valid JSON object matching this schema:
       }
     }
 
+    saveDataStore();
     console.log(`[Journal Created] "${newLog.title}" by ${currentUser.name} (Status: ${newLog.status})`);
     res.json({ success: true, log: newLog, waypoint: newWaypoint, waypoints, liveLocation });
   });
@@ -510,12 +588,13 @@ Return ONLY a valid JSON object matching this schema:
       id // preserve ID
     };
 
+    saveDataStore();
     console.log(`[Journal Updated] "${travelLogs[index].title}" modified by ${currentUser.name}`);
     res.json({ success: true, log: travelLogs[index] });
   });
 
-  // Toggle Draft / Publish status (Admin only)
-  app.post('/api/logs/:id/toggle-publish', (req: Request, res: Response) => {
+  // Toggle Draft / Publish status (Admin only) - supports both endpoint paths
+  const handleTogglePublish = (req: Request, res: Response) => {
     if (!currentUser?.isAdmin) {
       res.status(403).json({ error: 'Only Joannie or Barton can publish journal entries.' });
       return;
@@ -529,9 +608,13 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     log.status = log.status === 'published' ? 'draft' : 'published';
+    saveDataStore();
     console.log(`[Journal Publish Toggle] "${log.title}" is now ${log.status}`);
     res.json({ success: true, log, status: log.status });
-  });
+  };
+
+  app.post('/api/logs/:id/toggle-publish', handleTogglePublish);
+  app.post('/api/logs/:id/toggle-status', handleTogglePublish);
 
   // Delete Log (Admin only)
   app.delete('/api/logs/:id', (req: Request, res: Response) => {
@@ -543,6 +626,7 @@ Return ONLY a valid JSON object matching this schema:
     const { id } = req.params;
     travelLogs = travelLogs.filter(l => l.id !== id);
     waypoints = waypoints.filter(w => w.relatedLogId !== id);
+    saveDataStore();
     res.json({ success: true, message: 'Journal entry deleted.' });
   });
 
@@ -601,6 +685,7 @@ Return ONLY a valid JSON object matching this schema:
       }
     }
 
+    saveDataStore();
     res.json({ success: true, comment: newComment });
   });
 
@@ -621,6 +706,7 @@ Return ONLY a valid JSON object matching this schema:
       }
     }
 
+    saveDataStore();
     console.log(`[Comment Deleted] ID: ${id} by admin`);
     res.json({ success: true, message: 'Comment removed by administrator.' });
   });
@@ -643,6 +729,7 @@ Return ONLY a valid JSON object matching this schema:
       comment.likedByUsers = liked.filter(u => u !== userId);
     }
 
+    saveDataStore();
     res.json({ success: true, likes: comment.likes, isLiked: comment.likedByUsers.includes(userId) });
   });
 
@@ -655,6 +742,7 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     log.likesCount = (log.likesCount || 0) + 1;
+    saveDataStore();
     res.json({ success: true, likesCount: log.likesCount });
   });
 
@@ -689,6 +777,7 @@ Return ONLY a valid JSON object matching this schema:
     };
 
     mediaItems.unshift(newItem);
+    saveDataStore();
     res.json({ success: true, item: newItem });
   });
 
@@ -725,8 +814,48 @@ Return ONLY a valid JSON object matching this schema:
 
     // Prepend all new photos to media gallery
     mediaItems = [...newCreatedItems, ...mediaItems];
+    saveDataStore();
     console.log(`[Batch Media Upload] Uploaded ${newCreatedItems.length} photos from admin ${currentUser.name}`);
     res.json({ success: true, items: newCreatedItems, count: newCreatedItems.length });
+  });
+
+  app.put('/api/media/:id', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators can edit media.' });
+      return;
+    }
+    const { id } = req.params;
+    const mediaIndex = mediaItems.findIndex(m => m.id === id);
+    if (mediaIndex === -1) {
+      res.status(404).json({ error: 'Media not found' });
+      return;
+    }
+    const existing = mediaItems[mediaIndex];
+    const updated: MediaItem = {
+      ...existing,
+      title: req.body.title !== undefined ? req.body.title : existing.title,
+      caption: req.body.caption !== undefined ? req.body.caption : existing.caption,
+      locationName: req.body.locationName !== undefined ? req.body.locationName : existing.locationName,
+      tags: req.body.tags !== undefined ? req.body.tags : existing.tags,
+      journeyLeg: req.body.journeyLeg !== undefined ? req.body.journeyLeg : existing.journeyLeg,
+      url: req.body.url !== undefined ? req.body.url : existing.url,
+      thumbnailUrl: req.body.thumbnailUrl !== undefined ? req.body.thumbnailUrl : existing.thumbnailUrl,
+      featured: req.body.featured !== undefined ? Boolean(req.body.featured) : existing.featured
+    };
+    mediaItems[mediaIndex] = updated;
+    saveDataStore();
+    res.json({ success: true, item: updated });
+  });
+
+  app.delete('/api/media/:id', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators can delete media.' });
+      return;
+    }
+    const { id } = req.params;
+    mediaItems = mediaItems.filter(m => m.id !== id);
+    saveDataStore();
+    res.json({ success: true });
   });
 
   // --- RIG & SPECS PHOTOS API ---
@@ -757,7 +886,43 @@ Return ONLY a valid JSON object matching this schema:
     };
 
     rigPhotos.unshift(newRigPhoto);
+    saveDataStore();
     res.json({ success: true, photo: newRigPhoto });
+  });
+
+  app.put('/api/rig-photos/:id', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators can edit rig photos.' });
+      return;
+    }
+    const { id } = req.params;
+    const photoIndex = rigPhotos.findIndex(p => p.id === id);
+    if (photoIndex === -1) {
+      res.status(404).json({ error: 'Rig photo not found' });
+      return;
+    }
+    const existing = rigPhotos[photoIndex];
+    const updated: RigPhoto = {
+      ...existing,
+      title: req.body.title !== undefined ? req.body.title : existing.title,
+      caption: req.body.caption !== undefined ? req.body.caption : existing.caption,
+      category: req.body.category !== undefined ? req.body.category : existing.category,
+      url: req.body.url !== undefined ? req.body.url : existing.url
+    };
+    rigPhotos[photoIndex] = updated;
+    saveDataStore();
+    res.json({ success: true, photo: updated });
+  });
+
+  app.delete('/api/rig-photos/:id', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Only expedition administrators can delete rig photos.' });
+      return;
+    }
+    const { id } = req.params;
+    rigPhotos = rigPhotos.filter(p => p.id !== id);
+    saveDataStore();
+    res.json({ success: true });
   });
 
   // --- SUBSCRIBERS & ADMIN APPROVAL API ---
@@ -808,6 +973,7 @@ Return ONLY a valid JSON object matching this schema:
     };
 
     subscribers.unshift(newSub);
+    saveDataStore();
     console.log(`[Subscription Request] ${newSub.name} (${newSub.email}) - Pending Admin Approval`);
 
     res.json({ 
@@ -833,6 +999,7 @@ Return ONLY a valid JSON object matching this schema:
 
     sub.status = 'approved';
     sub.approvedAt = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
+    saveDataStore();
     console.log(`[Admin Approved] ${sub.name} (${sub.email}) approved by ${currentUser.name}`);
     res.json({ success: true, subscriber: sub });
   });
@@ -846,7 +1013,77 @@ Return ONLY a valid JSON object matching this schema:
 
     const { id } = req.params;
     subscribers = subscribers.filter(s => s.id !== id);
+    saveDataStore();
     res.json({ success: true, message: 'Subscriber removed.' });
+  });
+
+  // --- FAMILY & PROFILE MANAGEMENT API (Strictly Administrator Only to Edit) ---
+  app.get('/api/family', (req: Request, res: Response) => {
+    res.json(familyMembers);
+  });
+
+  app.put('/api/family/:id', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Unauthorized. Only expedition administrators (Joannie & Barton) can update profile pictures and information.' });
+      return;
+    }
+
+    const { id } = req.params;
+    const memberIdx = familyMembers.findIndex(m => m.id === id);
+    if (memberIdx === -1) {
+      res.status(404).json({ error: 'Family member profile not found.' });
+      return;
+    }
+
+    familyMembers[memberIdx] = {
+      ...familyMembers[memberIdx],
+      ...req.body,
+      id // preserve ID
+    };
+
+    // Also sync admin user avatars if updating Joannie or Barton
+    if (id === 'joannie') {
+      const adminJoannie = ADMIN_USERS.find(u => u.name.toLowerCase().includes('joannie'));
+      if (adminJoannie && req.body.avatar) {
+        adminJoannie.avatar = req.body.avatar;
+      }
+      if (currentUser && currentUser.name.toLowerCase().includes('joannie') && req.body.avatar) {
+        currentUser.avatar = req.body.avatar;
+      }
+    } else if (id === 'barton') {
+      const adminBarton = ADMIN_USERS.find(u => u.name.toLowerCase().includes('barton'));
+      if (adminBarton && req.body.avatar) {
+        adminBarton.avatar = req.body.avatar;
+      }
+      if (currentUser && currentUser.name.toLowerCase().includes('barton') && req.body.avatar) {
+        currentUser.avatar = req.body.avatar;
+      }
+    }
+
+    saveDataStore();
+    console.log(`[Family Profile Updated] "${familyMembers[memberIdx].name}" profile picture / details updated by ${currentUser.name}`);
+    res.json({ success: true, member: familyMembers[memberIdx] });
+  });
+
+  // --- SITE SETTINGS API (Hero Images, Sabbatical Banners) ---
+  app.get('/api/site-settings', (req: Request, res: Response) => {
+    res.json(siteSettings);
+  });
+
+  app.post('/api/site-settings', (req: Request, res: Response) => {
+    if (!currentUser?.isAdmin) {
+      res.status(403).json({ error: 'Unauthorized. Only expedition administrators can change site images or settings.' });
+      return;
+    }
+
+    siteSettings = {
+      ...siteSettings,
+      ...req.body
+    };
+
+    saveDataStore();
+    console.log(`[Site Settings Updated] Hero/portrait photos updated by ${currentUser.name}`);
+    res.json({ success: true, siteSettings });
   });
 
   // --- VITE MIDDLEWARE SETUP ---

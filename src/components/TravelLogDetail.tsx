@@ -3,7 +3,8 @@ import {
   TravelLog, 
   UserProfile, 
   CommentItem,
-  JournalCategory
+  JournalCategory,
+  MediaItem
 } from '../types';
 import { 
   ArrowLeft, 
@@ -11,7 +12,7 @@ import {
   MapPin, 
   Baby, 
   GraduationCap, 
-  Users,
+  Users, 
   Share2, 
   Heart, 
   MessageSquare, 
@@ -29,8 +30,18 @@ import {
   ShieldCheck, 
   Trash2, 
   Eye, 
-  EyeOff,
-  Edit3
+  EyeOff, 
+  Edit3, 
+  Upload, 
+  FolderOpen, 
+  Camera, 
+  Image as ImageIcon, 
+  Plus, 
+  X, 
+  ChevronLeft, 
+  ChevronRight, 
+  Maximize2, 
+  Layers 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { RichTextRenderer } from '../utils/richTextRenderer';
@@ -45,6 +56,8 @@ interface TravelLogDetailProps {
   onTogglePublish?: (logId: string) => Promise<void>;
   onDeleteLog?: (logId: string) => Promise<void>;
   onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<void>;
+  onUploadMedia?: (newMedia: Partial<MediaItem>) => Promise<void>;
+  onUploadBatchMedia?: (items: Partial<MediaItem>[]) => Promise<void>;
 }
 
 export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
@@ -55,7 +68,9 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   onViewLocationOnMap,
   onTogglePublish,
   onDeleteLog,
-  onUpdateLog
+  onUpdateLog,
+  onUploadMedia,
+  onUploadBatchMedia
 }) => {
   const [likes, setLikes] = useState<number>(log.likesCount || 14);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
@@ -67,6 +82,23 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [authorName, setAuthorName] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
+
+  // Bottom Journal Photos State
+  const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState<boolean>(false);
+  const [uploadPhotoUrl, setUploadPhotoUrl] = useState<string>('');
+  const [uploadPhotoTitle, setUploadPhotoTitle] = useState<string>('');
+  const [uploadPhotoCaption, setUploadPhotoCaption] = useState<string>('');
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
+  const [isDraggingPhoto, setIsDraggingPhoto] = useState<boolean>(false);
+  const [successToast, setSuccessToast] = useState<string | null>(null);
+
+  // Lightbox & Edit Caption State for Journal Photos
+  const [activeLightboxIdx, setActiveLightboxIdx] = useState<number | null>(null);
+  const [editingPhotoIdx, setEditingPhotoIdx] = useState<number | null>(null);
+  const [editingCaptionText, setEditingCaptionText] = useState<string>('');
+  const [isSavingCaption, setIsSavingCaption] = useState<boolean>(false);
+
+  const galleryList = log.gallery || [];
 
   // Fetch comments for this log
   useEffect(() => {
@@ -187,6 +219,158 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         await onDeleteLog(log.id);
         onBack();
       }
+    }
+  };
+
+  const showToast = (msg: string) => {
+    setSuccessToast(msg);
+    setTimeout(() => setSuccessToast(null), 4500);
+  };
+
+  // Upload Photo File(s) from computer / iPhoto (via file input or drag-and-drop)
+  const handleUploadFilesToEntry = async (files: FileList | File[]) => {
+    if (!currentUser?.isAdmin || !files || files.length === 0) return;
+
+    setIsUploadingPhoto(true);
+    const newItems: { url: string; caption: string; type: 'image' | 'video' }[] = [];
+    const mediaItemsToAdd: Partial<MediaItem>[] = [];
+
+    for (let i = 0; i < files.length; i++) {
+      const file = files[i];
+      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) continue;
+
+      const dataUrl = await new Promise<string>((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (e) => resolve(e.target?.result as string);
+        reader.readAsDataURL(file);
+      });
+
+      const cleanFileName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
+      const caption = `Expedition photo at ${log.locationName}: ${cleanFileName}`;
+      const title = `${log.title} - ${cleanFileName}`;
+
+      newItems.push({
+        url: dataUrl,
+        caption,
+        type: file.type.startsWith('video/') ? 'video' : 'image'
+      });
+
+      mediaItemsToAdd.push({
+        title,
+        caption,
+        url: dataUrl,
+        locationName: log.locationName,
+        coordinates: log.coordinates,
+        journeyLeg: log.journeyLeg || 'arctic_yukon',
+        tags: Array.from(new Set([...(log.tags || []), 'Journal', log.category])),
+        author: currentUser.name || log.author,
+        date: log.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        type: file.type.startsWith('video/') ? 'video' : 'image'
+      });
+    }
+
+    if (newItems.length > 0) {
+      const updatedGallery = [...(log.gallery || []), ...newItems];
+      if (onUpdateLog) {
+        await onUpdateLog(log.id, { gallery: updatedGallery });
+      }
+
+      if (onUploadBatchMedia && mediaItemsToAdd.length > 1) {
+        await onUploadBatchMedia(mediaItemsToAdd);
+      } else if (onUploadMedia) {
+        for (const item of mediaItemsToAdd) {
+          await onUploadMedia(item);
+        }
+      }
+
+      confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 } });
+      showToast(`✨ ${newItems.length} ${newItems.length === 1 ? 'photo' : 'photos'} added to journal entry & synced to Gallery!`);
+    }
+
+    setIsUploadingPhoto(false);
+    setIsAddPhotoModalOpen(false);
+  };
+
+  // Upload single photo via URL / Modal
+  const handleAddSinglePhotoSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!uploadPhotoUrl.trim() || !currentUser?.isAdmin) return;
+
+    setIsUploadingPhoto(true);
+    const caption = uploadPhotoCaption.trim() || `Expedition moment at ${log.locationName}`;
+    const title = uploadPhotoTitle.trim() || `${log.title} Photo`;
+
+    const newPhotoItem = {
+      url: uploadPhotoUrl.trim(),
+      caption,
+      type: 'image' as const
+    };
+
+    const updatedGallery = [...(log.gallery || []), newPhotoItem];
+    if (onUpdateLog) {
+      await onUpdateLog(log.id, { gallery: updatedGallery });
+    }
+
+    if (onUploadMedia) {
+      await onUploadMedia({
+        title,
+        caption,
+        url: uploadPhotoUrl.trim(),
+        locationName: log.locationName,
+        coordinates: log.coordinates,
+        journeyLeg: log.journeyLeg || 'arctic_yukon',
+        tags: Array.from(new Set([...(log.tags || []), 'Journal', log.category])),
+        author: currentUser.name || log.author,
+        date: log.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        type: 'image'
+      });
+    }
+
+    confetti({ particleCount: 35, spread: 55, origin: { y: 0.8 } });
+    showToast('✨ Photo added to journal entry & synced to Photo Gallery!');
+
+    setUploadPhotoUrl('');
+    setUploadPhotoTitle('');
+    setUploadPhotoCaption('');
+    setIsUploadingPhoto(false);
+    setIsAddPhotoModalOpen(false);
+  };
+
+  // Edit Caption for existing photo in entry
+  const handleSavePhotoCaption = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingPhotoIdx === null || !currentUser?.isAdmin) return;
+
+    setIsSavingCaption(true);
+    const updatedGallery = [...(log.gallery || [])];
+    if (updatedGallery[editingPhotoIdx]) {
+      updatedGallery[editingPhotoIdx] = {
+        ...updatedGallery[editingPhotoIdx],
+        caption: editingCaptionText.trim()
+      };
+
+      if (onUpdateLog) {
+        await onUpdateLog(log.id, { gallery: updatedGallery });
+      }
+      showToast('Caption updated successfully.');
+    }
+
+    setIsSavingCaption(false);
+    setEditingPhotoIdx(null);
+    setEditingCaptionText('');
+  };
+
+  // Delete photo from entry
+  const handleDeletePhotoFromEntry = async (idx: number, e?: React.MouseEvent) => {
+    e?.stopPropagation();
+    if (!currentUser?.isAdmin) return;
+    if (window.confirm('Remove this photo from this journal entry?')) {
+      const updatedGallery = (log.gallery || []).filter((_, i) => i !== idx);
+      if (onUpdateLog) {
+        await onUpdateLog(log.id, { gallery: updatedGallery });
+      }
+      showToast('Photo removed from this entry.');
+      if (activeLightboxIdx !== null) setActiveLightboxIdx(null);
     }
   };
 
@@ -472,35 +656,225 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         />
       </div>
 
-      {/* Photo Gallery if present */}
-      {log.gallery && log.gallery.length > 0 && (
-        <div className="space-y-4 pt-6 border-t border-stone-200">
-          <h3 className="text-xl font-serif font-bold text-stone-900">
-            Expedition Photos
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {log.gallery.map((item, idx) => (
-              <div key={idx} className="rounded-2xl overflow-hidden border border-stone-200/90 bg-white shadow-xs space-y-2">
-                <div className={`bg-stone-900 w-full flex items-center justify-center overflow-hidden ${
-                  item.url.includes('departure.jpeg') ? 'aspect-[3/4] sm:aspect-[4/5]' : 'h-64 sm:h-72'
-                }`}>
+      {/* EXPEDITION PHOTOS SECTION AT THE BOTTOM OF THE ENTRY */}
+      <div id="journal-entry-photos" className="space-y-5 pt-8 border-t border-stone-200 font-sans">
+        <div className="flex flex-wrap items-center justify-between gap-3">
+          <div>
+            <div className="flex items-center gap-2">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center">
+                <ImageIcon className="w-4 h-4" />
+              </div>
+              <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
+                Expedition Photos & Visual Memories
+              </h3>
+            </div>
+            <p className="text-xs text-stone-500 mt-0.5">
+              {galleryList.length > 0
+                ? `${galleryList.length} photograph${galleryList.length > 1 ? 's' : ''} captured during this expedition milestone`
+                : 'Photographs from this expedition leg'}
+            </p>
+          </div>
+
+          {/* Admin Upload Triggers */}
+          {currentUser?.isAdmin && (
+            <div className="flex items-center gap-2">
+              <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Upload From iPhoto / Files</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                  }}
+                  className="hidden"
+                />
+              </label>
+
+              <button
+                type="button"
+                onClick={() => setIsAddPhotoModalOpen(true)}
+                className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>Add Photo / URL</span>
+              </button>
+            </div>
+          )}
+        </div>
+
+        {/* Success Toast */}
+        {successToast && (
+          <div className="p-3 bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl text-xs font-medium flex items-center justify-between animate-in fade-in slide-in-from-top-2 duration-200">
+            <span>{successToast}</span>
+            <button onClick={() => setSuccessToast(null)} className="text-emerald-700 hover:text-emerald-950 text-xs">✕</button>
+          </div>
+        )}
+
+        {/* Photos Grid */}
+        {galleryList.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {galleryList.map((item, idx) => (
+              <div 
+                key={idx} 
+                className="group relative rounded-2xl overflow-hidden border border-stone-200/90 bg-white shadow-xs flex flex-col transition hover:shadow-md hover:border-stone-300"
+              >
+                {/* Photo Image with Lightbox click */}
+                <div 
+                  onClick={() => setActiveLightboxIdx(idx)}
+                  className={`bg-stone-900 w-full overflow-hidden relative cursor-pointer ${
+                    item.url.includes('departure.jpeg') ? 'aspect-[3/4]' : 'aspect-[4/3]'
+                  }`}
+                >
                   <img
                     src={item.url}
                     alt={item.caption || 'Expedition photo'}
-                    className={`w-full h-full ${item.url.includes('departure.jpeg') ? 'object-cover object-[50%_15%]' : 'object-cover'}`}
+                    className={`w-full h-full object-cover transition duration-300 group-hover:scale-103 ${
+                      item.url.includes('departure.jpeg') ? 'object-[50%_15%]' : ''
+                    }`}
                     referrerPolicy="no-referrer"
                   />
-                </div>
-                {item.caption && (
-                  <div className="p-3 text-xs text-stone-700 font-sans italic leading-relaxed">
-                    {item.caption}
+                  
+                  {/* Zoom Overlay Indicator */}
+                  <div className="absolute inset-0 bg-stone-950/20 opacity-0 group-hover:opacity-100 transition flex items-center justify-center">
+                    <div className="p-2 rounded-xl bg-black/60 text-white text-xs backdrop-blur-xs flex items-center gap-1.5 shadow">
+                      <Maximize2 className="w-3.5 h-3.5" />
+                      <span>Enlarge</span>
+                    </div>
                   </div>
-                )}
+                </div>
+
+                {/* Caption & Controls */}
+                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2 bg-white">
+                  <p className="text-xs text-stone-700 font-serif italic leading-relaxed">
+                    {item.caption || 'Expedition memory'}
+                  </p>
+
+                  {currentUser?.isAdmin && (
+                    <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px] font-sans">
+                      <button
+                        onClick={() => {
+                          setEditingPhotoIdx(idx);
+                          setEditingCaptionText(item.caption || '');
+                        }}
+                        className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit Caption</span>
+                      </button>
+
+                      <button
+                        onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
+                        className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
+                        title="Remove photo from this entry"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
+                  )}
+                </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          /* Empty State for Admin */
+          currentUser?.isAdmin ? (
+            <div 
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingPhoto(true);
+              }}
+              onDragLeave={() => setIsDraggingPhoto(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingPhoto(false);
+                if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
+              }}
+              className={`p-8 text-center rounded-3xl border-2 border-dashed transition space-y-3 ${
+                isDraggingPhoto 
+                  ? 'border-blue-900 bg-blue-50/90' 
+                  : 'border-stone-300 bg-white/70 hover:bg-white hover:border-stone-400'
+              }`}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-900 mx-auto flex items-center justify-center">
+                <Upload className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-serif font-bold text-stone-900 text-base">
+                  No photos added to this journal entry yet
+                </h4>
+                <p className="text-xs text-stone-500 max-w-md mx-auto">
+                  Drag and drop photos directly from your <strong>iPhoto / Photos library</strong> or computer files here. They will appear right at the bottom of this journal entry and automatically be published in the <strong>Photo & Video Gallery tab</strong>!
+                </p>
+              </div>
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Choose Photos from Computer</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={(e) => {
+                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsAddPhotoModalOpen(true)}
+                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
+                >
+                  Enter Photo URL / Preset
+                </button>
+              </div>
+            </div>
+          ) : null
+        )}
+
+        {/* Drag & Drop Quick Dropzone Bar for Admin when photos already exist */}
+        {currentUser?.isAdmin && galleryList.length > 0 && (
+          <div
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDraggingPhoto(true);
+            }}
+            onDragLeave={() => setIsDraggingPhoto(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingPhoto(false);
+              if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
+            }}
+            className={`p-4 rounded-2xl border-2 border-dashed transition flex flex-wrap items-center justify-between gap-3 text-xs ${
+              isDraggingPhoto
+                ? 'border-blue-900 bg-blue-50 text-blue-950'
+                : 'border-stone-200 bg-[#FAF8F5] text-stone-600'
+            }`}
+          >
+            <div className="flex items-center gap-2">
+              <Upload className="w-4 h-4 text-blue-900" />
+              <span>
+                <strong>Add more photos to this entry:</strong> Drag photos here directly from iPhoto or computer files.
+              </span>
+            </div>
+            <label className="cursor-pointer text-blue-900 hover:text-blue-950 font-semibold underline">
+              <span>Browse files</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={(e) => {
+                  if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                }}
+                className="hidden"
+              />
+            </label>
+          </div>
+        )}
+      </div>
 
       {/* Tags */}
       {log.tags && log.tags.length > 0 && (
@@ -675,6 +1049,303 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           }}
           authorName={currentUser?.name || log.author}
         />
+      )}
+
+      {/* 1. PHOTO LIGHTBOX MODAL */}
+      {activeLightboxIdx !== null && galleryList[activeLightboxIdx] && (
+        <div 
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setActiveLightboxIdx(null)}
+        >
+          {/* Top Bar Controls */}
+          <div 
+            className="w-full max-w-5xl flex items-center justify-between text-white pb-3 px-2 z-10"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center gap-3">
+              <span className="text-xs text-stone-300 font-mono">
+                Photo {activeLightboxIdx + 1} of {galleryList.length}
+              </span>
+              <span className="text-xs text-stone-400 font-sans">
+                • {log.locationName}
+              </span>
+            </div>
+
+            <div className="flex items-center gap-2">
+              {currentUser?.isAdmin && (
+                <button
+                  onClick={() => {
+                    setEditingPhotoIdx(activeLightboxIdx);
+                    setEditingCaptionText(galleryList[activeLightboxIdx].caption || '');
+                  }}
+                  className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-medium flex items-center gap-1.5 transition"
+                >
+                  <Edit3 className="w-3.5 h-3.5" />
+                  <span>Edit Caption</span>
+                </button>
+              )}
+
+              <button
+                onClick={() => setActiveLightboxIdx(null)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
+
+          {/* Main Photo Display */}
+          <div 
+            className="relative max-w-5xl max-h-[75vh] w-full flex items-center justify-center"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <img
+              src={galleryList[activeLightboxIdx].url}
+              alt={galleryList[activeLightboxIdx].caption || 'Expedition photo'}
+              className="max-h-[72vh] max-w-full object-contain rounded-xl shadow-2xl"
+              referrerPolicy="no-referrer"
+            />
+
+            {/* Navigation Chevrons */}
+            {galleryList.length > 1 && (
+              <>
+                <button
+                  onClick={() => setActiveLightboxIdx((prev) => (prev! > 0 ? prev! - 1 : galleryList.length - 1))}
+                  className="absolute left-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition"
+                >
+                  <ChevronLeft className="w-6 h-6" />
+                </button>
+                <button
+                  onClick={() => setActiveLightboxIdx((prev) => (prev! < galleryList.length - 1 ? prev! + 1 : 0))}
+                  className="absolute right-2 top-1/2 -translate-y-1/2 w-10 h-10 rounded-full bg-black/60 hover:bg-black/80 text-white flex items-center justify-center backdrop-blur-xs transition"
+                >
+                  <ChevronRight className="w-6 h-6" />
+                </button>
+              </>
+            )}
+          </div>
+
+          {/* Bottom Caption in Lightbox */}
+          {galleryList[activeLightboxIdx].caption && (
+            <div 
+              className="w-full max-w-2xl text-center text-stone-200 text-sm font-serif italic pt-3 px-4"
+              onClick={(e) => e.stopPropagation()}
+            >
+              {galleryList[activeLightboxIdx].caption}
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* 2. EDIT CAPTION MODAL (ADMIN) */}
+      {editingPhotoIdx !== null && galleryList[editingPhotoIdx] && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Edit3 className="w-4 h-4 text-blue-900" />
+                <h3 className="font-serif font-bold text-stone-900 text-base">Edit Photo Caption</h3>
+              </div>
+              <button
+                onClick={() => setEditingPhotoIdx(null)}
+                className="text-stone-400 hover:text-stone-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Thumbnail */}
+            <div className="h-36 rounded-xl overflow-hidden bg-stone-900 border border-stone-200">
+              <img
+                src={galleryList[editingPhotoIdx].url}
+                alt="Thumbnail"
+                className="w-full h-full object-cover"
+                referrerPolicy="no-referrer"
+              />
+            </div>
+
+            <form onSubmit={handleSavePhotoCaption} className="space-y-4">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
+                  Caption / Description:
+                </label>
+                <textarea
+                  value={editingCaptionText}
+                  onChange={(e) => setEditingCaptionText(e.target.value)}
+                  placeholder="Describe this expedition photo moment..."
+                  rows={3}
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
+                  required
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2">
+                <button
+                  type="button"
+                  onClick={() => setEditingPhotoIdx(null)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-stone-600 hover:bg-stone-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSavingCaption}
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
+                >
+                  {isSavingCaption ? 'Saving...' : 'Save Caption'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* 3. ADD / UPLOAD PHOTO MODAL (ADMIN) */}
+      {isAddPhotoModalOpen && (
+        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-5 animate-in zoom-in-95 duration-200">
+            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+              <div className="flex items-center gap-2">
+                <Camera className="w-5 h-5 text-blue-900" />
+                <div>
+                  <h3 className="font-serif font-bold text-stone-900 text-base">Add Photo to Journal Entry</h3>
+                  <p className="text-[11px] text-stone-500">Photo will also be saved to the Photo & Video Gallery tab</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsAddPhotoModalOpen(false)}
+                className="text-stone-400 hover:text-stone-700"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+
+            {/* Quick Upload from Files Button */}
+            <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-2xl flex items-center justify-between gap-3">
+              <div className="space-y-0.5">
+                <div className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
+                  <FolderOpen className="w-4 h-4 text-blue-900" />
+                  <span>Choose file from Computer / iPhoto</span>
+                </div>
+                <p className="text-[11px] text-blue-800">Directly selects from your photo library or disk</p>
+              </div>
+
+              <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold shadow-xs transition">
+                <span>Browse...</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                  }}
+                  className="hidden"
+                />
+              </label>
+            </div>
+
+            <div className="relative flex py-1 items-center">
+              <div className="grow border-t border-stone-200"></div>
+              <span className="shrink mx-3 text-stone-400 text-xs">or paste image URL / pick preset</span>
+              <div className="grow border-t border-stone-200"></div>
+            </div>
+
+            {/* Preset quick pills */}
+            <div className="space-y-1.5">
+              <span className="text-[11px] font-semibold text-stone-600">Quick Expedition Presets:</span>
+              <div className="flex flex-wrap gap-1.5">
+                {[
+                  { label: '🏔️ Coast Departure', url: '/departure.jpeg' },
+                  { label: '⚡ 400W Solar Rig', url: '/solar panel.jpeg' },
+                  { label: '🛋️ Birch Interior', url: '/interior1.jpeg' },
+                  { label: '⛺ Tundra Camp', url: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1200&q=80' }
+                ].map((preset, pIdx) => (
+                  <button
+                    key={pIdx}
+                    type="button"
+                    onClick={() => {
+                      setUploadPhotoUrl(preset.url);
+                      setUploadPhotoCaption(`Expedition view during ${log.title}`);
+                    }}
+                    className="text-[11px] px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition"
+                  >
+                    {preset.label}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <form onSubmit={handleAddSinglePhotoSubmit} className="space-y-3.5">
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                  Photo URL:
+                </label>
+                <input
+                  type="text"
+                  value={uploadPhotoUrl}
+                  onChange={(e) => setUploadPhotoUrl(e.target.value)}
+                  placeholder="https://... or /departure.jpeg"
+                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
+                  required
+                />
+              </div>
+
+              {uploadPhotoUrl && (
+                <div className="h-32 rounded-xl overflow-hidden bg-stone-900 border border-stone-200">
+                  <img
+                    src={uploadPhotoUrl}
+                    alt="Preview"
+                    className="w-full h-full object-cover"
+                    referrerPolicy="no-referrer"
+                  />
+                </div>
+              )}
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                  Photo Title (optional):
+                </label>
+                <input
+                  type="text"
+                  value={uploadPhotoTitle}
+                  onChange={(e) => setUploadPhotoTitle(e.target.value)}
+                  placeholder={`${log.title} Photo`}
+                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
+                />
+              </div>
+
+              <div>
+                <label className="block text-xs font-semibold text-stone-700 mb-1">
+                  Caption / Description:
+                </label>
+                <textarea
+                  value={uploadPhotoCaption}
+                  onChange={(e) => setUploadPhotoCaption(e.target.value)}
+                  placeholder={`Expedition moment in ${log.locationName}...`}
+                  rows={2}
+                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setIsAddPhotoModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-stone-600 hover:bg-stone-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isUploadingPhoto || !uploadPhotoUrl.trim()}
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition disabled:opacity-50"
+                >
+                  {isUploadingPhoto ? 'Uploading & Syncing...' : 'Add to Journal & Gallery'}
+                </button>
+              </div>
+            </form>
+          </div>
+        </div>
       )}
 
     </article>

@@ -306,6 +306,66 @@ function AppContent() {
     }
   };
 
+  // Update rig photo (caption, title, category, url)
+  const handleUpdateRigPhoto = async (photoId: string, updatedData: Partial<RigPhoto>) => {
+    try {
+      const res = await fetch(`/api/rig-photos/${photoId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      const data = await res.json();
+      if (data.success && data.photo) {
+        setRigPhotos(prev => prev.map(p => p.id === photoId ? data.photo : p));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update rig photo on server:', err);
+    }
+    // Optimistic fallback
+    setRigPhotos(prev => prev.map(p => p.id === photoId ? { ...p, ...updatedData } : p));
+  };
+
+  // Delete rig photo
+  const handleDeleteRigPhoto = async (photoId: string) => {
+    try {
+      await fetch(`/api/rig-photos/${photoId}`, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Failed to delete rig photo on server:', err);
+    }
+    setRigPhotos(prev => prev.filter(p => p.id !== photoId));
+  };
+
+  // Update media item (caption, title, location, tags, etc.)
+  const handleUpdateMedia = async (mediaId: string, updatedData: Partial<MediaItem>) => {
+    try {
+      const res = await fetch(`/api/media/${mediaId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatedData)
+      });
+      const data = await res.json();
+      if (data.success && data.item) {
+        setMediaItems(prev => prev.map(m => m.id === mediaId ? data.item : m));
+        return;
+      }
+    } catch (err) {
+      console.error('Failed to update media item on server:', err);
+    }
+    // Optimistic fallback
+    setMediaItems(prev => prev.map(m => m.id === mediaId ? { ...m, ...updatedData } : m));
+  };
+
+  // Delete media item
+  const handleDeleteMedia = async (mediaId: string) => {
+    try {
+      await fetch(`/api/media/${mediaId}`, { method: 'DELETE' });
+    } catch (err) {
+      console.error('Failed to delete media item on server:', err);
+    }
+    setMediaItems(prev => prev.filter(m => m.id !== mediaId));
+  };
+
   // Subscribe to updates (submits pending request)
   const handleSubscribe = async (sub: { email: string; name: string; relationshipNote?: string }) => {
     try {
@@ -478,6 +538,7 @@ function AppContent() {
             recentLogs={travelLogs}
             waypoints={waypoints}
             onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
+            isAdmin={Boolean(currentUser?.isAdmin)}
           />
         )}
 
@@ -526,6 +587,8 @@ function AppContent() {
               onTogglePublish={handleTogglePublishLog}
               onDeleteLog={handleDeleteLog}
               onUpdateLog={handleUpdateLog}
+              onUploadMedia={handleUploadMedia}
+              onUploadBatchMedia={handleUploadBatchMedia}
             />
           ) : (
             <TravelLogList
@@ -550,6 +613,8 @@ function AppContent() {
             currentUser={currentUser}
             onUploadMedia={handleUploadMedia}
             onUploadBatchMedia={handleUploadBatchMedia}
+            onUpdateMedia={handleUpdateMedia}
+            onDeleteMedia={handleDeleteMedia}
             onViewLocationOnMap={handleViewLocationOnMap}
             onOpenAuthModal={() => setIsAuthModalOpen(true)}
           />
@@ -560,6 +625,8 @@ function AppContent() {
           <RigSpecs
             rigPhotos={rigPhotos}
             onUploadRigPhoto={handleUploadRigPhoto}
+            onUpdateRigPhoto={handleUpdateRigPhoto}
+            onDeleteRigPhoto={handleDeleteRigPhoto}
             isAdmin={currentUser?.isAdmin}
           />
         )}

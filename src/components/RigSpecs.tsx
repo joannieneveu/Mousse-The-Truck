@@ -14,7 +14,10 @@ import {
   ExternalLink,
   Layers,
   Sparkles,
-  Heart
+  Heart,
+  Edit3,
+  Trash2,
+  X
 } from 'lucide-react';
 import { RigPhoto, RigSpecCategory } from '../types';
 import { RIG_SPECS_DATA } from '../data/initialData';
@@ -22,12 +25,16 @@ import { RIG_SPECS_DATA } from '../data/initialData';
 interface RigSpecsProps {
   rigPhotos: RigPhoto[];
   onUploadRigPhoto: (photo: { title: string; caption: string; url: string; category: RigPhoto['category'] }) => Promise<void>;
+  onUpdateRigPhoto?: (photoId: string, updatedData: Partial<RigPhoto>) => Promise<void>;
+  onDeleteRigPhoto?: (photoId: string) => Promise<void>;
   isAdmin?: boolean;
 }
 
 export const RigSpecs: React.FC<RigSpecsProps> = ({
   rigPhotos,
   onUploadRigPhoto,
+  onUpdateRigPhoto,
+  onDeleteRigPhoto,
   isAdmin = false
 }) => {
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -39,6 +46,65 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
   const [uploadPhotoCategory, setUploadPhotoCategory] = useState<RigPhoto['category']>('exterior');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [selectedPhotoModal, setSelectedPhotoModal] = useState<RigPhoto | null>(null);
+
+  // Edit photo modal state for Admin
+  const [editingPhoto, setEditingPhoto] = useState<RigPhoto | null>(null);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editCaption, setEditCaption] = useState<string>('');
+  const [editCategory, setEditCategory] = useState<RigPhoto['category']>('exterior');
+  const [editUrl, setEditUrl] = useState<string>('');
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
+
+  const openEditModal = (photo: RigPhoto, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingPhoto(photo);
+    setEditTitle(photo.title);
+    setEditCaption(photo.caption || '');
+    setEditCategory(photo.category);
+    setEditUrl(photo.url);
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingPhoto) return;
+
+    setIsSavingEdit(true);
+    try {
+      const updatedData: Partial<RigPhoto> = {
+        title: editTitle.trim() || 'Expedition Rig Photo',
+        caption: editCaption.trim(),
+        category: editCategory,
+        url: editUrl.trim() || editingPhoto.url
+      };
+
+      if (onUpdateRigPhoto) {
+        await onUpdateRigPhoto(editingPhoto.id, updatedData);
+      }
+
+      if (selectedPhotoModal && selectedPhotoModal.id === editingPhoto.id) {
+        setSelectedPhotoModal({
+          ...selectedPhotoModal,
+          ...updatedData
+        });
+      }
+
+      setEditingPhoto(null);
+    } catch (err) {
+      console.error('Failed to save rig photo edit:', err);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeletePhoto = async (photoId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!onDeleteRigPhoto) return;
+    if (window.confirm('Are you sure you want to delete this photo from the rig gallery?')) {
+      await onDeleteRigPhoto(photoId);
+      if (selectedPhotoModal?.id === photoId) setSelectedPhotoModal(null);
+      if (editingPhoto?.id === photoId) setEditingPhoto(null);
+    }
+  };
 
   const getCategoryIcon = (iconName: string) => {
     switch (iconName) {
@@ -269,14 +335,16 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
             </p>
           </div>
 
-          {/* Upload Button */}
-          <button
-            onClick={() => setIsUploadOpen(true)}
-            className="bg-blue-900 hover:bg-blue-950 text-white px-5 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-sm transition self-start sm:self-auto"
-          >
-            <Upload className="w-4 h-4" />
-            <span>Upload Rig Photo</span>
-          </button>
+          {/* Upload Button (Admin Only) */}
+          {isAdmin && (
+            <button
+              onClick={() => setIsUploadOpen(true)}
+              className="bg-blue-900 hover:bg-blue-950 text-white px-5 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-sm transition self-start sm:self-auto"
+            >
+              <Upload className="w-4 h-4" />
+              <span>Upload Rig Photo</span>
+            </button>
+          )}
         </div>
 
         {/* Photo Category Filter Pills */}
@@ -310,7 +378,7 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
             <div
               key={photo.id}
               onClick={() => setSelectedPhotoModal(photo)}
-              className="bg-white border border-stone-200/90 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition group cursor-pointer flex flex-col justify-between"
+              className="bg-white border border-stone-200/90 rounded-3xl overflow-hidden shadow-sm hover:shadow-md transition group cursor-pointer flex flex-col justify-between relative"
             >
               <div className="relative aspect-video overflow-hidden bg-stone-100">
                 <img
@@ -322,19 +390,43 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
                 <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-sm text-[10px] font-semibold text-white uppercase tracking-wider">
                   {photo.category.replace('_', ' ')}
                 </span>
+                
+                {/* Admin Quick Action Button on Photo */}
+                {isAdmin && (
+                  <button
+                    onClick={(e) => openEditModal(photo, e)}
+                    className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500/90 hover:bg-amber-600 text-white backdrop-blur-sm text-[11px] font-semibold flex items-center gap-1 shadow-sm transition"
+                    title="Edit caption and details"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit</span>
+                  </button>
+                )}
               </div>
 
               <div className="p-5 space-y-2">
-                <h3 className="font-serif font-bold text-stone-900 text-base leading-snug group-hover:text-blue-900 transition">
-                  {photo.title}
-                </h3>
+                <div className="flex items-start justify-between gap-2">
+                  <h3 className="font-serif font-bold text-stone-900 text-base leading-snug group-hover:text-blue-900 transition flex-1">
+                    {photo.title}
+                  </h3>
+                </div>
                 {photo.caption && (
                   <p className="text-xs text-stone-600 font-sans leading-relaxed">
                     {photo.caption}
                   </p>
                 )}
-                <div className="text-[10px] text-stone-400 font-mono pt-1">
-                  Added: {photo.uploadedAt}
+                
+                <div className="flex items-center justify-between pt-2 border-t border-stone-100 text-[10px] text-stone-400 font-mono">
+                  <span>Added: {photo.uploadedAt}</span>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => openEditModal(photo, e)}
+                      className="text-blue-900 hover:text-blue-950 font-sans font-semibold text-[11px] flex items-center gap-1 hover:underline"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      Edit Caption
+                    </button>
+                  )}
                 </div>
               </div>
             </div>
@@ -469,6 +561,138 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
         </div>
       )}
 
+      {/* Admin Edit Rig Photo Modal */}
+      {editingPhoto && (
+        <div 
+          onClick={() => setEditingPhoto(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-stone-800 space-y-5 my-8"
+          >
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500 text-white">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-stone-900">Edit Caption & Rig Photo</h3>
+                  <p className="text-xs text-stone-500">Administrator controls for Mousse rig specifications.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingPhoto(null)}
+                className="w-8 h-8 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs font-sans">
+              {/* Image Preview */}
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-stone-200 border border-stone-300">
+                <img
+                  src={editUrl || editingPhoto.url}
+                  alt={editTitle}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Photo Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Caption under Picture *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                  placeholder="Enter the descriptive caption for this photograph..."
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 text-xs leading-relaxed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Category
+                  </label>
+                  <select
+                    value={editCategory}
+                    onChange={(e) => setEditCategory(e.target.value as any)}
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                  >
+                    <option value="exterior">Exterior & Suspension</option>
+                    <option value="interior">Interior Living</option>
+                    <option value="henri_cot">Henri’s Nursery</option>
+                    <option value="solar_power">Solar & Electrical</option>
+                    <option value="kitchen">Galley & Water</option>
+                    <option value="workstation">MBA Workstation</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Image File / URL
+                  </label>
+                  <input
+                    type="text"
+                    value={editUrl}
+                    onChange={(e) => setEditUrl(e.target.value)}
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                  />
+                </div>
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-stone-200">
+                {onDeleteRigPhoto ? (
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeletePhoto(editingPhoto.id, e)}
+                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Photo</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingPhoto(null)}
+                    className="px-4 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{isSavingEdit ? 'Saving...' : 'Save Caption'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
       {/* Enlarged Photo Modal */}
       {selectedPhotoModal && (
         <div 
@@ -486,21 +710,35 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
                 className="w-full h-full object-cover"
               />
             </div>
-            <div className="space-y-1">
-              <div className="flex items-center justify-between">
+            <div className="space-y-2">
+              <div className="flex items-center justify-between gap-2">
                 <h3 className="font-serif font-bold text-xl text-stone-900">{selectedPhotoModal.title}</h3>
-                <span className="text-xs font-semibold px-3 py-1 rounded-full bg-stone-200 text-stone-700 uppercase">
-                  {selectedPhotoModal.category.replace('_', ' ')}
-                </span>
+                <div className="flex items-center gap-2">
+                  <span className="text-xs font-semibold px-3 py-1 rounded-full bg-stone-200 text-stone-700 uppercase">
+                    {selectedPhotoModal.category.replace('_', ' ')}
+                  </span>
+                  {isAdmin && (
+                    <button
+                      onClick={(e) => openEditModal(selectedPhotoModal, e)}
+                      className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 transition shadow-xs"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Caption</span>
+                    </button>
+                  )}
+                </div>
               </div>
               {selectedPhotoModal.caption && (
-                <p className="text-xs text-stone-600 font-sans">{selectedPhotoModal.caption}</p>
+                <p className="text-sm text-stone-700 font-sans leading-relaxed bg-white p-3.5 rounded-2xl border border-stone-200">
+                  {selectedPhotoModal.caption}
+                </p>
               )}
             </div>
-            <div className="flex justify-end pt-2">
+            <div className="flex justify-between items-center pt-2 border-t border-stone-200">
+              <span className="text-xs text-stone-500">Added: {selectedPhotoModal.uploadedAt}</span>
               <button
                 onClick={() => setSelectedPhotoModal(null)}
-                className="bg-slate-900 text-white text-xs font-medium px-4 py-2 rounded-xl"
+                className="bg-slate-900 hover:bg-slate-800 text-white text-xs font-medium px-4 py-2 rounded-xl transition"
               >
                 Close
               </button>

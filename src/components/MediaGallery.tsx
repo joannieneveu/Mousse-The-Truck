@@ -29,7 +29,8 @@ import {
   Send,
   Trash2,
   FolderOpen,
-  Layers
+  Layers,
+  Edit3
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { BatchPhotoUploadModal } from './BatchPhotoUploadModal';
@@ -40,6 +41,8 @@ interface MediaGalleryProps {
   currentUser?: UserProfile | null;
   onUploadMedia: (newMedia: Partial<MediaItem>) => Promise<void>;
   onUploadBatchMedia?: (items: Partial<MediaItem>[]) => Promise<void>;
+  onUpdateMedia?: (mediaId: string, updatedData: Partial<MediaItem>) => Promise<void>;
+  onDeleteMedia?: (mediaId: string) => Promise<void>;
   onViewLocationOnMap?: (lat?: number, lng?: number) => void;
   onOpenAuthModal?: () => void;
 }
@@ -49,6 +52,8 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
   currentUser,
   onUploadMedia,
   onUploadBatchMedia,
+  onUpdateMedia,
+  onDeleteMedia,
   onViewLocationOnMap,
   onOpenAuthModal,
 }) => {
@@ -58,6 +63,73 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
   const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
   const [likedMediaIds, setLikedMediaIds] = useState<Record<string, boolean>>({});
+
+  // Edit media & caption modal state
+  const [editingMedia, setEditingMedia] = useState<MediaItem | null>(null);
+  const [editTitle, setEditTitle] = useState<string>('');
+  const [editCaption, setEditCaption] = useState<string>('');
+  const [editLocation, setEditLocation] = useState<string>('');
+  const [editTags, setEditTags] = useState<string>('');
+  const [editJourneyLeg, setEditJourneyLeg] = useState<JourneyLeg>('arctic_yukon');
+  const [isSavingEdit, setIsSavingEdit] = useState<boolean>(false);
+
+  const openEditModal = (item: MediaItem, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    setEditingMedia(item);
+    setEditTitle(item.title);
+    setEditCaption(item.caption || '');
+    setEditLocation(item.locationName || '');
+    setEditTags(item.tags ? item.tags.join(', ') : '');
+    setEditJourneyLeg(item.journeyLeg || 'arctic_yukon');
+  };
+
+  const handleSaveEdit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!editingMedia) return;
+
+    setIsSavingEdit(true);
+    try {
+      const parsedTags = editTags
+        .split(',')
+        .map(t => t.trim().replace(/^#/, ''))
+        .filter(Boolean);
+
+      const updatedData: Partial<MediaItem> = {
+        title: editTitle.trim() || 'Expedition Media',
+        caption: editCaption.trim(),
+        locationName: editLocation.trim() || editingMedia.locationName,
+        tags: parsedTags.length > 0 ? parsedTags : editingMedia.tags,
+        journeyLeg: editJourneyLeg
+      };
+
+      if (onUpdateMedia) {
+        await onUpdateMedia(editingMedia.id, updatedData);
+      }
+
+      if (activeMedia && activeMedia.id === editingMedia.id) {
+        setActiveMedia({
+          ...activeMedia,
+          ...updatedData
+        });
+      }
+
+      setEditingMedia(null);
+    } catch (err) {
+      console.error('Failed to save media edit:', err);
+    } finally {
+      setIsSavingEdit(false);
+    }
+  };
+
+  const handleDeleteMediaItem = async (mediaId: string, e?: React.MouseEvent) => {
+    if (e) e.stopPropagation();
+    if (!onDeleteMedia) return;
+    if (window.confirm('Are you sure you want to delete this media item?')) {
+      await onDeleteMedia(mediaId);
+      if (activeMedia?.id === mediaId) setActiveMedia(null);
+      if (editingMedia?.id === mediaId) setEditingMedia(null);
+    }
+  };
   const [mediaList, setMediaList] = useState<MediaItem[]>(media);
 
   // Batch Drag & Drop Upload State
@@ -299,61 +371,12 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
           </p>
         </div>
 
-        <div className="flex items-center gap-2.5">
-          <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition self-start md:self-auto font-sans">
-            <FolderOpen className="w-4 h-4" />
-            <span>Upload From Files / iPhoto</span>
-            <input
-              type="file"
-              multiple
-              accept="image/*,video/*"
-              onChange={handleFileInputBatch}
-              className="hidden"
-            />
-          </label>
-          <button
-            onClick={() => setIsUploadModalOpen(true)}
-            className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-2xs transition self-start md:self-auto font-sans"
-          >
-            <Upload className="w-4 h-4 text-stone-600" />
-            <span>Single Upload</span>
-          </button>
-        </div>
-      </div>
-
-      {/* DRAG & DROP PHOTO DROPZONE HERO BANNER */}
-      <div
-        id="gallery-drag-dropzone"
-        onDragOver={(e) => {
-          e.preventDefault();
-          setIsHeroDragging(true);
-        }}
-        onDragLeave={() => setIsHeroDragging(false)}
-        onDrop={handleDropOnGalleryHero}
-        className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition p-6 sm:p-8 text-center font-sans ${
-          isHeroDragging 
-            ? 'border-blue-900 bg-blue-50/90 scale-101 shadow-lg' 
-            : 'border-stone-300 bg-white/80 hover:bg-white hover:border-stone-400 shadow-2xs'
-        }`}
-      >
-        <div className="max-w-xl mx-auto space-y-4">
-          <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center shadow-xs">
-            <Layers className="w-7 h-7" />
-          </div>
-
-          <div className="space-y-1.5">
-            <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
-              {isHeroDragging ? '✨ Release Photos to Upload Batch!' : 'Drag & Drop Photos Directly From iPhoto or Computer Folders'}
-            </h2>
-            <p className="text-xs text-stone-600 leading-relaxed max-w-md mx-auto">
-              Drag one or multiple photos directly onto this screen from your Mac's <strong>iPhoto / Apple Photos library</strong>, desktop folders, or phone backup.
-            </p>
-          </div>
-
-          <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
-            <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition">
+        {/* Admin-only Upload Actions in Header */}
+        {currentUser?.isAdmin && (
+          <div className="flex items-center gap-2.5">
+            <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition self-start md:self-auto font-sans">
               <FolderOpen className="w-4 h-4" />
-              <span>Select Photos from Computer</span>
+              <span>Upload From Files / iPhoto</span>
               <input
                 type="file"
                 multiple
@@ -364,13 +387,67 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
             </label>
             <button
               onClick={() => setIsUploadModalOpen(true)}
-              className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
+              className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-2xs transition self-start md:self-auto font-sans"
             >
-              Paste Web Image URL
+              <Upload className="w-4 h-4 text-stone-600" />
+              <span>Single Upload</span>
             </button>
           </div>
-        </div>
+        )}
       </div>
+
+      {/* DRAG & DROP PHOTO DROPZONE HERO BANNER (Admin Only) */}
+      {currentUser?.isAdmin && (
+        <div
+          id="gallery-drag-dropzone"
+          onDragOver={(e) => {
+            e.preventDefault();
+            setIsHeroDragging(true);
+          }}
+          onDragLeave={() => setIsHeroDragging(false)}
+          onDrop={handleDropOnGalleryHero}
+          className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition p-6 sm:p-8 text-center font-sans ${
+            isHeroDragging 
+              ? 'border-blue-900 bg-blue-50/90 scale-101 shadow-lg' 
+              : 'border-stone-300 bg-white/80 hover:bg-white hover:border-stone-400 shadow-2xs'
+          }`}
+        >
+          <div className="max-w-xl mx-auto space-y-4">
+            <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center shadow-xs">
+              <Layers className="w-7 h-7" />
+            </div>
+
+            <div className="space-y-1.5">
+              <h2 className="text-lg sm:text-xl font-serif font-bold text-stone-900">
+                {isHeroDragging ? '✨ Release Photos to Upload Batch!' : 'Drag & Drop Photos Directly From iPhoto or Computer Folders'}
+              </h2>
+              <p className="text-xs text-stone-600 leading-relaxed max-w-md mx-auto">
+                Drag one or multiple photos directly onto this screen from your Mac's <strong>iPhoto / Apple Photos library</strong>, desktop folders, or phone backup.
+              </p>
+            </div>
+
+            <div className="flex flex-wrap items-center justify-center gap-3 pt-1">
+              <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition">
+                <FolderOpen className="w-4 h-4" />
+                <span>Select Photos from Computer</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={handleFileInputBatch}
+                  className="hidden"
+                />
+              </label>
+              <button
+                onClick={() => setIsUploadModalOpen(true)}
+                className="px-3.5 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
+              >
+                Paste Web Image URL
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Filter Bar */}
       <div className="bg-white border border-stone-200/90 p-4 rounded-3xl space-y-3 shadow-sm font-sans">
@@ -511,6 +588,18 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                     <p className="text-xs text-stone-600 font-serif line-clamp-2 leading-relaxed">
                       {item.caption}
                     </p>
+                  )}
+
+                  {currentUser?.isAdmin && (
+                    <div className="pt-1.5 flex justify-end">
+                      <button
+                        onClick={(e) => openEditModal(item, e)}
+                        className="text-blue-900 hover:text-blue-950 font-sans font-semibold text-[11px] flex items-center gap-1 hover:underline"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit Caption</span>
+                      </button>
+                    </div>
                   )}
                 </div>
               </div>
@@ -722,6 +811,15 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                   <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700 uppercase">
                     {activeMedia.type}
                   </span>
+                  {currentUser?.isAdmin && (
+                    <button
+                      onClick={(e) => openEditModal(activeMedia, e)}
+                      className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 transition shadow-xs ml-2"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Caption</span>
+                    </button>
+                  )}
                 </div>
                 <div className="text-xs text-stone-500 flex items-center gap-2">
                   <span>📍 {activeMedia.locationName}</span>
@@ -731,7 +829,9 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                   <span>By {activeMedia.author}</span>
                 </div>
                 {activeMedia.caption && (
-                  <p className="text-xs text-stone-700 font-serif pt-1">{activeMedia.caption}</p>
+                  <p className="text-xs text-stone-700 font-serif pt-1 leading-relaxed bg-white p-3 rounded-xl border border-stone-200">
+                    {activeMedia.caption}
+                  </p>
                 )}
               </div>
 
@@ -847,6 +947,155 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
               </div>
             </div>
 
+          </div>
+        </div>
+      )}
+
+      {/* Admin Edit Media & Caption Modal */}
+      {editingMedia && (
+        <div 
+          onClick={() => setEditingMedia(null)}
+          className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-stone-950/70 backdrop-blur-sm overflow-y-auto animate-in fade-in duration-200"
+        >
+          <div 
+            onClick={(e) => e.stopPropagation()}
+            className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-lg w-full p-6 sm:p-8 shadow-2xl text-stone-800 space-y-5 my-8 font-sans"
+          >
+            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
+              <div className="flex items-center gap-2.5">
+                <div className="p-2 rounded-xl bg-amber-500 text-white">
+                  <Edit3 className="w-5 h-5" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-lg text-stone-900">Edit Caption & Media</h3>
+                  <p className="text-xs text-stone-500">Administrator controls for expedition photos and videos.</p>
+                </div>
+              </div>
+              <button
+                onClick={() => setEditingMedia(null)}
+                className="w-8 h-8 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-600 flex items-center justify-center text-xs"
+              >
+                ✕
+              </button>
+            </div>
+
+            <form onSubmit={handleSaveEdit} className="space-y-4 text-xs">
+              {/* Image Preview */}
+              <div className="relative aspect-video rounded-2xl overflow-hidden bg-stone-200 border border-stone-300">
+                <img
+                  src={editingMedia.url}
+                  alt={editTitle}
+                  className="w-full h-full object-cover"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={editTitle}
+                  onChange={(e) => setEditTitle(e.target.value)}
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                />
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Caption under Picture *
+                </label>
+                <textarea
+                  rows={4}
+                  required
+                  value={editCaption}
+                  onChange={(e) => setEditCaption(e.target.value)}
+                  placeholder="Enter the descriptive caption for this photograph..."
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 text-xs leading-relaxed"
+                />
+              </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Location Name
+                  </label>
+                  <input
+                    type="text"
+                    value={editLocation}
+                    onChange={(e) => setEditLocation(e.target.value)}
+                    placeholder="e.g. St. John's, NL"
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Expedition Leg
+                  </label>
+                  <select
+                    value={editJourneyLeg}
+                    onChange={(e) => setEditJourneyLeg(e.target.value as any)}
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                  >
+                    <option value="atlantic_canada">Atlantic Canada</option>
+                    <option value="trans_canada_prairies">Trans-Canada & Prairies</option>
+                    <option value="arctic_yukon">Arctic & Yukon</option>
+                    <option value="alaska_highway">Alaska Highway</option>
+                    <option value="rockies_pacific">Rockies & Pacific</option>
+                    <option value="baja_mexico">Baja & Mexico</option>
+                    <option value="central_america">Central America</option>
+                    <option value="andes_south_america">Andes & South America</option>
+                    <option value="patagonia_tierradelfuego">Patagonia & Fin del Mundo</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Tags (comma separated)
+                </label>
+                <input
+                  type="text"
+                  value={editTags}
+                  onChange={(e) => setEditTags(e.target.value)}
+                  placeholder="e.g. Mousse, Solar, Henri, Arctic"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-between pt-3 border-t border-stone-200">
+                {onDeleteMedia ? (
+                  <button
+                    type="button"
+                    onClick={(e) => handleDeleteMediaItem(editingMedia.id, e)}
+                    className="px-3.5 py-2 rounded-xl bg-rose-50 hover:bg-rose-100 text-rose-700 text-xs font-semibold flex items-center gap-1.5 transition"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Delete Media</span>
+                  </button>
+                ) : <div />}
+
+                <div className="flex items-center gap-2">
+                  <button
+                    type="button"
+                    onClick={() => setEditingMedia(null)}
+                    className="px-4 py-2 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 text-xs font-medium transition"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    type="submit"
+                    disabled={isSavingEdit}
+                    className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold shadow-sm transition flex items-center gap-1.5 disabled:opacity-50"
+                  >
+                    <Check className="w-3.5 h-3.5" />
+                    <span>{isSavingEdit ? 'Saving...' : 'Save Caption'}</span>
+                  </button>
+                </div>
+              </div>
+            </form>
           </div>
         </div>
       )}

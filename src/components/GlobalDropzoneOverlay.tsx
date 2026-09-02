@@ -18,12 +18,14 @@ interface GlobalDropzoneOverlayProps {
 
 export const GlobalDropzoneOverlay: React.FC<GlobalDropzoneOverlayProps> = ({
   onPhotosDropped,
-  isAdmin = true
+  isAdmin = false
 }) => {
   const [isDraggingOver, setIsDraggingOver] = useState<boolean>(false);
   const [dragCounter, setDragCounter] = useState<number>(0);
 
   useEffect(() => {
+    if (!isAdmin) return;
+
     const handleDragEnter = (e: DragEvent) => {
       e.preventDefault();
       // Check if drag event has files
@@ -74,9 +76,9 @@ export const GlobalDropzoneOverlay: React.FC<GlobalDropzoneOverlayProps> = ({
       window.removeEventListener('dragover', handleDragOver);
       window.removeEventListener('drop', handleDrop);
     };
-  }, [onPhotosDropped]);
+  }, [onPhotosDropped, isAdmin]);
 
-  if (!isDraggingOver) return null;
+  if (!isAdmin || !isDraggingOver) return null;
 
   return (
     <div 

@@ -275,38 +275,45 @@ Not for a normal poop. Not even for a respectable blowout. This was an event. Th
 
 Meanwhile, Joannie was trying to manage multiple washing machines, deal with a half-naked baby, no clean PJ (obviously in the washing machine!) and find her cellphone (which, as anyone who travels with her knows, she loses approximately ten times per day in a 10 meter square area).
 
-She needed to call Barton. No phone.  
-She needed diapers. No diaper bag.  
-She needed paper towels. Where were the paper towels?!
+She needed to call Barton. No phone. She needed diapers. No diaper bag. She needed paper towels. Where were the paper towels?!
 
 She turned back toward the counter.
 
-And then… She saw her.
+And then… she saw her.
 
-A lovely, completely innocent woman had walked to the counter with an enormous pile of freshly washed, beautifully warm, perfectly clean laundry. Before she could say anything, she placed the entire pile…
+A lovely, completely innocent woman had arrived with an enormous pile of freshly washed, beautifully warm, perfectly clean laundry. Before Joannie could fully process what was happening, the woman placed the entire pile…
 
 directly into Henri’s puddle of pee.
 
 Joannie froze.
 
-The lady started folding. Shirt. Fold. Pants. Fold. Another shirt. Fold.  
-Then she touched the bottom of the pile. Paused. And said, very pleasantly: *“Oh… it’s a bit wet here. That’s too bad!”*
+The lady started folding. Shirt. Fold. Pants. Fold. Another shirt. Fold.
 
-This was Joannie's moment.
+Joannie’s brain, meanwhile, was frantically trying to determine whether there was any socially acceptable way to begin the sentence, *“Excuse me, but your clean laundry is currently sitting in my baby’s urine.”*
 
-She could tell her the truth. She could confess. She could explain that the mysterious moisture soaking into her freshly laundered clothing had, moments earlier, been inside her infant son. She looked at this sweet woman. She looked at her laundry. She looked at Henri.
+There was not.
 
-And…
+Then the woman reached the bottom of the pile. She paused.
 
-She said nothing.
+*“Oh… it’s a bit wet here. That’s too bad!”*
+
+Joannie opened her mouth.
+
+This was the moment. Just say it. Explain what happened. Apologize profusely. Offer to rewash everything. Perhaps move to another territory afterward.
+
+Instead, some combination of embarrassment, sleep deprivation, and pure social paralysis took over.
 
 She smiled sympathetically.
 
-Yes. How unfortunate. Mysterious laundromat moisture. Who can explain these things?
+*“Oh no!”*
 
-Then she vigorously cleaned every remaining square centimetre of that counter while silently accepting that she had just failed some important test of Canadian citizenship.
+And just like that, Joannie became an accomplice to the Great Whitehorse Laundromat Mystery of 2026.
 
-To the lovely woman at the Whitehorse laundromat she wants to say: *I am so, so sorry.*
+She then cleaned every remaining square centimetre of that counter with the intensity of someone attempting to erase both a biohazard and her own shame.
+
+To the lovely woman at the Whitehorse laundromat: if by some extraordinary twist of fate you ever read this, Joannie is very, very sorry.
+
+And for the record, the mysterious wet spot was not the washing machine.
 
 ---
 

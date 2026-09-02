@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { 
   Compass, 
   MapPin, 
@@ -37,6 +37,7 @@ interface HomePageProps {
   recentLogs: TravelLog[];
   waypoints: Waypoint[];
   onOpenSubscribeModal: () => void;
+  isAdmin?: boolean;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -45,7 +46,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   liveLocation,
   recentLogs,
   waypoints,
-  onOpenSubscribeModal
+  onOpenSubscribeModal,
+  isAdmin = false
 }) => {
   const { language, t } = useLanguage();
   const isFr = language === 'fr';
@@ -71,24 +73,57 @@ export const HomePage: React.FC<HomePageProps> = ({
   const [newPhotoUrl, setNewPhotoUrl] = useState<string>('');
   const [isEditingHeroPhoto, setIsEditingHeroPhoto] = useState<boolean>(false);
 
+  // Load persistent family members & site settings from API
+  useEffect(() => {
+    fetch('/api/family')
+      .then(res => res.json())
+      .then(data => {
+        if (Array.isArray(data) && data.length > 0) {
+          setFamilyMembers(data);
+        }
+      })
+      .catch(() => {});
+
+    fetch('/api/site-settings')
+      .then(res => res.json())
+      .then(data => {
+        if (data.familyHeroPhoto) setFamilyHeroPhoto(data.familyHeroPhoto);
+        if (data.heroPhoto) setHeroPhoto(data.heroPhoto);
+      })
+      .catch(() => {});
+  }, []);
+
   const onTripMembers = familyMembers.filter(m => m.onTripWithUs);
   const atHomeMembers = familyMembers.filter(m => !m.onTripWithUs);
 
-  const handleUpdateAvatar = (e: React.FormEvent) => {
+  const handleUpdateAvatar = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!editingMember || !newPhotoUrl.trim()) return;
+    if (!isAdmin || !editingMember || !newPhotoUrl.trim()) return;
 
-    setFamilyMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, avatar: newPhotoUrl.trim() } : m));
+    const updatedAvatar = newPhotoUrl.trim();
+    setFamilyMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, avatar: updatedAvatar } : m));
+
+    try {
+      await fetch(`/api/family/${editingMember.id}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ avatar: updatedAvatar })
+      });
+    } catch (err) {
+      console.error('Failed to persist profile picture:', err);
+    }
+
     setEditingMember(null);
     setNewPhotoUrl('');
   };
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>, target: 'member' | 'hero') => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'member' | 'hero') => {
+    if (!isAdmin) return;
     const file = e.target.files?.[0];
     if (!file) return;
 
     const reader = new FileReader();
-    reader.onload = (event) => {
+    reader.onload = async (event) => {
       const dataUrl = event.target?.result as string;
       if (dataUrl) {
         if (target === 'hero') {
@@ -98,9 +133,27 @@ export const HomePage: React.FC<HomePageProps> = ({
           } catch {
             // ignore quota
           }
+          try {
+            await fetch('/api/site-settings', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ familyHeroPhoto: dataUrl })
+            });
+          } catch (err) {
+            console.error('Failed to persist family hero photo:', err);
+          }
           setIsEditingHeroPhoto(false);
         } else if (editingMember) {
           setFamilyMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, avatar: dataUrl } : m));
+          try {
+            await fetch(`/api/family/${editingMember.id}`, {
+              method: 'PUT',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ avatar: dataUrl })
+            });
+          } catch (err) {
+            console.error('Failed to persist profile photo:', err);
+          }
           setEditingMember(null);
         }
       }
@@ -562,14 +615,16 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <div className="text-white text-sm font-bold">Joannie, Barton & Baby Henri</div>
                       <div className="text-stone-300 text-[11px]">{isFr ? 'Plage de galets de Terre-Neuve, août 2026' : 'Newfoundland pebble coast, August 2026'}</div>
                     </div>
-                    <button
-                      onClick={() => setIsEditingHeroPhoto(true)}
-                      className="px-2.5 py-1.5 bg-white/20 backdrop-blur-md hover:bg-blue-900 text-white rounded-xl text-xs flex items-center gap-1 shadow transition cursor-pointer"
-                      title="Change or upload family photo"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span className="hidden sm:inline">{isFr ? 'Changer la photo' : 'Change Photo'}</span>
-                    </button>
+                    {isAdmin && (
+                      <button
+                        onClick={() => setIsEditingHeroPhoto(true)}
+                        className="px-2.5 py-1.5 bg-white/20 backdrop-blur-md hover:bg-blue-900 text-white rounded-xl text-xs flex items-center gap-1 shadow transition cursor-pointer"
+                        title="Change or upload family photo"
+                      >
+                        <Upload className="w-3.5 h-3.5" />
+                        <span className="hidden sm:inline">{isFr ? 'Changer la photo' : 'Change Photo'}</span>
+                      </button>
+                    )}
                   </div>
                 </div>
               </div>
@@ -606,13 +661,15 @@ export const HomePage: React.FC<HomePageProps> = ({
                         alt={member.name}
                         className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-900/30 shadow-xs"
                       />
-                      <button
-                        onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
-                        title="Update photo"
-                        className="absolute -bottom-1 -right-1 p-1.5 bg-blue-950 hover:bg-blue-900 text-white rounded-lg opacity-85 hover:opacity-100 transition shadow-xs cursor-pointer"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                      </button>
+                      {isAdmin && (
+                        <button
+                          onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
+                          title="Update photo"
+                          className="absolute -bottom-1 -right-1 p-1.5 bg-blue-950 hover:bg-blue-900 text-white rounded-lg opacity-85 hover:opacity-100 transition shadow-xs cursor-pointer"
+                        >
+                          <Camera className="w-3.5 h-3.5" />
+                        </button>
+                      )}
                     </div>
                     <div>
                       <h4 className="text-lg font-bold text-slate-900">{member.name}</h4>
@@ -632,15 +689,17 @@ export const HomePage: React.FC<HomePageProps> = ({
                   )}
                 </div>
 
-                <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
-                  <button
-                    onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
-                    className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1 cursor-pointer"
-                  >
-                    <Upload className="w-3 h-3" />
-                    <span>{isFr ? 'Mettre à jour la photo' : 'Update Picture'}</span>
-                  </button>
-                </div>
+                {isAdmin && (
+                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                    <button
+                      onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
+                      className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <Upload className="w-3 h-3" />
+                      <span>{isFr ? 'Mettre à jour la photo' : 'Update Picture'}</span>
+                    </button>
+                  </div>
+                )}
               </div>
             ))}
           </div>
