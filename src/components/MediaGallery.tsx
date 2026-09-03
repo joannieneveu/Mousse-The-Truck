@@ -175,7 +175,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     if (!activeMedia || !commentInput.trim()) return;
 
     setIsPostingComment(true);
-    const author = currentUser ? currentUser.name : (guestName.trim() || 'Guest Follower');
+    const author = guestName.trim() || (currentUser ? currentUser.name : 'Guest Friend');
     const content = commentInput.trim();
 
     try {
@@ -206,7 +206,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
       targetType: 'media',
       authorName: author,
       content,
-      createdAt: new Date().toISOString(),
+      createdAt: 'Just now',
       likes: 0
     };
     setMediaComments(prev => [localComment, ...prev]);
@@ -666,12 +666,25 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                 </div>
               </div>
 
-              <div className="p-5 pt-0 flex flex-wrap gap-1 font-sans">
-                {item.tags.slice(0, 3).map((tag, idx) => (
-                  <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
-                    #{tag}
-                  </span>
-                ))}
+              <div className="p-5 pt-0 space-y-3 font-sans">
+                <div className="flex flex-wrap gap-1">
+                  {item.tags.slice(0, 3).map((tag, idx) => (
+                    <span key={idx} className="text-[10px] px-2 py-0.5 rounded-full bg-stone-100 text-stone-600">
+                      #{tag}
+                    </span>
+                  ))}
+                </div>
+
+                <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-xs">
+                  <button
+                    onClick={() => setActiveMedia(item)}
+                    className="inline-flex items-center gap-1.5 text-blue-900 hover:text-blue-950 font-semibold text-xs transition"
+                  >
+                    <MessageSquare className="w-3.5 h-3.5" />
+                    <span>Leave a comment</span>
+                  </button>
+                  <span className="text-[11px] text-stone-400">Click photo to view & comment</span>
+                </div>
               </div>
             </div>
           );
@@ -856,7 +869,7 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
         >
           <div 
             onClick={(e) => e.stopPropagation()}
-            className="bg-[#FAF8F5] border border-stone-200 rounded-3xl max-w-4xl w-full overflow-hidden shadow-2xl space-y-4 p-6 font-sans"
+            className="bg-[#FAF8F5] border border-stone-200 rounded-3xl max-w-4xl w-full max-h-[92vh] overflow-y-auto shadow-2xl space-y-4 p-6 font-sans"
           >
             <div className="relative aspect-video rounded-2xl overflow-hidden bg-stone-900">
               <img
@@ -931,36 +944,44 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
               </div>
 
               {/* Add Comment Form */}
-              <form onSubmit={handlePostMediaComment} className="bg-white border border-stone-200 rounded-2xl p-3.5 space-y-2.5 shadow-xs">
-                {!currentUser && (
+              <form onSubmit={handlePostMediaComment} className="bg-white border border-stone-200 rounded-2xl p-4 space-y-3 shadow-xs">
+                <div className="grid grid-cols-1 gap-2.5">
                   <div>
+                    <label className="block font-semibold text-stone-700 mb-1 text-[11px]">
+                      Your Name <span className="text-rose-500">*</span>
+                    </label>
                     <input
                       type="text"
+                      required
                       value={guestName}
                       onChange={(e) => setGuestName(e.target.value)}
-                      placeholder="Your Name (e.g. Grandma, Friend from MUN)"
-                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-1.5 text-xs text-stone-900 focus:outline-none focus:border-blue-900"
+                      placeholder="e.g. Grandma Sarah, Riley, Cousin David"
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3 py-2 text-xs text-stone-900 focus:outline-none focus:border-blue-900"
                     />
                   </div>
-                )}
-                <div>
-                  <textarea
-                    rows={2}
-                    required
-                    value={commentInput}
-                    onChange={(e) => setCommentInput(e.target.value)}
-                    placeholder="Leave a comment or question about this photo..."
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs text-stone-900 focus:outline-none focus:border-blue-900"
-                  />
+                  <div>
+                    <label className="block font-semibold text-stone-700 mb-1 text-[11px]">
+                      Your Comment <span className="text-rose-500">*</span>
+                    </label>
+                    <textarea
+                      rows={2}
+                      required
+                      value={commentInput}
+                      onChange={(e) => setCommentInput(e.target.value)}
+                      placeholder="Leave a comment or question about this photo..."
+                      className="w-full bg-stone-50 border border-stone-200 rounded-xl p-2.5 text-xs text-stone-900 focus:outline-none focus:border-blue-900"
+                    />
+                  </div>
                 </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-stone-500 text-[11px]">
-                    Posting as: <strong className="text-stone-800">{currentUser ? currentUser.name : (guestName || 'Guest')}</strong>
+
+                <div className="flex items-center justify-between text-xs pt-1">
+                  <span className="text-stone-400 text-[11px]">
+                    {guestName.trim() ? `Posting as: ${guestName.trim()}` : 'No login required'}
                   </span>
                   <button
                     type="submit"
-                    disabled={isPostingComment || !commentInput.trim()}
-                    className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition shadow-xs disabled:opacity-50"
+                    disabled={isPostingComment || !commentInput.trim() || !guestName.trim()}
+                    className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-4 py-2 rounded-xl text-xs flex items-center gap-1.5 transition shadow-xs disabled:opacity-50 cursor-pointer"
                   >
                     <Send className="w-3 h-3" />
                     <span>Post Comment</span>

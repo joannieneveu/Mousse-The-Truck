@@ -209,6 +209,9 @@ function AppContent() {
       if (data.liveLocation) {
         setLiveLocation(data.liveLocation);
       }
+      if (Array.isArray(data.mediaItems)) {
+        setMediaItems(data.mediaItems);
+      }
     } catch (err) {
       // Fallback for static hosting / GitHub Pages
     }
@@ -237,6 +240,26 @@ function AppContent() {
       };
       setTravelLogs(prev => [fallbackLog, ...prev]);
       setSelectedLog(fallbackLog);
+
+      // In fallback, also ensure gallery photos are visible in media gallery
+      if (fallbackLog.gallery && fallbackLog.gallery.length > 0) {
+        const newMediaFromLog: MediaItem[] = fallbackLog.gallery.map((g, i) => ({
+          id: `media-log-${fallbackLog.id}-${i}`,
+          type: g.type || 'image',
+          url: g.url,
+          title: g.caption ? g.caption.split(':')[0].substring(0, 45) : fallbackLog.title,
+          caption: g.caption,
+          locationName: fallbackLog.locationName,
+          coordinates: fallbackLog.coordinates,
+          date: fallbackLog.date,
+          tags: Array.from(new Set([...fallbackLog.tags, 'Journal'])),
+          author: fallbackLog.author,
+          journeyLeg: fallbackLog.journeyLeg,
+          likesCount: 0,
+          commentsCount: 0
+        }));
+        setMediaItems(prev => [...newMediaFromLog, ...prev]);
+      }
     }
   };
 
@@ -573,6 +596,9 @@ function AppContent() {
         body: JSON.stringify(updatedFields)
       });
       const data = await res.json();
+      if (Array.isArray(data.mediaItems)) {
+        setMediaItems(data.mediaItems);
+      }
       if (Array.isArray(data.travelLogs)) {
         setTravelLogs(data.travelLogs);
         const match = data.travelLogs.find((l: TravelLog) => l.id === logId);
@@ -706,6 +732,10 @@ function AppContent() {
               onUpdateLog={handleUpdateLog}
               onUploadMedia={handleUploadMedia}
               onUploadBatchMedia={handleUploadBatchMedia}
+              onOpenMediaGallery={() => {
+                setActiveTab('gallery');
+                window.scrollTo({ top: 0, behavior: 'smooth' });
+              }}
             />
           ) : (
             <TravelLogList

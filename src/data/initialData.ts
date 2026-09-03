@@ -26,7 +26,7 @@ export const ADMIN_USERS: UserProfile[] = [
   {
     id: 'user_barton',
     name: 'Barton Thiessen',
-    email: 'barton.bilingual@alumni.harvard.edu',
+    email: 'barton@mun.ca',
     role: 'expedition_leader',
     roleLabel: 'Barton Thiessen (Expedition Leader & Driver)',
     avatar: '/Barton.jpeg',
@@ -39,7 +39,6 @@ export const ADMIN_USERS: UserProfile[] = [
 export const ADMIN_EMAILS: string[] = [
   'joannieneveu@gmail.com',
   'joannie@mun.ca',
-  'barton.bilingual@alumni.harvard.edu',
   'barton@mun.ca'
 ];
 
@@ -384,26 +383,6 @@ And somehow, we’re only a few days in.`,
         url: "/Henri's spot.jpeg",
         caption: 'Henri cozied up in his custom truck cot inside Mousse.',
         type: 'image'
-      },
-      {
-        url: '/Family.jpeg',
-        caption: 'Family travel moments with baby Henri exploring the Canadian North.',
-        type: 'image'
-      },
-      {
-        url: '/departure.jpeg',
-        caption: 'Expedition crew rolling through northern BC and into the Yukon Territory.',
-        type: 'image'
-      },
-      {
-        url: '/Mousse1.jpeg',
-        caption: 'Mousse in the Garage, waiting for us to pick it up at Wilderness Van',
-        type: 'image'
-      },
-      {
-        url: '/Runner.jpeg',
-        caption: 'Trail stops and fresh mountain air along the Alaska Highway corridor.',
-        type: 'image'
       }
     ],
     metrics: {
@@ -459,18 +438,13 @@ From here, our compass points north up the Alaska Highway and Dempster Highway t
         type: 'image'
       },
       {
-        url: '/lethbridge_departure.jpg',
-        caption: 'Graphic Landscape: Overland expedition rig Mousse departing Lethbridge into the Alberta big sky sunrise.',
+        url: '/moussesunset.jpeg',
+        caption: 'Mousse at golden hour sunset on the Alberta foothills as our 35,000 km expedition begins.',
         type: 'image'
       },
       {
         url: '/Mousse1.jpeg',
-        caption: 'Mousse: Our custom moss-green 4x4 overland truck ready for gravel and tundra.',
-        type: 'image'
-      },
-      {
-        url: '/Runner.jpeg',
-        caption: 'Trail running and outdoor exploration on the open road ahead.',
+        caption: 'Mousse in the garage waiting for pickup at Wilderness Van in Alberta.',
         type: 'image'
       }
     ],

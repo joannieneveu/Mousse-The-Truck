@@ -434,3 +434,233 @@ You are receiving this because you subscribed to family updates.
 
   return { html, plainText, defaultSubject };
 }
+
+export function generateWelcomeEmailHtml(options: {
+  subscriberName: string;
+  subscriberEmail: string;
+  appBaseUrl?: string;
+}): { html: string; plainText: string; defaultSubject: string } {
+  const {
+    subscriberName,
+    appBaseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ais-dev-mni42zihstckvgsdpd6pe2-693897229959.us-east1.run.app'
+  } = options;
+
+  const defaultSubject = `🌲 Welcome to Mousse on the Loose Expedition Updates!`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>${defaultSubject}</title>
+  <style>
+    body {
+      margin: 0; padding: 0; background-color: #F5F3EF;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+      color: #1C1917; -webkit-font-smoothing: antialiased;
+    }
+    .wrapper { width: 100%; background-color: #F5F3EF; padding: 30px 15px; }
+    .container {
+      max-width: 620px; margin: 0 auto; background-color: #FFFFFF;
+      border-radius: 20px; overflow: hidden; border: 1px solid #E7E5E0;
+      box-shadow: 0 4px 20px rgba(0, 0, 0, 0.05);
+    }
+    .header-banner {
+      background-color: #1E3A8A;
+      background-image: linear-gradient(135deg, #0F172A 0%, #1E3A8A 100%);
+      color: #FFFFFF; padding: 32px 24px 24px; text-align: center;
+    }
+    .expedition-subtitle {
+      font-size: 11px; letter-spacing: 2px; text-transform: uppercase;
+      font-weight: 700; color: #93C5FD; margin-bottom: 6px;
+    }
+    .expedition-title {
+      font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
+      font-size: 24px; font-weight: 700; margin: 0 0 6px; color: #FFFFFF;
+    }
+    .content-body { padding: 32px 28px; }
+    .welcome-title {
+      font-family: Georgia, Cambria, 'Times New Roman', Times, serif;
+      font-size: 22px; font-weight: 700; color: #0F172A; margin: 0 0 16px;
+    }
+    .paragraph {
+      font-size: 15px; line-height: 1.6; color: #334155; margin: 0 0 16px;
+    }
+    .highlight-card {
+      background-color: #F0FDF4; border: 1px solid #BBF7D0;
+      border-radius: 14px; padding: 18px; margin: 20px 0; color: #166534; font-size: 14px; line-height: 1.5;
+    }
+    .btn {
+      display: inline-block; background-color: #1E3A8A; color: #FFFFFF !important;
+      text-decoration: none; padding: 12px 26px; border-radius: 12px;
+      font-weight: 600; font-size: 14px; margin-top: 10px;
+    }
+    .footer {
+      background-color: #FAFAF9; padding: 24px 28px;
+      text-align: center; font-size: 12px; color: #78716C; border-top: 1px solid #E7E5E0;
+    }
+  </style>
+</head>
+<body>
+  <div class="wrapper">
+    <div class="container">
+      <div class="header-banner">
+        <div class="expedition-subtitle">Overland Sabbatical 2026–2027</div>
+        <h1 class="expedition-title">Mousse on the Loose</h1>
+        <p style="font-size: 13px; color: #BFDBFE; margin: 0;">Arctic Ocean ➔ Ushuaia, Argentina • 35,000 km</p>
+      </div>
+
+      <div class="content-body">
+        <h2 class="welcome-title">Welcome to our circle, ${subscriberName}! 🌲</h2>
+        
+        <p class="paragraph">
+          Thank you for joining our expedition journal circle! We are thrilled to share our 35,000-kilometer overland sabbatical adventure across the Americas with you.
+        </p>
+
+        <div class="highlight-card">
+          <strong>🍼 Who's on board:</strong><br>
+          • <strong>Joannie Neveu</strong> (Physician, Runner, Snowboarder, Aspiring Kitesurfer & Mom)<br>
+          • <strong>Barton Thiessen</strong> (Physician, Skier, Expedition Driver, Dad & MBA Student)<br>
+          • <strong>Baby Henri</strong> (Born June 2026, exploring from his custom truck cot!)<br>
+          • <strong>Mousse</strong> (Our custom 2026 Ford F-550 4-Season Overland Habitat)
+        </div>
+
+        <p class="paragraph">
+          Whenever we reach major waypoints, publish new journal chapters, post new photo albums, or share updates from the road (currently journeying through the Yukon and Dempster Highway), you will receive a personal dispatch directly in your inbox.
+        </p>
+
+        <p class="paragraph">
+          You can also visit the live interactive map at any time to see our live GPS coordinates, check out the photo galleries, or leave campfire comments for us:
+        </p>
+
+        <div style="text-align: center; margin: 24px 0;">
+          <a href="${appBaseUrl}" class="btn">Explore Live Expedition Website ➔</a>
+        </div>
+      </div>
+
+      <div class="footer">
+        <div style="font-weight: 700; color: #1E293B; margin-bottom: 6px;">
+          With love from the road,<br>
+          Joannie, Barton, baby Henri & Mousse 🐾
+        </div>
+        <p style="margin: 0; font-size: 11px; color: #A8A29E;">
+          Follow our daily stories on Instagram: <a href="https://www.instagram.com/moussethetruck/" style="color: #EA580C;">@moussethetruck</a>
+        </p>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+
+  const plainText = `
+================================================================================
+                    MOUSSE ON THE LOOSE EXPEDITION UPDATES
+================================================================================
+
+Welcome to our journal circle, ${subscriberName}!
+
+Thank you for subscribing to our overland sabbatical journey from the Arctic Ocean
+to Ushuaia, Argentina (35,000+ km) in our 2026 Ford F550 rig, "Mousse".
+
+Who's on board:
+• Joannie Neveu (Physician, Runner, Snowboarder & Mom)
+• Barton Thiessen (Physician, Skier, Expedition Driver & MBA Student)
+• Baby Henri (Born June 2026, traveling in his custom truck cot)
+• Mousse (Our 4-Season Overland Habitat)
+
+You will automatically receive email updates whenever we publish new journal entries,
+share photo dispatches, or reach key milestones along the road.
+
+Visit our live interactive map & journal anytime:
+👉 ${appBaseUrl}
+
+With love from the road,
+Joannie, Barton, baby Henri & Mousse 🐾
+Instagram: @moussethetruck
+================================================================================
+  `.trim();
+
+  return { html, plainText, defaultSubject };
+}
+
+export function generateAdminNotificationEmailHtml(options: {
+  subscriberName: string;
+  subscriberEmail: string;
+  relationshipNote?: string;
+  totalSubscribersCount: number;
+  appBaseUrl?: string;
+}): { html: string; plainText: string; defaultSubject: string } {
+  const {
+    subscriberName,
+    subscriberEmail,
+    relationshipNote,
+    totalSubscribersCount,
+    appBaseUrl = typeof window !== 'undefined' ? window.location.origin : 'https://ais-dev-mni42zihstckvgsdpd6pe2-693897229959.us-east1.run.app'
+  } = options;
+
+  const defaultSubject = `🔔 New Expedition Subscriber: ${subscriberName} (${subscriberEmail})`;
+
+  const html = `
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>${defaultSubject}</title>
+</head>
+<body style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; background-color: #F8FAFC; padding: 24px; color: #1E293B;">
+  <div style="max-width: 540px; margin: 0 auto; background: #FFFFFF; border: 1px solid #E2E8F0; border-radius: 16px; padding: 24px; box-shadow: 0 4px 12px rgba(0,0,0,0.05);">
+    <div style="background: #1E3A8A; color: white; padding: 12px 18px; border-radius: 10px; margin-bottom: 18px;">
+      <h2 style="margin: 0; font-size: 18px;">🔔 New Expedition Subscriber Alert</h2>
+    </div>
+
+    <p style="font-size: 15px; margin-top: 0;">
+      Hi Joannie & Barton, someone just subscribed to your expedition updates on <strong>Mousse on the Loose</strong>!
+    </p>
+
+    <div style="background: #F1F5F9; border-radius: 12px; padding: 16px; margin: 16px 0; font-size: 14px; line-height: 1.6;">
+      <div><strong>👤 Name:</strong> ${subscriberName}</div>
+      <div><strong>✉️ Email:</strong> <a href="mailto:${subscriberEmail}">${subscriberEmail}</a></div>
+      <div><strong>💬 Note:</strong> ${relationshipNote || 'No custom note provided'}</div>
+      <div><strong>📊 Total Circle:</strong> ${totalSubscribersCount} subscribers enrolled</div>
+      <div><strong>🕒 Timestamp:</strong> ${new Date().toLocaleString()}</div>
+    </div>
+
+    <p style="font-size: 13px; color: #64748B;">
+      A welcome email has been generated and queued for this subscriber. They will automatically receive your next journal broadcast.
+    </p>
+
+    <div style="text-align: center; margin-top: 20px;">
+      <a href="${appBaseUrl}" style="display: inline-block; background: #1E3A8A; color: white; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-size: 13px; font-weight: 600;">
+        Open Admin Dashboard
+      </a>
+    </div>
+  </div>
+</body>
+</html>
+  `.trim();
+
+  const plainText = `
+================================================================================
+                    NEW SUBSCRIBER NOTIFICATION
+================================================================================
+
+Hi Joannie & Barton,
+
+A new follower just subscribed to receive updates from Mousse on the Loose!
+
+• Name: ${subscriberName}
+• Email: ${subscriberEmail}
+• Note: ${relationshipNote || 'Friend / Follower'}
+• Total Subscribers: ${totalSubscribersCount}
+• Timestamp: ${new Date().toLocaleString()}
+
+They are enrolled to receive your expedition updates and journal broadcasts.
+
+Manage subscribers: ${appBaseUrl}
+================================================================================
+  `.trim();
+
+  return { html, plainText, defaultSubject };
+}

@@ -635,69 +635,92 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         {/* The Sabbatical Crew on the Road */}
         <div className="space-y-6">
-          <div>
-            <h3 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
-              <Truck className="w-6 h-6 text-blue-900" />
-              {isFr ? 'Sur la route : Le trio de l\'expédition à plein temps' : 'On the Road: The Full-Time Expedition Trio'}
-            </h3>
-            <p className="text-xs sm:text-sm text-stone-600 mt-1">
-              {isFr
-                ? 'Joannie, Barton et bébé Henri voyageant à plein temps dans notre camion 4x4 tout-terrain personnalisé.'
-                : 'Joannie, Barton, and baby Henri traveling full-time in our custom 4x4 overland truck.'}
-            </p>
+          <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-2">
+            <div>
+              <h3 className="text-2xl font-bold text-slate-900 flex items-center gap-2">
+                <Truck className="w-6 h-6 text-blue-900" />
+                {isFr ? 'Sur la route : Le trio de l\'expédition à plein temps' : 'On the Road: The Full-Time Expedition Trio'}
+              </h3>
+              <p className="text-xs sm:text-sm text-stone-600 mt-1">
+                {isFr
+                  ? 'Joannie, Barton et bébé Henri voyageant à plein temps dans notre camion 4x4 tout-terrain personnalisé.'
+                  : 'Joannie, Barton, and baby Henri traveling full-time in our custom 4x4 overland truck.'}
+              </p>
+            </div>
+            <div className="text-xs font-medium text-stone-500 bg-stone-100 px-3 py-1.5 rounded-full self-start sm:self-auto">
+              3 Full-Time Overlanders
+            </div>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6 lg:gap-8">
             {onTripMembers.map((member) => (
               <div
                 key={member.id}
-                className="bg-white border border-stone-200 rounded-3xl p-6 shadow-xs space-y-4 flex flex-col justify-between hover:shadow-md transition"
+                className="bg-white border border-stone-200 rounded-3xl p-5 shadow-xs flex flex-col justify-between hover:shadow-lg transition-all duration-300 group"
               >
                 <div className="space-y-4">
-                  <div className="flex items-center gap-4">
-                    <div className="relative group">
-                      <img
-                        src={member.avatar}
-                        alt={member.name}
-                        className="w-16 h-16 rounded-2xl object-cover border-2 border-blue-900/30 shadow-xs"
-                      />
-                      {isAdmin && (
-                        <button
-                          onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
-                          title="Update photo"
-                          className="absolute -bottom-1 -right-1 p-1.5 bg-blue-950 hover:bg-blue-900 text-white rounded-lg opacity-85 hover:opacity-100 transition shadow-xs cursor-pointer"
-                        >
-                          <Camera className="w-3.5 h-3.5" />
-                        </button>
-                      )}
+                  {/* Large High-Impact Portrait Frame */}
+                  <div className="relative w-full h-72 sm:h-80 rounded-2xl overflow-hidden bg-stone-100 border border-stone-200 shadow-xs">
+                    <img
+                      src={member.avatar}
+                      alt={member.name}
+                      className="w-full h-full object-cover object-center group-hover:scale-105 transition-transform duration-500"
+                      referrerPolicy="no-referrer"
+                    />
+                    
+                    {/* Subtle Gradient & Name/Role Pill on Image */}
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/60 via-transparent to-transparent opacity-80 group-hover:opacity-90 transition-opacity" />
+                    
+                    <div className="absolute bottom-3 left-3 right-3 text-white">
+                      <h4 className="text-xl font-serif font-bold tracking-tight drop-shadow-sm">
+                        {member.name}
+                      </h4>
+                      <p className="text-xs text-stone-200 font-medium line-clamp-1 drop-shadow-xs">
+                        {member.relation}
+                      </p>
                     </div>
-                    <div>
-                      <h4 className="text-lg font-bold text-slate-900">{member.name}</h4>
-                      <div className="text-xs font-semibold text-blue-900">{member.relation}</div>
-                    </div>
+
+                    {isAdmin && (
+                      <button
+                        onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
+                        title="Update portrait photo"
+                        className="absolute top-3 right-3 px-3 py-1.5 bg-black/60 hover:bg-blue-900 text-white rounded-xl backdrop-blur-md text-xs font-medium flex items-center gap-1.5 shadow-md transition cursor-pointer"
+                      >
+                        <Camera className="w-3.5 h-3.5" />
+                        <span>{isFr ? 'Changer' : 'Change Photo'}</span>
+                      </button>
+                    )}
                   </div>
 
-                  <p className="text-xs text-stone-600 leading-relaxed font-normal">
-                    {member.bio}
-                  </p>
-
-                  {member.detailNote && (
-                    <div className="bg-[#FAF8F5] border border-stone-200 rounded-xl p-2.5 text-[11px] text-stone-700">
-                      <span className="font-semibold text-slate-900">{isFr ? 'Statut : ' : 'Status: '}</span>
-                      {member.detailNote}
+                  {/* Bio & Details */}
+                  <div className="space-y-2.5 px-1">
+                    <div className="text-xs font-semibold text-blue-900 uppercase tracking-wider">
+                      {member.relation}
                     </div>
-                  )}
+
+                    <p className="text-xs text-stone-600 leading-relaxed font-normal">
+                      {member.bio}
+                    </p>
+
+                    {member.detailNote && (
+                      <div className="bg-[#FAF8F5] border border-stone-200/80 rounded-xl p-2.5 text-[11px] text-stone-700 font-medium">
+                        <span className="font-semibold text-slate-900">{isFr ? 'Statut : ' : 'Status: '}</span>
+                        {member.detailNote}
+                      </div>
+                    )}
+                  </div>
                 </div>
 
                 {isAdmin && (
-                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px]">
+                  <div className="pt-3 mt-4 border-t border-stone-100 flex items-center justify-between text-[11px] px-1">
                     <button
                       onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
                       className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1 cursor-pointer"
                     >
-                      <Upload className="w-3 h-3" />
-                      <span>{isFr ? 'Mettre à jour la photo' : 'Update Picture'}</span>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>{isFr ? 'Mettre à jour la photo' : 'Upload New Portrait'}</span>
                     </button>
+                    <span className="text-[10px] text-stone-400">Admin Control</span>
                   </div>
                 )}
               </div>

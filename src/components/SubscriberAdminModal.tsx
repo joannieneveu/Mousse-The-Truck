@@ -236,6 +236,26 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
                 </div>
 
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
+                  <button
+                    onClick={async () => {
+                      try {
+                        const res = await fetch(`/api/subscribers/${sub.id}/send-welcome`, {
+                          method: 'POST',
+                          headers: { 'x-user-role': 'admin' }
+                        });
+                        const data = await res.json();
+                        alert(data.message || `Welcome email sent to ${sub.email}`);
+                      } catch (err) {
+                        alert('Could not send email: ' + String(err));
+                      }
+                    }}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
+                    title="Send / Re-send Welcome Email"
+                  >
+                    <Mail className="w-3.5 h-3.5" />
+                    <span>Send Welcome</span>
+                  </button>
+
                   {sub.status === 'pending' && (
                     <button
                       onClick={() => handleApprove(sub.id)}

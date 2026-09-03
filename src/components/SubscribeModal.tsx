@@ -84,19 +84,19 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
             <div className="w-14 h-14 rounded-2xl bg-emerald-100 text-emerald-800 mx-auto flex items-center justify-center shadow-sm">
               <Check className="w-7 h-7" />
             </div>
-            <h3 className="text-xl font-serif font-bold text-stone-900">Request Received</h3>
-            <p className="text-xs text-stone-600 max-w-sm mx-auto leading-relaxed">
+            <h3 className="text-xl font-serif font-bold text-stone-900">You're Subscribed! 🎉</h3>
+            <p className="text-xs text-stone-700 max-w-sm mx-auto leading-relaxed">
               {submittedMessage}
             </p>
-            <div className="p-3 bg-stone-100 rounded-xl text-stone-600 text-xs flex items-center justify-center gap-2 border border-stone-200">
-              <Lock className="w-3.5 h-3.5 text-stone-500" />
-              <span>Approved subscribers receive updates when new journal entries are published.</span>
+            <div className="p-3 bg-emerald-50 rounded-xl text-emerald-900 text-xs flex items-center justify-center gap-2 border border-emerald-200">
+              <Mail className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+              <span>A welcome email confirmation has been sent to your inbox.</span>
             </div>
             <button
               onClick={onClose}
-              className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-6 py-2.5 rounded-xl text-xs shadow-sm transition"
+              className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-6 py-2.5 rounded-xl text-xs shadow-sm transition cursor-pointer"
             >
-              Close
+              Continue Exploring
             </button>
           </div>
         ) : (
@@ -105,10 +105,10 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
             <div className="p-3.5 bg-blue-50/80 border border-blue-200/80 rounded-2xl text-blue-950 leading-relaxed space-y-1">
               <div className="font-semibold flex items-center gap-1.5 text-[11px] uppercase tracking-wider text-blue-900">
                 <ShieldCheck className="w-4 h-4 text-blue-900" />
-                <span>Private Family & Friends Circle</span>
+                <span>Expedition Email Dispatches</span>
               </div>
               <p className="text-[11px] text-blue-900/90">
-                To keep our sabbatical updates personal, new subscription requests are approved by Joannie or Barton before updates are sent.
+                Subscribe to receive personal email updates, photo albums, and road stories from Joannie & Barton as we journey 35,000 km across the Americas with baby Henri in Mousse.
               </p>
             </div>
 

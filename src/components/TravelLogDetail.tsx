@@ -60,6 +60,7 @@ interface TravelLogDetailProps {
   onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<void>;
   onUploadMedia?: (newMedia: Partial<MediaItem>) => Promise<void>;
   onUploadBatchMedia?: (items: Partial<MediaItem>[]) => Promise<void>;
+  onOpenMediaGallery?: () => void;
 }
 
 export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
@@ -72,7 +73,8 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   onDeleteLog,
   onUpdateLog,
   onUploadMedia,
-  onUploadBatchMedia
+  onUploadBatchMedia,
+  onOpenMediaGallery
 }) => {
   const [likes, setLikes] = useState<number>(log.likesCount || 14);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
@@ -81,7 +83,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [commentText, setCommentText] = useState<string>('');
-  const [authorName, setAuthorName] = useState<string>('');
+  const [authorName, setAuthorName] = useState<string>(currentUser?.name || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
 
@@ -101,7 +103,85 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [isSavingCaption, setIsSavingCaption] = useState<boolean>(false);
   const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
 
+  // Photo comments in lightbox
+  const [photoComments, setPhotoComments] = useState<CommentItem[]>([]);
+  const [photoCommentText, setPhotoCommentText] = useState<string>('');
+  const [photoGuestName, setPhotoGuestName] = useState<string>(currentUser?.name || '');
+  const [isPostingPhotoComment, setIsPostingPhotoComment] = useState<boolean>(false);
+
   const galleryList = log.gallery || [];
+
+  const currentPhotoTargetId = activeLightboxIdx !== null && galleryList[activeLightboxIdx]
+    ? (galleryList[activeLightboxIdx].url || `${log.id}_photo_${activeLightboxIdx}`)
+    : null;
+
+  useEffect(() => {
+    if (currentPhotoTargetId) {
+      fetch(`/api/comments?targetId=${encodeURIComponent(currentPhotoTargetId)}`)
+        .then(res => res.json())
+        .then(data => {
+          if (Array.isArray(data)) setPhotoComments(data);
+        })
+        .catch(() => setPhotoComments([]));
+    } else {
+      setPhotoComments([]);
+    }
+  }, [currentPhotoTargetId]);
+
+  const handlePostPhotoComment = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!currentPhotoTargetId || !photoCommentText.trim()) return;
+
+    setIsPostingPhotoComment(true);
+    const author = photoGuestName.trim() || (currentUser ? currentUser.name : 'Guest Friend');
+    const content = photoCommentText.trim();
+
+    try {
+      const res = await fetch('/api/comments', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          targetId: currentPhotoTargetId,
+          targetType: 'media',
+          content,
+          authorName: author
+        })
+      });
+      const data = await res.json();
+      if (data.success && data.comment) {
+        setPhotoComments(prev => [data.comment, ...prev]);
+        setPhotoCommentText('');
+        setIsPostingPhotoComment(false);
+        return;
+      }
+    } catch (err) {
+      // fallback
+    }
+
+    const localComment: CommentItem = {
+      id: `comment-photo-${Date.now()}`,
+      targetId: currentPhotoTargetId,
+      targetType: 'media',
+      authorName: author,
+      content,
+      createdAt: 'Just now',
+      likes: 0
+    };
+    setPhotoComments(prev => [localComment, ...prev]);
+    setPhotoCommentText('');
+    setIsPostingPhotoComment(false);
+  };
+
+  const handleDeletePhotoComment = async (commentId: string) => {
+    if (window.confirm('Remove this comment as administrator?')) {
+      try {
+        await fetch(`/api/comments/${commentId}`, { method: 'DELETE' });
+      } catch (err) {
+        // fallback
+      }
+      setPhotoComments(prev => prev.filter(c => c.id !== commentId));
+    }
+  };
 
   // Fetch comments for this log
   useEffect(() => {
@@ -163,7 +243,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     if (!commentText.trim()) return;
 
     setIsSubmitting(true);
-    const author = currentUser ? currentUser.name : (authorName.trim() || 'Guest Follower');
+    const author = authorName.trim() || (currentUser ? currentUser.name : 'Guest Friend');
     const content = commentText.trim();
 
     try {
@@ -182,6 +262,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       if (data.success && data.comment) {
         setComments(prev => [data.comment, ...prev]);
         setCommentText('');
+        setIsSubmitting(false);
         return;
       }
     } catch (err) {
@@ -194,7 +275,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       targetType: 'log',
       authorName: author,
       content,
-      createdAt: new Date().toISOString(),
+      createdAt: 'Just now',
       likes: 0
     };
     setComments(prev => [localComment, ...prev]);
@@ -677,43 +758,71 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                 <ImageIcon className="w-4 h-4" />
               </div>
               <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
-                Expedition Photos & Visual Memories
+                Photos from this Journal Entry
               </h3>
             </div>
-            <p className="text-xs text-stone-500 mt-0.5">
-              {galleryList.length > 0
-                ? `${galleryList.length} photograph${galleryList.length > 1 ? 's' : ''} captured during this expedition milestone`
-                : 'Photographs from this expedition leg'}
-            </p>
+            <div className="flex flex-wrap items-center gap-2 text-xs text-stone-500 mt-1">
+              <span>
+                {galleryList.length > 0
+                  ? `${galleryList.length} photograph${galleryList.length > 1 ? 's' : ''} related directly to this entry`
+                  : 'Photographs related to this entry'}
+              </span>
+              {onOpenMediaGallery && (
+                <>
+                  <span className="text-stone-300">•</span>
+                  <button
+                    type="button"
+                    onClick={onOpenMediaGallery}
+                    className="text-blue-900 hover:text-blue-950 font-medium underline underline-offset-2 flex items-center gap-1 transition"
+                  >
+                    <span>Also catalogued in Photo & Video Gallery →</span>
+                  </button>
+                </>
+              )}
+            </div>
           </div>
 
           {/* Admin Upload Triggers */}
-          {currentUser?.isAdmin && (
-            <div className="flex items-center gap-2">
-              <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
-                <FolderOpen className="w-3.5 h-3.5" />
-                <span>Upload From iPhoto / Files</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={(e) => {
-                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                  }}
-                  className="hidden"
-                />
-              </label>
-
+          <div className="flex flex-wrap items-center gap-2">
+            {onOpenMediaGallery && (
               <button
                 type="button"
-                onClick={() => setIsAddPhotoModalOpen(true)}
-                className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
+                onClick={onOpenMediaGallery}
+                className="bg-stone-100 hover:bg-stone-200 text-stone-700 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 border border-stone-200 shadow-2xs transition"
               >
-                <Plus className="w-3.5 h-3.5" />
-                <span>Add Photo / URL</span>
+                <Layers className="w-3.5 h-3.5 text-stone-500" />
+                <span className="hidden sm:inline">Open Global Media Gallery</span>
+                <span className="sm:hidden">Gallery</span>
               </button>
-            </div>
-          )}
+            )}
+
+            {currentUser?.isAdmin && (
+              <>
+                <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Upload To This Entry</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={(e) => {
+                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+
+                <button
+                  type="button"
+                  onClick={() => setIsAddPhotoModalOpen(true)}
+                  className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Photo</span>
+                </button>
+              </>
+            )}
+          </div>
         </div>
 
         {/* Success Toast */}
@@ -758,34 +867,44 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                 </div>
 
                 {/* Caption & Controls */}
-                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2 bg-white">
+                <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5 bg-white">
                   <p className="text-xs text-stone-700 font-serif italic leading-relaxed">
                     {item.caption || 'Expedition memory'}
                   </p>
 
-                  {currentUser?.isAdmin && (
-                    <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px] font-sans">
-                      <button
-                        onClick={() => {
-                          setEditingPhotoIdx(idx);
-                          setEditingCaptionText(item.caption || '');
-                        }}
-                        className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                        <span>Edit Caption</span>
-                      </button>
+                  <div className="pt-2 border-t border-stone-100 flex items-center justify-between text-[11px] font-sans">
+                    <button
+                      onClick={() => setActiveLightboxIdx(idx)}
+                      className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1 cursor-pointer"
+                    >
+                      <MessageSquare className="w-3.5 h-3.5" />
+                      <span>Leave a comment</span>
+                    </button>
 
-                      <button
-                        onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
-                        className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
-                        title="Remove photo from this entry"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Remove</span>
-                      </button>
-                    </div>
-                  )}
+                    {currentUser?.isAdmin && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingPhotoIdx(idx);
+                            setEditingCaptionText(item.caption || '');
+                          }}
+                          className="text-stone-600 hover:text-blue-900 font-medium flex items-center gap-1"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
+
+                        <button
+                          onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
+                          className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
+                          title="Remove photo from this entry"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    )}
+                  </div>
                 </div>
               </div>
             ))}
@@ -934,53 +1053,60 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </div>
 
         {/* Post Comment Form */}
-        <form onSubmit={handlePostComment} className="bg-white border border-stone-200/90 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4">
-          <div className="flex items-center justify-between text-xs text-stone-600">
-            <span>
-              Posting as: <strong className="text-stone-900">{currentUser ? currentUser.name : (authorName || 'Guest Follower')}</strong>
-            </span>
-            {!currentUser && (
-              <button
-                type="button"
-                onClick={onOpenAuthModal}
-                className="text-blue-900 hover:text-blue-950 font-semibold underline text-xs"
-              >
-                Sign In
-              </button>
+        <form onSubmit={handlePostComment} className="bg-white border border-stone-200/90 rounded-3xl p-5 sm:p-6 shadow-xs space-y-4 font-sans">
+          <div className="flex items-center justify-between border-b border-stone-100 pb-3">
+            <div>
+              <h4 className="font-semibold text-stone-900 text-sm">Leave a Note for the Family</h4>
+              <p className="text-[11px] text-stone-500">No sign-in required — write your name and comment below.</p>
+            </div>
+            {authorName.trim() && (
+              <span className="text-[11px] text-emerald-800 bg-emerald-50 border border-emerald-200 px-2.5 py-0.5 rounded-full font-medium">
+                Posting as: <strong>{authorName.trim()}</strong>
+              </span>
             )}
           </div>
 
-          {!currentUser && (
+          <div className="grid grid-cols-1 gap-3.5">
             <div>
+              <label className="block font-semibold text-stone-700 mb-1 text-xs">
+                Your Name <span className="text-rose-500">*</span>
+              </label>
               <input
                 type="text"
+                required
                 value={authorName}
                 onChange={(e) => setAuthorName(e.target.value)}
-                placeholder="Your Name (e.g. Riley, Grandma Sarah, Alex)"
-                className="w-full bg-[#FAF8F5] border border-stone-200 rounded-xl px-3.5 py-2 text-xs text-stone-900 focus:outline-none focus:border-blue-900"
+                placeholder="e.g. Riley, Grandma Sarah, Cousin David, Dr. Chen"
+                className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3.5 py-2.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900"
               />
             </div>
-          )}
 
-          <div>
-            <textarea
-              rows={3}
-              required
-              value={commentText}
-              onChange={(e) => setCommentText(e.target.value)}
-              placeholder="Leave a warm comment for Joannie, Barton, and baby Henri on the road..."
-              className="w-full bg-[#FAF8F5] border border-stone-200 rounded-2xl p-3.5 text-xs text-stone-900 focus:outline-none focus:border-blue-900 font-sans"
-            />
+            <div>
+              <label className="block font-semibold text-stone-700 mb-1 text-xs">
+                Your Comment <span className="text-rose-500">*</span>
+              </label>
+              <textarea
+                rows={3}
+                required
+                value={commentText}
+                onChange={(e) => setCommentText(e.target.value)}
+                placeholder="Leave your cheer, well wishes, or road advice for Joannie, Barton, and baby Henri..."
+                className="w-full bg-[#FAF8F5] border border-stone-300 rounded-2xl p-3.5 text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 font-sans"
+              />
+            </div>
           </div>
 
-          <div className="flex justify-end">
+          <div className="flex items-center justify-between pt-1">
+            <span className="text-[11px] text-stone-400">
+              Comments appear immediately on this journal entry.
+            </span>
             <button
               type="submit"
-              disabled={isSubmitting || !commentText.trim()}
-              className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition disabled:opacity-50"
+              disabled={isSubmitting || !commentText.trim() || !authorName.trim()}
+              className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-xl text-xs flex items-center gap-1.5 shadow-xs transition disabled:opacity-50 cursor-pointer"
             >
               <Send className="w-3.5 h-3.5" />
-              <span>Post Comment</span>
+              <span>{isSubmitting ? 'Posting...' : 'Post Comment'}</span>
             </button>
           </div>
         </form>
@@ -1063,15 +1189,15 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         />
       )}
 
-      {/* 1. PHOTO LIGHTBOX MODAL */}
+      {/* 1. PHOTO LIGHTBOX MODAL WITH BOTTOM COMMENTS */}
       {activeLightboxIdx !== null && galleryList[activeLightboxIdx] && (
         <div 
-          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-center p-4 animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 bg-black/95 backdrop-blur-md flex flex-col items-center justify-start p-4 overflow-y-auto animate-in fade-in duration-200"
           onClick={() => setActiveLightboxIdx(null)}
         >
           {/* Top Bar Controls */}
           <div 
-            className="w-full max-w-5xl flex items-center justify-between text-white pb-3 px-2 z-10"
+            className="w-full max-w-5xl flex items-center justify-between text-white pb-3 px-2 z-10 sticky top-0"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center gap-3">
@@ -1108,13 +1234,13 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
           {/* Main Photo Display */}
           <div 
-            className="relative max-w-5xl max-h-[75vh] w-full flex items-center justify-center"
+            className="relative max-w-5xl max-h-[70vh] w-full flex items-center justify-center my-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <img
               src={galleryList[activeLightboxIdx].url}
               alt={galleryList[activeLightboxIdx].caption || 'Expedition photo'}
-              className="max-h-[72vh] max-w-full object-contain rounded-xl shadow-2xl"
+              className="max-h-[68vh] max-w-full object-contain rounded-xl shadow-2xl"
               referrerPolicy="no-referrer"
             />
 
@@ -1137,15 +1263,93 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
             )}
           </div>
 
-          {/* Bottom Caption in Lightbox */}
-          {galleryList[activeLightboxIdx].caption && (
-            <div 
-              className="w-full max-w-2xl text-center text-stone-200 text-sm font-serif italic pt-3 px-4"
-              onClick={(e) => e.stopPropagation()}
-            >
-              {galleryList[activeLightboxIdx].caption}
+          {/* Bottom Caption & Comments at Bottom of Picture */}
+          <div 
+            className="w-full max-w-3xl space-y-4 pt-4 px-2 pb-8"
+            onClick={(e) => e.stopPropagation()}
+          >
+            {galleryList[activeLightboxIdx].caption && (
+              <div className="text-center text-stone-200 text-sm font-serif italic bg-white/5 py-2.5 px-4 rounded-xl border border-white/10">
+                {galleryList[activeLightboxIdx].caption}
+              </div>
+            )}
+
+            {/* Guest Comment Box on Picture */}
+            <div className="bg-stone-900/90 border border-stone-700/80 rounded-2xl p-4 text-white space-y-3 backdrop-blur-md shadow-xl">
+              <div className="flex items-center justify-between">
+                <h4 className="text-xs font-semibold text-stone-200 flex items-center gap-1.5 font-sans">
+                  <MessageSquare className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Comments on this picture ({photoComments.length})</span>
+                </h4>
+                <span className="text-[10px] text-stone-400 font-sans">
+                  No login required to comment
+                </span>
+              </div>
+
+              {/* Add Comment Form */}
+              <form onSubmit={handlePostPhotoComment} className="space-y-2.5">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <div>
+                    <input
+                      type="text"
+                      required
+                      value={photoGuestName}
+                      onChange={(e) => setPhotoGuestName(e.target.value)}
+                      placeholder="Your Name (e.g. Grandma, Riley)*"
+                      className="w-full bg-stone-800/90 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-stone-400 focus:outline-none focus:border-blue-400 font-sans"
+                    />
+                  </div>
+                  <div>
+                    <input
+                      type="text"
+                      required
+                      value={photoCommentText}
+                      onChange={(e) => setPhotoCommentText(e.target.value)}
+                      placeholder="Your comment on this picture...*"
+                      className="w-full bg-stone-800/90 border border-stone-700 rounded-xl px-3 py-1.5 text-xs text-white placeholder:text-stone-400 focus:outline-none focus:border-blue-400 font-sans"
+                    />
+                  </div>
+                </div>
+
+                <div className="flex items-center justify-end pt-1">
+                  <button
+                    type="submit"
+                    disabled={isPostingPhotoComment || !photoCommentText.trim() || !photoGuestName.trim()}
+                    className="bg-blue-600 hover:bg-blue-500 text-white font-medium px-4 py-1.5 rounded-xl text-xs flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer font-sans"
+                  >
+                    <Send className="w-3 h-3" />
+                    <span>{isPostingPhotoComment ? 'Posting...' : 'Post Comment'}</span>
+                  </button>
+                </div>
+              </form>
+
+              {/* Photo Comments List */}
+              {photoComments.length > 0 && (
+                <div className="space-y-1.5 max-h-40 overflow-y-auto pt-2 border-t border-stone-800">
+                  {photoComments.map((c) => (
+                    <div key={c.id} className="bg-stone-800/70 border border-stone-700/50 rounded-xl p-2.5 text-xs space-y-1">
+                      <div className="flex items-center justify-between text-[10px] text-stone-400">
+                        <span className="font-semibold text-stone-200">{c.authorName}</span>
+                        <div className="flex items-center gap-2">
+                          <span>{c.createdAt}</span>
+                          {currentUser?.isAdmin && (
+                            <button
+                              onClick={() => handleDeletePhotoComment(c.id)}
+                              className="text-stone-400 hover:text-rose-400"
+                              title="Delete comment (Admin)"
+                            >
+                              <Trash2 className="w-3 h-3" />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                      <p className="text-stone-300 text-xs font-sans">{c.content}</p>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       )}
 
