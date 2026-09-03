@@ -17,10 +17,12 @@ import {
   Heart,
   Edit3,
   Trash2,
+  FolderOpen,
   X
 } from 'lucide-react';
 import { RigPhoto, RigSpecCategory } from '../types';
 import { RIG_SPECS_DATA } from '../data/initialData';
+import { readFileAsOptimizedDataUrl, cleanFileNameToTitle } from '../utils/photoDropHelper';
 
 interface RigSpecsProps {
   rigPhotos: RigPhoto[];
@@ -122,16 +124,54 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
     ? rigPhotos 
     : rigPhotos.filter(p => p.category === selectedCategory);
 
+  const [isRigDragging, setIsRigDragging] = useState<boolean>(false);
+
+  const handleRigFileSelect = async (file: File, isForEdit = false) => {
+    try {
+      const dataUrl = await readFileAsOptimizedDataUrl(file);
+      if (isForEdit) {
+        setEditUrl(dataUrl);
+      } else {
+        setUploadUrl(dataUrl);
+        if (!uploadTitle) {
+          setUploadTitle(cleanFileNameToTitle(file.name));
+        }
+      }
+    } catch (err) {
+      console.error('Error processing rig photo file:', err);
+    }
+  };
+
   const handleUploadSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!uploadUrl.trim()) return;
 
     setIsSubmitting(true);
     try {
+      let finalUrl = uploadUrl.trim();
+      if (uploadUrl.startsWith('data:')) {
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              dataUrl: uploadUrl, 
+              title: uploadTitle || 'Rig Photo' 
+            })
+          });
+          const data = await res.json();
+          if (data.success && data.url) {
+            finalUrl = data.url;
+          }
+        } catch (e) {
+          // fallback
+        }
+      }
+
       await onUploadRigPhoto({
         title: uploadTitle.trim() || 'Expedition Rig Photo',
         caption: uploadCaption.trim(),
-        url: uploadUrl.trim(),
+        url: finalUrl,
         category: uploadPhotoCategory
       });
       setUploadTitle('');
@@ -490,17 +530,91 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
                 </select>
               </div>
 
+              {/* File Dropzone or choose file */}
               <div>
                 <label className="block font-semibold text-stone-700 mb-1">
-                  Image URL *
+                  Photo File (Drag & Drop or Choose)
+                </label>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsRigDragging(true);
+                  }}
+                  onDragLeave={() => setIsRigDragging(false)}
+                  onDrop={(e) => {
+                    e.preventDefault();
+                    setIsRigDragging(false);
+                    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+                      handleRigFileSelect(e.dataTransfer.files[0]);
+                    }
+                  }}
+                  className={`border-2 border-dashed rounded-2xl p-4 text-center transition ${
+                    isRigDragging 
+                      ? 'border-blue-900 bg-blue-50/80' 
+                      : 'border-stone-300 bg-white hover:border-stone-400'
+                  }`}
+                >
+                  {uploadUrl ? (
+                    <div className="space-y-2">
+                      <div className="relative inline-block max-h-40 rounded-xl overflow-hidden border border-stone-200 shadow-xs">
+                        <img 
+                          src={uploadUrl} 
+                          alt="Rig Preview" 
+                          className="max-h-36 w-auto object-contain mx-auto"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setUploadUrl('')}
+                          className="absolute top-1.5 right-1.5 p-1 bg-stone-900/80 hover:bg-rose-600 text-white rounded-full transition"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-emerald-700 font-medium flex items-center justify-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Photo loaded
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-1.5 py-2">
+                      <div className="w-9 h-9 mx-auto rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center">
+                        <FolderOpen className="w-4 h-4" />
+                      </div>
+                      <div className="text-stone-700 text-xs">
+                        <span className="font-semibold">Drag & drop photo here</span> or{' '}
+                        <label className="text-blue-900 hover:text-blue-950 font-bold underline cursor-pointer">
+                          browse from computer
+                          <input
+                            type="file"
+                            accept="image/*"
+                            onChange={(e) => {
+                              if (e.target.files && e.target.files[0]) {
+                                handleRigFileSelect(e.target.files[0]);
+                              }
+                            }}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Or Image Web URL / Path
                 </label>
                 <input
                   type="text"
-                  required
-                  value={uploadUrl}
-                  onChange={(e) => setUploadUrl(e.target.value)}
+                  value={uploadUrl.startsWith('data:') ? '[Selected from computer]' : uploadUrl}
+                  onChange={(e) => {
+                    if (!uploadUrl.startsWith('data:')) {
+                      setUploadUrl(e.target.value);
+                    }
+                  }}
                   placeholder="/interior1.jpeg or https://..."
-                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900"
                 />
               </div>
 

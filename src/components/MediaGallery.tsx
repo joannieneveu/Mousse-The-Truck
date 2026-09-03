@@ -34,7 +34,13 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { BatchPhotoUploadModal } from './BatchPhotoUploadModal';
-import { extractPhotosFromDropEvent, extractPhotosFromFileInput, ProcessedPhoto } from '../utils/photoDropHelper';
+import { 
+  extractPhotosFromDropEvent, 
+  extractPhotosFromFileInput, 
+  readFileAsOptimizedDataUrl, 
+  cleanFileNameToTitle,
+  ProcessedPhoto 
+} from '../utils/photoDropHelper';
 
 interface MediaGalleryProps {
   media: MediaItem[];
@@ -224,10 +230,44 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
   const [uploadType, setUploadType] = useState<'image' | 'video'>('image');
   const [uploadUrl, setUploadUrl] = useState<string>('');
   const [uploadCaption, setUploadCaption] = useState<string>('');
-  const [uploadLocation, setUploadLocation] = useState<string>('Olympic Peninsula, WA');
+  const [uploadLocation, setUploadLocation] = useState<string>('Pelly Crossing & Heading to Dawson City, Yukon');
   const [uploadAuthor, setUploadAuthor] = useState<string>('Joannie & Barton');
-  const [uploadTagInput, setUploadTagInput] = useState<string>('Overland, Henri, Nature');
+  const [uploadTagInput, setUploadTagInput] = useState<string>('Henri, Mousse, Yukon, Expedition');
+  const [uploadJourneyLeg, setUploadJourneyLeg] = useState<JourneyLeg>('arctic_yukon');
+  const [isSingleDragging, setIsSingleDragging] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  const handleSingleFileSelect = async (file: File) => {
+    try {
+      const dataUrl = await readFileAsOptimizedDataUrl(file);
+      setUploadUrl(dataUrl);
+      if (!uploadTitle) {
+        setUploadTitle(cleanFileNameToTitle(file.name));
+      }
+      if (file.type.startsWith('video/')) {
+        setUploadType('video');
+      } else {
+        setUploadType('image');
+      }
+    } catch (err) {
+      console.error('Error processing file:', err);
+    }
+  };
+
+  const handleSingleFileInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    if (e.target.files && e.target.files[0]) {
+      handleSingleFileSelect(e.target.files[0]);
+    }
+  };
+
+  const handleSingleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setIsSingleDragging(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleSingleFileSelect(e.dataTransfer.files[0]);
+    }
+  };
 
   // Preset demo images
   const PRESET_DEMO_IMAGES = [
@@ -320,19 +360,41 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     try {
       const tagsArray = uploadTagInput
         .split(',')
-        .map(t => t.trim())
+        .map(t => t.trim().replace(/^#/, ''))
         .filter(Boolean);
 
+      let finalUrl = uploadUrl;
+      // Try to save image to server disk if base64 dataUrl
+      if (uploadUrl && uploadUrl.startsWith('data:')) {
+        try {
+          const res = await fetch('/api/upload', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              dataUrl: uploadUrl, 
+              title: uploadTitle 
+            })
+          });
+          const data = await res.json();
+          if (data.success && data.url) {
+            finalUrl = data.url;
+          }
+        } catch (e) {
+          // fallback to dataUrl
+        }
+      }
+
       await onUploadMedia({
-        title: uploadTitle,
+        title: uploadTitle.trim(),
         type: uploadType,
-        url: uploadUrl,
-        caption: uploadCaption,
-        locationName: uploadLocation,
+        url: finalUrl,
+        thumbnailUrl: finalUrl,
+        caption: uploadCaption.trim(),
+        locationName: uploadLocation.trim() || 'Expedition Route',
         country: 'Canada',
         tags: tagsArray.length > 0 ? tagsArray : ['Expedition 2026'],
-        author: uploadAuthor || 'Joannie & Barton',
-        journeyLeg: 'rockies_pacific',
+        author: currentUser ? currentUser.name : (uploadAuthor || 'Joannie & Barton'),
+        journeyLeg: uploadJourneyLeg,
         likesCount: 0
       });
 
@@ -1094,6 +1156,247 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                     <span>{isSavingEdit ? 'Saving...' : 'Save Caption'}</span>
                   </button>
                 </div>
+              </div>
+            </form>
+          </div>
+        </div>
+      )}
+
+      {/* Single Photo Upload Modal */}
+      {isUploadModalOpen && (
+        <div className="fixed inset-0 z-50 bg-stone-900/60 backdrop-blur-xs flex items-center justify-center p-4 overflow-y-auto">
+          <div className="bg-[#FAF8F5] rounded-3xl max-w-xl w-full border border-stone-200 shadow-2xl overflow-hidden animate-in fade-in zoom-in-95 duration-200 my-8">
+            <div className="flex items-center justify-between px-6 py-4 border-b border-stone-200 bg-stone-50">
+              <div className="flex items-center gap-2.5">
+                <div className="w-8 h-8 rounded-xl bg-blue-100 text-blue-900 flex items-center justify-center">
+                  <Camera className="w-4 h-4" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-stone-900 text-base">Upload Photo to Expedition Gallery</h3>
+                  <p className="text-[11px] text-stone-500">Add directly from your computer, phone, or iPhoto</p>
+                </div>
+              </div>
+              <button
+                onClick={() => {
+                  setIsUploadModalOpen(false);
+                  setUploadUrl('');
+                  setUploadTitle('');
+                  setUploadCaption('');
+                }}
+                className="p-1.5 rounded-full hover:bg-stone-200 text-stone-500 transition"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            <form onSubmit={handleUploadSubmit} className="p-6 space-y-4 text-xs">
+              
+              {/* File Dropzone & Selector */}
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1.5">
+                  Photo File (Drag & Drop or Choose File)
+                </label>
+                <div
+                  onDragOver={(e) => {
+                    e.preventDefault();
+                    setIsSingleDragging(true);
+                  }}
+                  onDragLeave={() => setIsSingleDragging(false)}
+                  onDrop={handleSingleDrop}
+                  className={`border-2 border-dashed rounded-2xl p-4 text-center transition ${
+                    isSingleDragging 
+                      ? 'border-blue-800 bg-blue-50/80' 
+                      : 'border-stone-300 bg-white hover:border-stone-400'
+                  }`}
+                >
+                  {uploadUrl ? (
+                    <div className="space-y-2">
+                      <div className="relative inline-block max-h-48 rounded-xl overflow-hidden border border-stone-200 shadow-xs">
+                        <img 
+                          src={uploadUrl} 
+                          alt="Preview" 
+                          className="max-h-44 w-auto object-contain mx-auto"
+                        />
+                        <button
+                          type="button"
+                          onClick={() => setUploadUrl('')}
+                          className="absolute top-2 right-2 p-1 bg-stone-900/80 hover:bg-rose-600 text-white rounded-full transition"
+                          title="Remove photo"
+                        >
+                          <X className="w-3.5 h-3.5" />
+                        </button>
+                      </div>
+                      <p className="text-[11px] text-emerald-700 font-medium flex items-center justify-center gap-1">
+                        <Check className="w-3.5 h-3.5" /> Photo loaded & ready to publish
+                      </p>
+                    </div>
+                  ) : (
+                    <div className="space-y-2 py-3">
+                      <div className="w-10 h-10 mx-auto rounded-xl bg-blue-50 text-blue-900 flex items-center justify-center">
+                        <FolderOpen className="w-5 h-5" />
+                      </div>
+                      <div className="text-stone-700">
+                        <span className="font-semibold">Drag & drop photo here</span> or{' '}
+                        <label className="text-blue-900 hover:text-blue-950 font-bold underline cursor-pointer">
+                          browse from computer
+                          <input
+                            type="file"
+                            accept="image/*,video/*"
+                            onChange={handleSingleFileInputChange}
+                            className="hidden"
+                          />
+                        </label>
+                      </div>
+                      <p className="text-[10px] text-stone-500">Supports JPEG, PNG, HEIC, WebP, and MP4 videos</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              {/* Or Web URL Input */}
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Or Paste Photo Web URL / Path
+                </label>
+                <input
+                  type="text"
+                  value={uploadUrl.startsWith('data:') ? '[Selected from computer]' : uploadUrl}
+                  onChange={(e) => {
+                    if (!uploadUrl.startsWith('data:')) {
+                      setUploadUrl(e.target.value);
+                    }
+                  }}
+                  placeholder="https://... or /filename.jpeg"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900"
+                />
+              </div>
+
+              {/* Title */}
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Photo Title *
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={uploadTitle}
+                  onChange={(e) => setUploadTitle(e.target.value)}
+                  placeholder="e.g. Henri Exploring the Yukon River at Sunset"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900 font-medium"
+                />
+              </div>
+
+              {/* Caption Under Picture */}
+              <div>
+                <label className="block font-semibold text-stone-700 mb-1">
+                  Caption (Story under the picture)
+                </label>
+                <textarea
+                  rows={3}
+                  value={uploadCaption}
+                  onChange={(e) => setUploadCaption(e.target.value)}
+                  placeholder="Describe the moment, family story, or campsite details..."
+                  className="w-full bg-white border border-stone-300 rounded-xl p-3 text-stone-900 focus:outline-none focus:border-blue-900 resize-none leading-relaxed"
+                />
+              </div>
+
+              {/* Location & Journey Leg */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Location Name
+                  </label>
+                  <input
+                    type="text"
+                    value={uploadLocation}
+                    onChange={(e) => setUploadLocation(e.target.value)}
+                    placeholder="e.g. Dawson City, Yukon"
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900"
+                  />
+                </div>
+
+                <div>
+                  <label className="block font-semibold text-stone-700 mb-1">
+                    Journey Leg
+                  </label>
+                  <select
+                    value={uploadJourneyLeg}
+                    onChange={(e) => setUploadJourneyLeg(e.target.value as JourneyLeg)}
+                    className="w-full bg-white border border-stone-300 rounded-xl px-3 py-2 text-stone-900 focus:outline-none focus:border-blue-900"
+                  >
+                    <option value="arctic_yukon">Arctic & Yukon</option>
+                    <option value="alaska_highway">Alaska Highway</option>
+                    <option value="rockies_pacific">Rockies & Pacific</option>
+                    <option value="baja_mexico">Baja & Mexico</option>
+                    <option value="central_america">Central America</option>
+                    <option value="andes_south_america">Andes & South America</option>
+                    <option value="patagonia_tierradelfuego">Patagonia & Fin del Mundo</option>
+                  </select>
+                </div>
+              </div>
+
+              {/* Tags with quick presets */}
+              <div>
+                <div className="flex items-center justify-between mb-1">
+                  <label className="block font-semibold text-stone-700">
+                    Tags (comma separated)
+                  </label>
+                  <div className="flex items-center gap-1.5 text-[10px] text-stone-500">
+                    <span>Quick tags:</span>
+                    {['Henri', 'Mousse', 'Campsite', 'Yukon', 'Family'].map(tag => (
+                      <button
+                        key={tag}
+                        type="button"
+                        onClick={() => {
+                          const currentTags = uploadTagInput.split(',').map(t => t.trim()).filter(Boolean);
+                          if (!currentTags.includes(tag)) {
+                            setUploadTagInput([...currentTags, tag].join(', '));
+                          }
+                        }}
+                        className="px-1.5 py-0.5 rounded bg-stone-200 hover:bg-stone-300 text-stone-700 font-medium transition"
+                      >
+                        +{tag}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                <input
+                  type="text"
+                  value={uploadTagInput}
+                  onChange={(e) => setUploadTagInput(e.target.value)}
+                  placeholder="Henri, Mousse, Yukon, Expedition"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:border-blue-900"
+                />
+              </div>
+
+              <div className="flex items-center justify-end gap-2.5 pt-3 border-t border-stone-200">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsUploadModalOpen(false);
+                    setUploadUrl('');
+                  }}
+                  className="px-4 py-2.5 rounded-xl bg-stone-200 hover:bg-stone-300 text-stone-700 font-medium transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  disabled={isSubmitting || !uploadTitle.trim() || !uploadUrl.trim()}
+                  className="px-6 py-2.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-semibold shadow-sm transition flex items-center gap-2 disabled:opacity-50"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                      <span>Publishing...</span>
+                    </>
+                  ) : (
+                    <>
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload to Gallery</span>
+                    </>
+                  )}
+                </button>
               </div>
             </form>
           </div>

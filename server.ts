@@ -37,6 +37,21 @@ async function startServer() {
 
   // Persistent Data Store File
   const DATA_FILE = path.join(process.cwd(), 'expedition_data_store.json');
+  const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
+  try {
+    if (!fs.existsSync(UPLOADS_DIR)) {
+      fs.mkdirSync(UPLOADS_DIR, { recursive: true });
+    }
+  } catch (err) {
+    console.warn('[Uploads] Could not create uploads directory:', err);
+  }
+
+  const ADMIN_EMAILS = [
+    'joannieneveu@gmail.com',
+    'joannie@mun.ca',
+    'barton.bilingual@alumni.harvard.edu',
+    'barton@mun.ca'
+  ];
 
   // Database State
   let currentUser: UserProfile | null = ADMIN_USERS[0]; // Default Joannie (Admin)
@@ -895,6 +910,46 @@ Return ONLY a valid JSON object matching this schema:
     mediaItems = mediaItems.filter(m => m.id !== id);
     saveDataStore();
     res.json({ success: true, mediaItems });
+  });
+
+  // --- DIRECT FILE & BASE64 IMAGE UPLOAD API ---
+  app.post('/api/upload', (req: Request, res: Response) => {
+    try {
+      const { dataUrl, filename, title } = req.body;
+      if (!dataUrl) {
+        res.status(400).json({ error: 'No image data provided for upload.' });
+        return;
+      }
+
+      // If dataUrl is a base64 string, write to disk
+      if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+        const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const mimeType = matches[1];
+          const base64Data = matches[2];
+          const extension = mimeType.split('/')[1]?.replace('jpeg', 'jpg').replace('png', 'png').replace('webp', 'webp') || 'jpg';
+          const safeName = (filename || title || `upload-${Date.now()}`)
+            .toLowerCase()
+            .replace(/[^a-z0-9]+/g, '-')
+            .replace(/^-+|-+$/g, '');
+          const finalFileName = `${safeName}-${Date.now()}.${extension}`;
+          const filePath = path.join(UPLOADS_DIR, finalFileName);
+
+          fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+          const publicUrl = `/uploads/${finalFileName}`;
+          console.log(`[Upload API] Saved photo to disk: ${publicUrl}`);
+          res.json({ success: true, url: publicUrl, originalName: filename || finalFileName });
+          return;
+        }
+      }
+
+      // If already a URL or path, just echo back
+      res.json({ success: true, url: dataUrl });
+    } catch (err: any) {
+      console.error('[Upload API Error]:', err);
+      // Fallback safely by returning the provided dataUrl
+      res.json({ success: true, url: req.body.dataUrl });
+    }
   });
 
   // --- RIG & SPECS PHOTOS API ---

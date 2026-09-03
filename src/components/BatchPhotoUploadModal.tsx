@@ -34,6 +34,7 @@ interface BatchPhotoUploadModalProps {
   onCreateJournalWithPhotos?: (photos: ProcessedPhoto[]) => void;
   liveLocation?: LiveLocation;
   currentUser?: UserProfile | null;
+  authorName?: string;
 }
 
 export const BatchPhotoUploadModal: React.FC<BatchPhotoUploadModalProps> = ({
@@ -43,7 +44,8 @@ export const BatchPhotoUploadModal: React.FC<BatchPhotoUploadModalProps> = ({
   onUploadBatch,
   onCreateJournalWithPhotos,
   liveLocation,
-  currentUser
+  currentUser,
+  authorName = 'Joannie & Barton'
 }) => {
   const [photos, setPhotos] = useState<ProcessedPhoto[]>(initialPhotos);
   const [locationName, setLocationName] = useState<string>(liveLocation?.lastCity || 'Lethbridge & Heading North');
@@ -143,23 +145,46 @@ export const BatchPhotoUploadModal: React.FC<BatchPhotoUploadModalProps> = ({
     setIsSubmitting(true);
 
     try {
-      const itemsToUpload: Partial<MediaItem>[] = photos.map(photo => {
+      const itemsToUpload: Partial<MediaItem>[] = await Promise.all(photos.map(async (photo) => {
         const meta = photoMeta[photo.id] || { title: photo.cleanTitle, caption: '', featured: false };
+        let finalUrl = photo.dataUrl;
+
+        // Try to save image to server disk
+        if (photo.dataUrl && photo.dataUrl.startsWith('data:')) {
+          try {
+            const res = await fetch('/api/upload', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({ 
+                dataUrl: photo.dataUrl, 
+                filename: photo.name, 
+                title: meta.title || photo.cleanTitle 
+              })
+            });
+            const data = await res.json();
+            if (data.success && data.url) {
+              finalUrl = data.url;
+            }
+          } catch (e) {
+            // fallback to original dataUrl
+          }
+        }
+
         return {
           title: meta.title.trim() || photo.cleanTitle,
           type: photo.type,
-          url: photo.dataUrl,
-          thumbnailUrl: photo.dataUrl,
+          url: finalUrl,
+          thumbnailUrl: finalUrl,
           caption: meta.caption.trim(),
-          locationName: locationName.trim(),
+          locationName: locationName.trim() || 'Expedition Route',
           coordinates: liveLocation ? { lat: liveLocation.lat, lng: liveLocation.lng } : undefined,
-          date: date.trim(),
+          date: date.trim() || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
           tags: selectedTags.length > 0 ? selectedTags : ['Expedition Photo'],
-          author: currentUser ? currentUser.name : 'Joannie & Barton',
+          author: currentUser ? currentUser.name : (authorName || 'Joannie & Barton'),
           featured: meta.featured,
           journeyLeg
         };
-      });
+      }));
 
       await onUploadBatch(itemsToUpload);
       onClose();
