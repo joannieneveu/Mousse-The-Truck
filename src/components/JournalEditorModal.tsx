@@ -105,6 +105,23 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const [mbaHighlight, setMbaHighlight] = useState<string>(initialLog?.mbaHighlight || '');
   const [visitorHighlight, setVisitorHighlight] = useState<string>(initialLog?.visitorHighlight || '');
   const [henriAge, setHenriAge] = useState<string>(initialLog?.metrics?.henriAge || '2.5 months');
+  const [kmTraveled, setKmTraveled] = useState<string>(
+    initialLog?.metrics?.kmTraveled !== undefined 
+      ? String(initialLog.metrics.kmTraveled) 
+      : initialLog?.metrics?.odometerKm !== undefined
+        ? String(initialLog.metrics.odometerKm)
+        : ''
+  );
+  const [elevationM, setElevationM] = useState<string>(
+    initialLog?.metrics?.elevationM !== undefined 
+      ? String(initialLog.metrics.elevationM) 
+      : String(liveLocation?.altitudeM || 600)
+  );
+  const [tempC, setTempC] = useState<string>(
+    initialLog?.metrics?.tempC !== undefined 
+      ? String(initialLog.metrics.tempC) 
+      : String(liveLocation?.weather?.tempC || 14)
+  );
 
   // Gallery items
   const [gallery, setGallery] = useState<{ url: string; caption: string; type: 'image' | 'video' }[]>(
@@ -348,10 +365,14 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
       readingTime: `${Math.max(2, Math.ceil(content.split(/\s+/).length / 180))} min read`,
       excerpt: content.substring(0, 160).replace(/[#*`_>]/g, '') + '...',
       metrics: {
-        elevationM: liveLocation?.altitudeM || 600,
-        tempC: liveLocation?.weather?.tempC || 18,
+        elevationM: elevationM ? Number(elevationM) : (liveLocation?.altitudeM || 600),
+        tempC: tempC ? Number(tempC) : (liveLocation?.weather?.tempC || 14),
+        kmTraveled: kmTraveled ? Number(kmTraveled) : undefined,
+        odometerKm: kmTraveled ? Number(kmTraveled) : undefined,
         henriAge,
-        activityType: activity
+        activityType: activity,
+        mbaModule: initialLog?.metrics?.mbaModule || 'Operations & Remote Logistics',
+        visitors: initialLog?.metrics?.visitors
       },
       locationInsights: (population || culturalContext || interestingFacts.length > 0) ? {
         population,
@@ -928,6 +949,87 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
               placeholder="e.g. Soaking in natural mineral hot springs, 10km trail run, Starlink setup"
               className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs"
             />
+          </div>
+
+          {/* Expedition Vitals & Odometer Reading Card */}
+          <div className="bg-stone-50 border border-stone-300/80 rounded-2xl p-4 space-y-3">
+            <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1">
+              <label className="font-bold text-stone-800 flex items-center gap-1.5 text-xs">
+                <Compass className="w-4 h-4 text-blue-900" />
+                <span>Expedition Vitals & Odometer Reading</span>
+              </label>
+              <span className="text-[11px] text-stone-500 font-sans">
+                Set directly from Mousse’s odometer or trip meter
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Odometer / KM From Start */}
+              <div>
+                <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                  KM from Start / Odometer (km)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={kmTraveled}
+                    onChange={(e) => setKmTraveled(e.target.value)}
+                    placeholder="e.g. 3820"
+                    className="w-full bg-white border border-stone-300 rounded-xl pl-3 pr-10 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs font-mono font-bold"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">
+                    km
+                  </span>
+                </div>
+                <div className="flex items-center gap-2 mt-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setKmTraveled('3820')}
+                    className="text-[10px] text-blue-900 hover:text-blue-950 font-medium underline font-sans bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200"
+                  >
+                    Quick: Tuktoyaktuk (3,820 km)
+                  </button>
+                </div>
+              </div>
+
+              {/* Elevation */}
+              <div>
+                <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                  Elevation (meters)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={elevationM}
+                    onChange={(e) => setElevationM(e.target.value)}
+                    placeholder="e.g. 670"
+                    className="w-full bg-white border border-stone-300 rounded-xl pl-3 pr-8 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs font-mono"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">
+                    m
+                  </span>
+                </div>
+              </div>
+
+              {/* Temperature */}
+              <div>
+                <label className="block text-[11px] font-semibold text-stone-700 mb-1">
+                  Temperature (°C)
+                </label>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={tempC}
+                    onChange={(e) => setTempC(e.target.value)}
+                    placeholder="e.g. 14"
+                    className="w-full bg-white border border-stone-300 rounded-xl pl-3 pr-8 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs font-mono"
+                  />
+                  <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">
+                    °C
+                  </span>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Cover Photo */}

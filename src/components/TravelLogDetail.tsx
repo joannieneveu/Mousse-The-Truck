@@ -42,7 +42,8 @@ import {
   ChevronRight, 
   Maximize2, 
   Layers,
-  Mail 
+  Mail,
+  Gauge 
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { RichTextRenderer } from '../utils/richTextRenderer';
@@ -108,6 +109,50 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [photoCommentText, setPhotoCommentText] = useState<string>('');
   const [photoGuestName, setPhotoGuestName] = useState<string>(currentUser?.name || '');
   const [isPostingPhotoComment, setIsPostingPhotoComment] = useState<boolean>(false);
+
+  // Odometer editing state
+  const [isOdometerModalOpen, setIsOdometerModalOpen] = useState<boolean>(false);
+  const [odometerInput, setOdometerInput] = useState<string>(
+    log.metrics?.kmTraveled !== undefined 
+      ? String(log.metrics.kmTraveled) 
+      : (log.metrics?.odometerKm !== undefined ? String(log.metrics.odometerKm) : '')
+  );
+  const [isSavingOdometer, setIsSavingOdometer] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (log.metrics?.kmTraveled !== undefined) {
+      setOdometerInput(String(log.metrics.kmTraveled));
+    } else if (log.metrics?.odometerKm !== undefined) {
+      setOdometerInput(String(log.metrics.odometerKm));
+    }
+  }, [log.id, log.metrics?.kmTraveled, log.metrics?.odometerKm]);
+
+  const handleSaveOdometer = async () => {
+    const val = Number(odometerInput);
+    if (isNaN(val) || val < 0) {
+      alert('Please enter a valid number of kilometers.');
+      return;
+    }
+    setIsSavingOdometer(true);
+    try {
+      if (onUpdateLog) {
+        await onUpdateLog(log.id, {
+          metrics: {
+            ...log.metrics,
+            kmTraveled: val,
+            odometerKm: val
+          }
+        });
+      }
+      setSuccessToast(`Odometer updated to ${val.toLocaleString()} km from start!`);
+      setIsOdometerModalOpen(false);
+      setTimeout(() => setSuccessToast(null), 4000);
+    } catch (err) {
+      console.error('Failed to update odometer:', err);
+    } finally {
+      setIsSavingOdometer(false);
+    }
+  };
 
   const galleryList = log.gallery || [];
 
@@ -624,10 +669,28 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
             {log.coordinates.lat.toFixed(4)}°, {log.coordinates.lng.toFixed(4)}°
           </div>
         </div>
-        <div>
-          <div className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Distance From Start</div>
-          <div className="font-bold text-stone-800 text-[11px] mt-0.5">
-            {log.metrics.kmTraveled ? `${log.metrics.kmTraveled.toLocaleString()} km` : '0 km'}
+        <div className="relative group">
+          <div className="flex items-center justify-between">
+            <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Distance From Start</span>
+            <button 
+              onClick={() => {
+                setOdometerInput(log.metrics.kmTraveled !== undefined ? String(log.metrics.kmTraveled) : '');
+                setIsOdometerModalOpen(true);
+              }}
+              className="text-[10px] text-blue-900 hover:text-blue-950 font-semibold underline decoration-dotted inline-flex items-center gap-0.5 ml-1 transition"
+              title="Enter reading from odometer"
+            >
+              <Gauge className="w-3 h-3 text-blue-900" />
+              <span>Enter Odometer</span>
+            </button>
+          </div>
+          <div className="font-bold text-stone-800 text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
+            <span>{log.metrics.kmTraveled ? `${log.metrics.kmTraveled.toLocaleString()} km` : '0 km'}</span>
+            {log.id === 'log-2-alberta-to-yukon' && (
+              <span className="text-[9px] bg-blue-100 text-blue-900 px-1.5 py-0.2 rounded-md font-medium">
+                Lethbridge → Tuktoyaktuk
+              </span>
+            )}
           </div>
         </div>
         <div>
@@ -1572,6 +1635,120 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           logData={log}
           authorName={currentUser?.name || log.author}
         />
+      )}
+
+      {/* --- ODOMETER / KM FROM START MODAL --- */}
+      {isOdometerModalOpen && (
+        <div 
+          className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
+          onClick={() => setIsOdometerModalOpen(false)}
+        >
+          <div 
+            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-5 text-stone-800"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-start justify-between">
+              <div className="flex items-center gap-2.5">
+                <div className="w-9 h-9 rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center">
+                  <Gauge className="w-5 h-5 text-blue-900" />
+                </div>
+                <div>
+                  <h3 className="font-serif font-bold text-base text-stone-900">
+                    Odometer / Distance from Start
+                  </h3>
+                  <p className="text-[11px] text-stone-500 font-sans">
+                    {log.title}
+                  </p>
+                </div>
+              </div>
+              <button
+                onClick={() => setIsOdometerModalOpen(false)}
+                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition"
+              >
+                ✕
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="block text-xs font-bold text-stone-700 mb-1">
+                  Kilometers from Start (Odometer Reading)
+                </label>
+                <p className="text-[11px] text-stone-500 mb-2">
+                  Enter the exact number shown on Mousse’s odometer or trip meter.
+                </p>
+                <div className="relative">
+                  <input
+                    type="number"
+                    value={odometerInput}
+                    onChange={(e) => setOdometerInput(e.target.value)}
+                    placeholder="e.g. 3820"
+                    autoFocus
+                    className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-base font-mono font-bold text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900 pr-12"
+                  />
+                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-sans text-xs font-semibold">
+                    km
+                  </span>
+                </div>
+              </div>
+
+              {/* Quick Distance Presets */}
+              <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/80 space-y-2">
+                <div className="text-[10px] uppercase font-bold tracking-wider text-stone-400">
+                  Quick Expedition Distance Helpers
+                </div>
+                <div className="flex flex-wrap gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setOdometerInput('3820')}
+                    className="px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-semibold transition"
+                  >
+                    Lethbridge → Tuktoyaktuk (3,820 km)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOdometerInput('3670')}
+                    className="px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 text-[11px] font-medium transition"
+                  >
+                    Inuvik (3,670 km)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setOdometerInput('2150')}
+                    className="px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 text-[11px] font-medium transition"
+                  >
+                    Whitehorse (2,150 km)
+                  </button>
+                </div>
+              </div>
+
+              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
+                <button
+                  type="button"
+                  onClick={() => setIsOdometerModalOpen(false)}
+                  className="px-4 py-2 rounded-xl text-xs font-medium text-stone-600 hover:bg-stone-100 transition"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="button"
+                  onClick={handleSaveOdometer}
+                  disabled={isSavingOdometer || !odometerInput.trim()}
+                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1.5"
+                >
+                  {isSavingOdometer ? (
+                    <span>Saving...</span>
+                  ) : (
+                    <>
+                      <Check className="w-3.5 h-3.5" />
+                      <span>Save Odometer</span>
+                    </>
+                  )}
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
       )}
 
     </article>

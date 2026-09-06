@@ -1,22 +1,22 @@
 {
   "liveLocation": {
-    "lat": 62.8286,
-    "lng": -136.5772,
-    "altitudeM": 580,
+    "lat": 69.4454,
+    "lng": -133.0342,
+    "altitudeM": 5,
     "speedKmh": 0,
-    "heading": 340,
-    "timestamp": "2026-09-02T03:14:41.617Z",
+    "heading": 180,
+    "timestamp": "2026-09-04T18:30:00.000Z",
     "accuracyM": 5,
-    "batteryPercent": 96,
+    "batteryPercent": 98,
     "isSharing": true,
-    "statusMessage": "En route to Pelly Crossing & Dawson City, Yukon! Left Whitehorse after hot springs swim, laundromat adventures, and wonderful dinner with medical colleagues.",
-    "lastCity": "Pelly Crossing & Heading to Dawson City, Yukon",
-    "nextMilestone": "Dawson City (Barton's Birthday!) & Dempster Hwy",
+    "statusMessage": "We reached the Arctic Ocean! Dipped our toes in the Beaufort Sea at Tuktoyaktuk after 3,820 km from Lethbridge.",
+    "lastCity": "Tuktoyaktuk, Northwest Territories (Arctic Ocean)",
+    "nextMilestone": "Dempster Highway Southbound & Pacific Northwest",
     "trackingMode": "manual_checkin",
     "weather": {
-      "tempC": 14,
-      "condition": "Crisp Northern Sky & Boreal Forest",
-      "icon": "cloud-sun"
+      "tempC": 4,
+      "condition": "Arctic Coastline Breeze & Midnight Glow",
+      "icon": "cloud"
     }
   },
   "waypoints": [
@@ -83,26 +83,45 @@
       "lat": 64.0601,
       "lng": -139.432,
       "date": "September 2, 2026",
-      "status": "upcoming",
+      "status": "completed",
       "elevationM": 320,
-      "summary": "Celebrating Barton’s birthday in the historic Klondike gold rush capital before tackling the Dempster Highway to the Arctic Ocean!",
+      "summary": "Celebrated Barton’s birthday in the historic Klondike gold rush capital before tackling the Dempster Highway to the Arctic Ocean!",
       "thumbnail": "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=600&q=80",
       "distanceFromStartKm": 2680
     },
     {
+      "id": "inuvik",
+      "name": "Inuvik (NWT)",
+      "region": "Dempster Highway & Mackenzie Delta, NWT",
+      "country": "Canada",
+      "leg": "arctic_yukon",
+      "lat": 68.3607,
+      "lng": -133.723,
+      "date": "September 3, 2026",
+      "status": "completed",
+      "elevationM": 68,
+      "summary": "Crossed the Arctic Circle and arrived in Inuvik at the northern terminus of the Dempster Highway in the Mackenzie River Delta!",
+      "henriNote": "Henri officially crossed above the Arctic Circle (66°33′ N) and stared out across the northern tundra.",
+      "mbaNote": "High-latitude Starlink communications testing and cold-weather remote supply management.",
+      "thumbnail": "https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=600&q=80",
+      "distanceFromStartKm": 3670
+    },
+    {
       "id": "tuktoyaktuk",
       "name": "Tuktoyaktuk (Arctic Ocean)",
-      "region": "Beaufort Sea, NWT",
+      "region": "Beaufort Sea & Arctic Coast, NWT",
       "country": "Canada",
       "leg": "arctic_yukon",
       "lat": 69.4454,
       "lng": -133.0342,
-      "date": "October 2026",
-      "status": "upcoming",
+      "date": "September 4, 2026",
+      "status": "completed",
       "elevationM": 5,
-      "summary": "Planned: The Northern Apex! Reaching the Beaufort Sea and Arctic Ocean surf at 69° North.",
+      "summary": "The Arctic Ocean reached! Driving the Inuvik-Tuktoyaktuk Highway all the way to the northernmost public road in North America at 69° North on the Beaufort Sea.",
+      "henriNote": "Baby Henri dipping his little toes into the Arctic Ocean surf at 69° North!",
+      "mbaNote": "Northern apex milestone achieved: 3,820 km from Lethbridge to the Arctic Ocean!",
       "thumbnail": "https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=600&q=80",
-      "distanceFromStartKm": 3640
+      "distanceFromStartKm": 3820
     },
     {
       "id": "olympic_peninsula",
@@ -245,7 +264,8 @@
       "metrics": {
         "elevationM": 670,
         "tempC": 14,
-        "kmTraveled": 2150,
+        "kmTraveled": 3820,
+        "odometerKm": 3820,
         "henriAge": "2.5 months",
         "mbaModule": "Operations & Remote Logistics"
       },
@@ -675,7 +695,7 @@
       "id": "sub-2",
       "name": "Bridger",
       "email": "bridger.family@americasexpedition.com",
-      "relationshipNote": "Family",
+      "relationshipNote": "Big Brother (Vancouver,BC)",
       "status": "approved",
       "subscribedAt": "June 2, 2026",
       "approvedAt": "June 2, 2026"
@@ -832,11 +852,11 @@
     {
       "id": "bridger",
       "name": "Bridger",
-      "relation": "Family (Vancouver, BC)",
-      "bio": "Keeping up with the coordinates, route maps, and Henri’s newest milestones from Vancouver, BC.",
+      "relation": "Big Brother (Vancouver,BC)",
+      "bio": "Keeping up with the coordinates, route maps, and Henri’s newest milestones from his active outdoor life in Vancouver, BC.",
       "avatar": "",
       "onTripWithUs": false,
-      "detailNote": "Tracking the route from Vancouver, British Columbia"
+      "detailNote": "Big brother following the expedition from Vancouver, British Columbia"
     },
     {
       "id": "nikolai",
@@ -867,5 +887,5 @@
     "adminPasswordSalt": null,
     "adminPasswordHash": null
   },
-  "lastSaved": "2026-09-02T23:48:32.614Z"
+  "lastSaved": "2026-09-06T05:01:41.730Z"
 }

@@ -279,6 +279,14 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
                   <Clock className="w-3.5 h-3.5" />
                   {featuredLog.readingTime}
                 </span>
+                {featuredLog.metrics?.kmTraveled ? (
+                  <>
+                    <span className="text-stone-400">•</span>
+                    <span className="font-semibold text-stone-700 font-mono">
+                      {featuredLog.metrics.kmTraveled.toLocaleString()} km from start
+                    </span>
+                  </>
+                ) : null}
               </div>
 
               <div className="flex items-center gap-2 text-xs text-blue-900 font-semibold font-sans">
@@ -425,9 +433,17 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
                   </div>
 
                   <div className="p-5 pt-0 border-t border-stone-100 flex items-center justify-between font-sans text-xs">
-                    <span className="text-stone-500 text-[11px]">
-                      {log.readingTime}
-                    </span>
+                    <div className="flex items-center gap-1.5 text-stone-500 text-[11px]">
+                      <span>{log.readingTime}</span>
+                      {log.metrics?.kmTraveled ? (
+                        <>
+                          <span>•</span>
+                          <span className="font-semibold text-stone-700 font-mono">
+                            {log.metrics.kmTraveled.toLocaleString()} km
+                          </span>
+                        </>
+                      ) : null}
+                    </div>
 
                     <div className="flex items-center gap-2">
                       {isUserAdmin && (

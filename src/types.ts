@@ -139,6 +139,7 @@ export interface TravelLog {
     elevationM?: number;
     tempC?: number;
     kmTraveled?: number;
+    odometerKm?: number;
     henriAge?: string;
     mbaModule?: string;
     visitors?: string;
