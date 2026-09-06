@@ -232,10 +232,26 @@ export const Navbar: React.FC<NavbarProps> = ({
             </button>
 
             {/* Log In / User Button */}
+            {!currentUser?.isAdmin && (
+              <button
+                id="admin-login-nav-btn"
+                onClick={onOpenAuthModal}
+                className="hidden xl:flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition text-xs font-semibold shadow-2xs"
+                title="Expedition Administrator Sign In (Joannie & Barton)"
+              >
+                <ShieldCheck className="w-3.5 h-3.5 text-amber-800" />
+                <span>Admin Login</span>
+              </button>
+            )}
+
             <button
               id="auth-persona-btn"
               onClick={onOpenAuthModal}
-              className="flex items-center gap-2 bg-stone-100 hover:bg-stone-200/80 border border-stone-200 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition text-xs"
+              className={`flex items-center gap-2 border px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition text-xs ${
+                currentUser?.isAdmin
+                  ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-950 font-bold shadow-2xs'
+                  : 'bg-stone-100 hover:bg-stone-200/80 border-stone-200 text-stone-800'
+              }`}
               title={currentUser ? `${t('nav.signedInAs')} ${currentUser.name}` : t('nav.signIn')}
             >
               {currentUser?.avatar ? (
@@ -245,13 +261,13 @@ export const Navbar: React.FC<NavbarProps> = ({
                   className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-stone-300"
                 />
               ) : (
-                <User className="w-4 h-4 text-stone-600" />
+                <User className={`w-4 h-4 ${currentUser?.isAdmin ? 'text-emerald-700' : 'text-stone-600'}`} />
               )}
-              <span className="font-bold text-stone-800 hidden md:inline truncate max-w-[120px]">
-                {currentUser?.name || t('nav.signIn')}
+              <span className="font-bold hidden md:inline truncate max-w-[120px]">
+                {currentUser?.isAdmin ? `Admin: ${currentUser.name.split(' ')[0]}` : (currentUser?.name || t('nav.signIn'))}
               </span>
               {currentUser?.isAdmin && (
-                <span className="hidden sm:inline-block w-2 h-2 rounded-full bg-emerald-500" title="Admin Active" />
+                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Administrator Session Active" />
               )}
             </button>
 

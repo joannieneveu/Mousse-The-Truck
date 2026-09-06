@@ -60,10 +60,12 @@ interface TravelLogDetailProps {
   onViewLocationOnMap?: (lat: number, lng: number) => void;
   onTogglePublish?: (logId: string) => Promise<void>;
   onDeleteLog?: (logId: string) => Promise<void>;
-  onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<void>;
+  onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<any>;
   onUploadMedia?: (newMedia: Partial<MediaItem>) => Promise<void>;
   onUploadBatchMedia?: (items: Partial<MediaItem>[]) => Promise<void>;
   onOpenMediaGallery?: () => void;
+  liveLocation?: any;
+  subscribers?: any[];
 }
 
 export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
@@ -78,7 +80,9 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   onUpdateLog,
   onUploadMedia,
   onUploadBatchMedia,
-  onOpenMediaGallery
+  onOpenMediaGallery,
+  liveLocation,
+  subscribers
 }) => {
   const [likes, setLikes] = useState<number>(typeof log.likesCount === 'number' ? log.likesCount : 0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
@@ -425,9 +429,19 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const uploadPhotoToServer = async (dataUrl: string, filename?: string): Promise<string> => {
     if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;
     try {
+      const adminToken = localStorage.getItem('mousse_admin_token');
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      if (adminToken) {
+        headers['x-admin-token'] = adminToken;
+        headers['Authorization'] = `Bearer ${adminToken}`;
+      }
+      if (currentUser?.email) {
+        headers['x-user-email'] = currentUser.email;
+        headers['x-user-role'] = currentUser.isAdmin ? 'admin' : 'guest';
+      }
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ dataUrl, filename: filename || `entry-photo-${Date.now()}` })
       });
       const data = await res.json();
@@ -618,11 +632,25 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
               <button
                 onClick={() => setIsEditorOpen(true)}
                 className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
-                title="Edit Journal Entry"
+                title="Edit Journal Entry & Text"
               >
                 <Edit3 className="w-3.5 h-3.5" />
                 <span>Edit Entry</span>
               </button>
+
+              <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs transition" title="Upload photos directly to this journal entry">
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Upload Photos</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                  }}
+                  className="hidden"
+                />
+              </label>
 
               <button
                 onClick={() => setIsEmailModalOpen(true)}
@@ -677,6 +705,72 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           </button>
         </div>
       </div>
+
+      {/* Administrator Direct Edit Banner */}
+      {!currentUser?.isAdmin ? (
+        <div className="bg-stone-50 border border-stone-200/90 rounded-2xl p-3.5 sm:px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs font-sans">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-slate-900">Administrator Direct Editing</div>
+              <p className="text-[11px] text-stone-600">
+                Are you an administrator (Joannie or Barton)? Sign in to edit captions, update journal text, or upload photos directly to the website.
+              </p>
+            </div>
+          </div>
+          {onOpenAuthModal && (
+            <button
+              type="button"
+              onClick={onOpenAuthModal}
+              className="shrink-0 px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold shadow-xs transition"
+            >
+              Sign In as Administrator
+            </button>
+          )}
+        </div>
+      ) : (
+        <div className="bg-blue-50/90 border border-blue-200 rounded-2xl p-3.5 sm:px-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs font-sans">
+          <div className="flex items-center gap-3">
+            <div className="w-8 h-8 rounded-xl bg-blue-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
+              <Check className="w-4 h-4" />
+            </div>
+            <div>
+              <div className="text-xs font-bold text-blue-950">
+                Administrator Mode Active ({currentUser.name})
+              </div>
+              <p className="text-[11px] text-blue-800">
+                You can edit this journal entry, upload photos, and update photo captions directly on the website.
+              </p>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setIsEditorOpen(true)}
+              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
+            >
+              <Edit3 className="w-3.5 h-3.5" />
+              <span>Edit Journal Entry</span>
+            </button>
+
+            <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs transition">
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Upload Photos</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={(e) => {
+                  if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                }}
+                className="hidden"
+              />
+            </label>
+          </div>
+        </div>
+      )}
 
       {/* Header Metadata */}
       <header className="space-y-4">
@@ -1013,7 +1107,18 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
                 {/* Caption & Controls */}
                 <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5 bg-white">
-                  <p className="text-xs text-stone-700 font-serif italic leading-relaxed">
+                  <p 
+                    onClick={() => {
+                      if (currentUser?.isAdmin) {
+                        setEditingPhotoIdx(idx);
+                        setEditingCaptionText(item.caption || '');
+                      }
+                    }}
+                    className={`text-xs text-stone-700 font-serif italic leading-relaxed ${
+                      currentUser?.isAdmin ? 'cursor-pointer hover:text-blue-900 transition underline-offset-2 hover:underline' : ''
+                    }`}
+                    title={currentUser?.isAdmin ? 'Click to edit caption directly' : undefined}
+                  >
                     {item.caption || 'Expedition memory'}
                   </p>
 
@@ -1027,26 +1132,25 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                     </button>
 
                     {currentUser?.isAdmin && (
-                      <div className="flex items-center gap-2">
+                      <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => {
                             setEditingPhotoIdx(idx);
                             setEditingCaptionText(item.caption || '');
                           }}
-                          className="text-stone-600 hover:text-blue-900 font-medium flex items-center gap-1"
-                          title="Edit photo description"
+                          className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition"
+                          title="Edit photo description & caption"
                         >
                           <Edit3 className="w-3 h-3" />
-                          <span>Edit</span>
+                          <span>Edit Caption</span>
                         </button>
 
                         <button
                           onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
-                          className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
+                          className="p-1 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition"
                           title="Remove photo from this entry"
                         >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Remove</span>
+                          <Trash2 className="w-3.5 h-3.5" />
                         </button>
                       </div>
                     )}
@@ -1586,7 +1690,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
       {/* 2. EDIT CAPTION MODAL (ADMIN) */}
       {editingPhotoIdx !== null && galleryList[editingPhotoIdx] && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div className="flex items-center gap-2">
@@ -1639,7 +1743,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                   disabled={isSavingCaption}
                   className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
                 >
-                  {isSavingCaption ? 'Saving...' : 'Save Caption'}
+                  {isSavingCaption ? 'Saving directly...' : 'Save Caption'}
                 </button>
               </div>
             </form>
@@ -1649,7 +1753,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
       {/* 3. ADD / UPLOAD PHOTO MODAL (ADMIN) */}
       {isAddPhotoModalOpen && (
-        <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
+        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
           <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-5 animate-in zoom-in-95 duration-200">
             <div className="flex items-center justify-between border-b border-stone-100 pb-3">
               <div className="flex items-center gap-2">

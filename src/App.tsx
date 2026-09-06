@@ -794,6 +794,8 @@ function AppContent() {
               onUpdateLog={handleUpdateLog}
               onUploadMedia={handleUploadMedia}
               onUploadBatchMedia={handleUploadBatchMedia}
+              liveLocation={liveLocation}
+              subscribers={subscribers}
               onOpenMediaGallery={() => {
                 setActiveTab('gallery');
                 window.scrollTo({ top: 0, behavior: 'smooth' });

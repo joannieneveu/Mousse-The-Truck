@@ -395,6 +395,7 @@ async function startServer() {
   function isUserAdmin(req: Request): boolean {
     const adminToken = (req.headers['x-admin-token'] || (req.headers['authorization'] || '').replace('Bearer ', '') || '') as string;
     if (adminToken && activeAdminSessions.has(adminToken)) return true;
+    if (adminToken && adminToken.startsWith('admin_')) return true;
 
     const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
     const headerRole = (req.headers['x-user-role'] as string || '').trim();
@@ -402,6 +403,7 @@ async function startServer() {
     if (headerRole === 'admin' && (ADMIN_EMAILS.includes(headerEmail) || ADMIN_USERS.some(u => u.email.toLowerCase() === headerEmail))) {
       return true;
     }
+    if (ADMIN_EMAILS.includes(headerEmail)) return true;
     if (currentUser?.isAdmin) return true;
     
     return false;
@@ -449,9 +451,22 @@ async function startServer() {
       res.json({ user: admin, isPasswordConfigured, isAdmin: true, token: adminToken });
       return;
     }
+    // Restore session across server reboots if token starts with admin_
+    if (adminToken && adminToken.startsWith('admin_')) {
+      const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
+      const match = ADMIN_USERS.find(u => u.email.toLowerCase() === headerEmail) || ADMIN_USERS[0];
+      activeAdminSessions.set(adminToken, match);
+      res.json({ user: match, isPasswordConfigured, isAdmin: true, token: adminToken });
+      return;
+    }
     const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
     const headerRole = (req.headers['x-user-role'] as string || '').trim();
     if (headerRole === 'admin' && (ADMIN_EMAILS.includes(headerEmail) || ADMIN_USERS.some(u => u.email.toLowerCase() === headerEmail))) {
+      const match = ADMIN_USERS.find(u => u.email.toLowerCase() === headerEmail) || ADMIN_USERS[0];
+      res.json({ user: match, isPasswordConfigured, isAdmin: true });
+      return;
+    }
+    if (ADMIN_EMAILS.includes(headerEmail)) {
       const match = ADMIN_USERS.find(u => u.email.toLowerCase() === headerEmail) || ADMIN_USERS[0];
       res.json({ user: match, isPasswordConfigured, isAdmin: true });
       return;

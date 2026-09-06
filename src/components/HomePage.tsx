@@ -516,7 +516,7 @@ export const HomePage: React.FC<HomePageProps> = ({
 
         {recentLogs && recentLogs.length > 0 ? (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {recentLogs.slice(0, 4).map((log, idx) => (
+            {recentLogs.slice(0, 2).map((log, idx) => (
               <article
                 key={log.id}
                 onClick={() => onSelectLog(log)}
