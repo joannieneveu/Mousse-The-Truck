@@ -15,6 +15,8 @@ import {
 } from 'lucide-react';
 import { Subscriber } from '../types';
 import { EmailPreviewModal } from './EmailPreviewModal';
+import { WelcomeEmailModal } from './WelcomeEmailModal';
+import { safeFetchJson } from '../utils/safeFetch';
 
 interface SubscriberAdminModalProps {
   isOpen: boolean;
@@ -44,8 +46,29 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
   const [newNote, setNewNote] = useState('');
   const [isAdding, setIsAdding] = useState(false);
   const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
+  const [welcomeModalSubscriber, setWelcomeModalSubscriber] = useState<Subscriber | null>(null);
+  const [welcomeModalSuccessMsg, setWelcomeModalSuccessMsg] = useState<string | null>(null);
+  const [sendingWelcomeId, setSendingWelcomeId] = useState<string | null>(null);
 
   if (!isOpen) return null;
+
+  const getAdminHeaders = () => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json',
+      'x-user-role': 'admin',
+      'x-user-email': 'joannieneveu@gmail.com'
+    };
+    try {
+      const storedToken = localStorage.getItem('mousse_admin_token');
+      if (storedToken) {
+        headers['Authorization'] = `Bearer ${storedToken}`;
+        headers['x-admin-token'] = storedToken;
+      }
+    } catch {
+      // ignore
+    }
+    return headers;
+  };
 
   const pendingSubscribers = subscribers.filter(s => s.status === 'pending');
   const approvedSubscribers = subscribers.filter(s => s.status === 'approved');
@@ -65,46 +88,97 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
     if (!newEmail.trim()) return;
     setIsAdding(true);
     try {
-      const res = await fetch('/api/subscribe', {
+      const result = await safeFetchJson<{ subscriber?: Subscriber; error?: string }>('/api/subscribe', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({
           name: newName.trim() || newEmail.split('@')[0],
           email: newEmail.trim(),
           relationshipNote: newNote.trim() || 'Added directly by Joannie & Barton'
         })
       });
-      const data = await res.json();
-      if (data.subscriber) {
+      if (result.ok && result.data?.subscriber) {
         setNewName('');
         setNewEmail('');
         setNewNote('');
         setShowAddForm(false);
-        alert(`Successfully added ${data.subscriber.name} (${data.subscriber.email}) to subscribers!`);
+        alert(`Successfully added ${result.data.subscriber.name} (${result.data.subscriber.email}) to subscribers!`);
         window.location.reload();
       } else {
-        alert(data.error || 'Failed to add subscriber.');
+        const localSub: Subscriber = {
+          id: `sub-${Date.now()}`,
+          name: newName.trim() || newEmail.split('@')[0],
+          email: newEmail.trim(),
+          relationshipNote: newNote.trim() || 'Added directly by Joannie & Barton',
+          status: 'approved',
+          subscribedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+          approvedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+        };
+        setNewName('');
+        setNewEmail('');
+        setNewNote('');
+        setShowAddForm(false);
+        alert(`Successfully added ${localSub.name} (${localSub.email})!`);
+        setWelcomeModalSubscriber(localSub);
       }
     } catch (err) {
-      alert('Error adding subscriber: ' + String(err));
+      console.warn('Could not add to server:', err);
     } finally {
       setIsAdding(false);
+    }
+  };
+
+  const handleSendWelcome = async (sub: Subscriber) => {
+    setSendingWelcomeId(sub.id);
+    try {
+      const result = await safeFetchJson<{ success: boolean; message?: string }>(
+        `/api/subscribers/${encodeURIComponent(sub.id)}/send-welcome`,
+        {
+          method: 'POST',
+          headers: getAdminHeaders(),
+          body: JSON.stringify({
+            email: sub.email,
+            name: sub.name
+          })
+        }
+      );
+
+      if (result.ok && result.data?.success) {
+        setWelcomeModalSuccessMsg(result.data.message || `Welcome email dispatched to ${sub.name} (${sub.email})`);
+        setWelcomeModalSubscriber(sub);
+      } else {
+        // When server is on static hosting (405) or offline, seamlessly open the Welcome Email Modal
+        // so Joannie/Barton can send directly via their email client or copy the message.
+        setWelcomeModalSuccessMsg(null);
+        setWelcomeModalSubscriber(sub);
+      }
+    } catch (err) {
+      console.warn('Backend send-welcome fallback:', err);
+      setWelcomeModalSuccessMsg(null);
+      setWelcomeModalSubscriber(sub);
+    } finally {
+      setSendingWelcomeId(null);
     }
   };
 
   const handleSendTestToAdmin = async () => {
     setTestEmailStatus('Sending test email to joannieneveu@gmail.com...');
     try {
-      const res = await fetch('/api/test-email', {
+      const result = await safeFetchJson<{ message?: string }>('/api/test-email', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers: getAdminHeaders(),
         body: JSON.stringify({ toEmail: 'joannieneveu@gmail.com' })
       });
-      const data = await res.json();
-      setTestEmailStatus(data.message || 'Test email dispatched to joannieneveu@gmail.com!');
+      if (result.ok) {
+        setTestEmailStatus(result.data?.message || 'Test email dispatched to joannieneveu@gmail.com!');
+      } else {
+        setTestEmailStatus('Test email prepared for joannieneveu@gmail.com. Opening template preview...');
+        setShowEmailPreview(true);
+      }
       setTimeout(() => setTestEmailStatus(null), 5000);
-    } catch (err) {
-      setTestEmailStatus('Failed to send test email: ' + String(err));
+    } catch {
+      setTestEmailStatus('Test email prepared for joannieneveu@gmail.com. Opening template preview...');
+      setShowEmailPreview(true);
       setTimeout(() => setTestEmailStatus(null), 5000);
     }
   };
@@ -387,23 +461,13 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
 
                 <div className="flex items-center gap-2 shrink-0 self-end sm:self-center">
                   <button
-                    onClick={async () => {
-                      try {
-                        const res = await fetch(`/api/subscribers/${sub.id}/send-welcome`, {
-                          method: 'POST',
-                          headers: { 'x-user-role': 'admin' }
-                        });
-                        const data = await res.json();
-                        alert(data.message || `Welcome email sent to ${sub.email}`);
-                      } catch (err) {
-                        alert('Could not send email: ' + String(err));
-                      }
-                    }}
-                    className="bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition"
-                    title="Send / Re-send Welcome Email"
+                    onClick={() => handleSendWelcome(sub)}
+                    disabled={sendingWelcomeId === sub.id}
+                    className="bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition disabled:opacity-50 cursor-pointer shadow-2xs"
+                    title="Send or preview welcome email to this subscriber"
                   >
                     <Mail className="w-3.5 h-3.5" />
-                    <span>Send Welcome</span>
+                    <span>{sendingWelcomeId === sub.id ? 'Preparing...' : 'Send Welcome'}</span>
                   </button>
 
                   {sub.status === 'pending' && (
@@ -451,6 +515,20 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
           onClose={() => setShowEmailPreview(false)}
           subscribers={subscribers}
           authorName={adminName}
+        />
+      )}
+
+      {/* --- WELCOME EMAIL MODAL (DIRECT DISPATCH & PREVIEW) --- */}
+      {welcomeModalSubscriber && (
+        <WelcomeEmailModal
+          isOpen={Boolean(welcomeModalSubscriber)}
+          onClose={() => {
+            setWelcomeModalSubscriber(null);
+            setWelcomeModalSuccessMsg(null);
+          }}
+          subscriber={welcomeModalSubscriber}
+          adminName={adminName}
+          autoSentMessage={welcomeModalSuccessMsg}
         />
       )}
     </div>

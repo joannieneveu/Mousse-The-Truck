@@ -41,6 +41,19 @@ async function startServer() {
   app.use(express.json({ limit: '50mb' }));
   app.use(express.urlencoded({ extended: true, limit: '50mb' }));
 
+  // CORS Middleware for external domains (e.g. mousseontheloose.ca) and preview URLs
+  app.use((req: Request, res: Response, next: NextFunction) => {
+    res.header('Access-Control-Allow-Origin', (req.headers.origin as string) || '*');
+    res.header('Access-Control-Allow-Credentials', 'true');
+    res.header('Access-Control-Allow-Methods', 'GET, POST, PUT, DELETE, OPTIONS');
+    res.header('Access-Control-Allow-Headers', 'Origin, X-Requested-With, Content-Type, Accept, Authorization, x-user-email, x-user-role, x-user-id, x-admin-token');
+    if (req.method === 'OPTIONS') {
+      res.sendStatus(204);
+      return;
+    }
+    next();
+  });
+
   // Persistent Data Store File
   const DATA_FILE = path.join(process.cwd(), 'expedition_data_store.json');
   const UPLOADS_DIR = path.join(process.cwd(), 'public', 'uploads');
@@ -1647,34 +1660,64 @@ Return ONLY a valid JSON object matching this schema:
 
   // Re-send Welcome Email to specific subscriber
   app.post('/api/subscribers/:id/send-welcome', async (req: Request, res: Response) => {
-    if (!isUserAdmin(req)) {
-      res.status(403).json({ error: 'Administrator authorization required.' });
-      return;
+    try {
+      if (!isUserAdmin(req)) {
+        res.status(403).json({ success: false, error: 'Administrator authorization required.' });
+        return;
+      }
+
+      const { id } = req.params;
+      const { email: bodyEmail, name: bodyName } = req.body || {};
+      let sub = subscribers.find(s => s.id === id);
+      if (!sub && bodyEmail) {
+        sub = subscribers.find(s => s.email.toLowerCase() === String(bodyEmail).toLowerCase().trim());
+      }
+
+      // If subscriber not found in memory but email is provided, construct subscriber record on the fly
+      if (!sub) {
+        if (bodyEmail) {
+          sub = {
+            id: id || `sub-${Date.now()}`,
+            email: String(bodyEmail).toLowerCase().trim(),
+            name: bodyName || String(bodyEmail).split('@')[0],
+            relationshipNote: 'Subscriber',
+            status: 'approved',
+            subscribedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+            approvedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
+          };
+          subscribers.push(sub);
+          saveDataStore();
+        } else {
+          res.status(404).json({ success: false, error: 'Subscriber not found.' });
+          return;
+        }
+      }
+
+      const welcome = generateWelcomeEmailHtml({
+        subscriberName: sub.name,
+        subscriberEmail: sub.email
+      });
+
+      const result = await dispatchEmail({
+        to: sub.email,
+        subject: welcome.defaultSubject,
+        html: welcome.html,
+        text: welcome.plainText
+      });
+
+      res.json({ 
+        success: true, 
+        message: `Welcome email dispatched to ${sub.name} (${sub.email}). Mode: ${result.mode}`,
+        emailDetails: {
+          to: sub.email,
+          subject: welcome.defaultSubject,
+          text: welcome.plainText
+        }
+      });
+    } catch (err: any) {
+      console.error('[Send Welcome Endpoint Error]:', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to dispatch welcome email' });
     }
-
-    const { id } = req.params;
-    const sub = subscribers.find(s => s.id === id);
-    if (!sub) {
-      res.status(404).json({ error: 'Subscriber not found.' });
-      return;
-    }
-
-    const welcome = generateWelcomeEmailHtml({
-      subscriberName: sub.name,
-      subscriberEmail: sub.email
-    });
-
-    const result = await dispatchEmail({
-      to: sub.email,
-      subject: welcome.defaultSubject,
-      html: welcome.html,
-      text: welcome.plainText
-    });
-
-    res.json({ 
-      success: true, 
-      message: `Welcome email dispatched to ${sub.name} (${sub.email}). Mode: ${result.mode}` 
-    });
   });
 
   // Admin Approve Subscriber (Joannie or Barton)
