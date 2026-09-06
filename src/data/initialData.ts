@@ -75,7 +75,7 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
   {
     id: 'riley',
     name: 'Riley',
-    relation: 'Daughter & Twin Mom (St. John\'s, NL)',
+    relation: "Big sister & Twin Mom (St. John's, NL)",
     bio: 'Cheering on the sabbatical from home in St. John\'s, NL! Riley just had baby twins of her own, so she is immersed in double baby bliss.',
     avatar: '',
     onTripWithUs: false,
@@ -93,7 +93,7 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
   {
     id: 'nikolai',
     name: 'Nikolai',
-    relation: 'Med Student (St. John\'s, NL)',
+    relation: "Brother & Med Student (St. John's, NL)",
     bio: 'Med student, keeping the pulse on the hospital and our house while following our journey from Canada to Argentina.',
     avatar: '',
     onTripWithUs: false,
@@ -110,64 +110,228 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
   }
 ];
 
-export const INITIAL_SUBSCRIBERS: Subscriber[] = [
-  {
-    id: 'sub-1',
-    name: 'Riley',
-    email: 'riley.family@americasexpedition.com',
-    relationshipNote: 'Daughter (twin mom)',
-    status: 'approved',
-    subscribedAt: 'June 1, 2026',
-    approvedAt: 'June 1, 2026'
-  },
-  {
-    id: 'sub-2',
-    name: 'Bridger',
-    email: 'bridger.family@americasexpedition.com',
-    relationshipNote: 'Big Brother (Vancouver,BC)',
-    status: 'approved',
-    subscribedAt: 'June 2, 2026',
-    approvedAt: 'June 2, 2026'
-  },
-  {
-    id: 'sub-3',
-    name: 'Nikolai',
-    email: 'nikolai.family@americasexpedition.com',
-    relationshipNote: 'Family',
-    status: 'approved',
-    subscribedAt: 'June 2, 2026',
-    approvedAt: 'June 2, 2026'
-  },
-  {
-    id: 'sub-4',
-    name: 'Mattea',
-    email: 'mattea.family@americasexpedition.com',
-    relationshipNote: 'Family',
-    status: 'approved',
-    subscribedAt: 'June 3, 2026',
-    approvedAt: 'June 3, 2026'
-  },
-  {
-    id: 'sub-5',
-    name: 'Sarah Jenkins',
-    email: 'sarah.hospital@calgaryhealth.ca',
-    relationshipNote: 'Physician colleague',
-    status: 'approved',
-    subscribedAt: 'June 8, 2026',
-    approvedAt: 'June 9, 2026'
-  },
-  {
-    id: 'sub-6',
-    name: 'Alex Rivera',
-    email: 'alex.mba@cohort2027.org',
-    relationshipNote: 'MBA classmate',
-    status: 'approved',
-    subscribedAt: 'June 15, 2026',
-    approvedAt: 'June 16, 2026'
-  }
-];
+export const INITIAL_SUBSCRIBERS: Subscriber[] = [];
 
 export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
+  // Entry 3 - North to the Arctic Ocean (Tuktoyaktuk & Dempster Highway)
+  {
+    id: 'log-3-arctic-ocean-tuktoyaktuk',
+    title: 'North to the Arctic Ocean',
+    slug: 'north-to-the-arctic-ocean',
+    date: 'September 4, 2026',
+    locationName: 'Tuktoyaktuk, Northwest Territories',
+    country: 'Canada',
+    coordinates: { lat: 69.4454, lng: -133.0342 },
+    author: 'Dr. Joannie Neveu',
+    readingTime: '7 min read',
+    category: 'adventures_mba',
+    journeyLeg: 'arctic_yukon',
+    status: 'published',
+    excerpt: 'Tonight, after roughly 900 kilometres of dirt, mud, mountains, tundra, one enormous flat tire, a surprise Newfoundland reunion, and a few very cold toes, we reached the Arctic Ocean.',
+    content: `### **Dawson City → Dempster Highway → Inuvik → Tuktoyaktuk**
+
+*September 4, 2026 — Tuktoyaktuk, Northwest Territories*
+
+WE MADE IT, GANG.
+
+Tonight, after roughly 900 kilometres of dirt, mud, mountains, tundra, one enormous flat tire, a surprise Newfoundland reunion, and a few very cold toes, we reached the Arctic Ocean.
+
+But first: Dawson City.
+
+---
+
+### **Dawson City: Birthdays, Boardwalks & Bike Parts**
+
+We made it to Dawson City just in time for Barton’s birthday.
+
+Dawson is completely charming. Dirt streets, colourful old buildings and wooden boardwalks instead of sidewalks, it feels a little like someone preserved a Gold Rush town and then forgot to tell everyone that the 1890s ended. Straight out of a movie set!
+
+We celebrated with a lovely lunch and matcha latté at Bonton & Company before setting off on a very Dawson-style errand... finding a bike part.
+
+A woman who owns a bike shop had exactly what Barton needed. Great! Except the bike shop wasn't open because she works at the hospital during the week. No problem. She told us to meet her at the hospital reception because the bike part was in her truck.
+
+And that is how our sightseeing tour of Dawson City included the local hospital.
+
+Bike tire pumped, it was time for Barton's birthday activity... The Dome.
+
+I hiked up carrying Henri on my chest while Barton mountain biked it. Henri isn't quite ready to ride his own mountain bike yet.
+
+Yet.
+
+We met at the top, sweaty and happy, with Dawson and the Yukon River spread out below us. And wow, it was steep! After so many hours sitting in Mousse, moving our legs again felt incredible. Birthday pictures taken, we climbed back into the truck.
+
+Next stop: the Dempster Highway.
+
+---
+
+### **The Dempster: Things Escalated Quickly**
+
+The Dempster Highway runs about 900km, with 740 km to Inuvik, crossing some of Canada's vastest country before the road continues another 138 km to Tuktoyaktuk and the Arctic Ocean.
+
+No services for very long stretches. A barge, a ferry. Gravel. Mountains. Tundra. Mud. Wait, did I say mud ??
+
+Basically, exactly what we bought Mousse for... and the two awesome ZealPro bike bags, otherwise they would be caked!
+
+The days are still long this far north, so we drove until our eyelids informed us that the day was officially over. About 80 km up the Dempster, we pulled over for the night just a couple of kilometres from the Angelcomb Peak trail in Tombstone Territorial Park.
+
+The plan was perfect:  
+Wake up, breakfast, Hike Angelcomb, Continue north.
+
+We woke up to an absolutely spectacular mountain view... and a flat tire.
+
+Of course. Not just a tire. One of Mousse's enormous military-rated tires. Two hundred and eighty pounds of tire. Flat.
+
+Apparently the Dempster wanted to establish the terms of our relationship early. Papa vs. The 280-lb Tire.
+
+Therefore... change of plans. Now my favourite anesthesiologist got to work. First, lower the spare. Then jack up several tonnes of Mousse. Except our jack couldn't reach high enough. Thankfully, some Newfoundlanders who were heading north to hunt caribou had given us a block of wood. There are moments in life when you suddenly understand why you've been carrying around a random piece of lumber. This was one of them.
+
+Meanwhile, Henri was becoming increasingly unimpressed with the roadside entertainment.
+
+So we bundled him into the spectacular hand-knitted Newfoundland outfit we'd been given (which makes him look like a tiny Arctic Smurf lol) strapped him into his bouncy chair and positioned him where he could supervise Papa.
+
+Eventually the gigantic tire came off, the puncture was found, the repair was done, and Mousse was roadworthy again.
+
+Several hours had disappeared, and so had our Angelcomb hike.
+
+But we had a mission still... Arctic Ocean. September 4.
+
+---
+
+### **Mountains, Mud & the Arctic Circle**
+
+We still needed to move our legs, so around supper time we stopped to hike the Sapper Hill Trail. It was absolutely gorgeous. Then back into Mousse... Drive. Drive. Drive. At around kilometre 290, we finally gave up for the night and collapsed into bed. The next morning we woke surrounded by mountains, completely refreshed. We looked at the clock and it was past 8 a.m. A little miracle when you have an infant!
+
+Back on the road.
+
+And then came one of those moments we'd been waiting for, you guessed it... 66°33′ North. → The Arctic Circle !!!
+
+We crossed it. For the first time on this journey, we were officially in the Arctic. Family photo. Obviously. Only 485-ish kilometres left to the ocean. Easy.
+
+The Dempster really is extraordinary.  
+Mountains give way to enormous open landscapes, the vegetation gets shorter, trees eventually disappear, and suddenly you're driving through tundra under a sky that seems sooo big. And yes, the road is VERY muddy. We have never been happier that we didn't buy a white truck. People had warned us repeatedly about how rough the Dempster could be. Honestly? A few bumps here and there. Nothing compared with the road between Pouch Cove and Cape St. Francis in Newfoundland. 😂
+
+Eventually, we found snow. Henri's first snow! Historic moment!  
+... Except Henri was asleep. Barton ran outside, made a snowball and brought it into the truck so our son wouldn't miss this important Canadian milestone.
+
+He placed the snowball on him... Henri remained asleep. Completely unbothered by winter.
+
+We have photographic evidence, so we're counting it.
+
+---
+
+### **Snow: 1. Motorcycle: 0.**
+
+Not everyone was quite as relaxed about the snow as Henri. We came across a motorcyclist from Taiwan who had apparently never encountered snow before. Unfortunately, his introduction involved wiping out. Another truck had already stopped. We pulled over and asked if they needed help. The man basically told us they had things under control: he was an RCMP officer and his wife was a nurse in Inuvik. Fair enough. That seemed like a reasonably qualified roadside rescue team. So we continued north. Little did we know we'd see them again.
+
+---
+
+### **Northwest Territories**
+
+Eventually we crossed from Yukon into the Northwest Territories and kept winding our way north. And finally... Inuvik. Civilization! A campground! A SPACIOUS SHOWER. Glorious.
+
+Naturally, we also decided to visit the hospital. Apparently hospital tourism is becoming a recurring feature of this trip. We wandered into the OR to say hello and somehow, thousands of kilometres from Newfoundland, found...
+
+Newfoundlanders.
+
+Quinn, an anesthesiologist who trained in Newfoundland and was doing a locum in Inuvik. And Dena, an OR nurse from home who now lives in Inuvik because her husband is an RCMP officer. Wait. An RCMP officer?
+
+Yep.
+
+THEY WERE THE PEOPLE ON THE SIDE OF THE ROAD.
+
+Of course they were.
+
+We had managed to encounter fellow Newfoundlanders on the Dempster Highway, drive away from them, and then accidentally walk into their workplace in Inuvik.
+
+Newfoundland has approximately 500,000 people, yet somehow you can apparently never be more than six metres from one.
+
+We exchanged stories over tea, bannock and fish sticks in the hospital parking lot. Then it was time for the final push. Tuktoyaktuk.
+
+---
+
+### **The Road to Tuk**
+
+The drive from Inuvik to Tuktoyaktuk is unlike anything we'd seen before. The mountains disappeared. The trees disappeared. The world flattened into tundra... low shrubs, berries, lakes and blue sky. Along the road were snowmobiles and komatiks, traditional sleds used across the North. As Barton drove, I read aloud from a chapter about communities in the Northwest Territories and the effects of coastal erosion and climate change. It was surreal reading descriptions of the landscape while literally watching that landscape pass outside our windows.
+
+And then...
+
+Tuktoyaktuk. 69°27′ North and on the shore of the Arctic Ocean.
+
+---
+
+### **Dinner in Tuk**
+
+Our first stop was supper at Guatsie's Catering, which was less “restaurant” and more “welcome into someone’s home and eat what people actually eat here.” Perfect.
+
+A lovely local Elder and her niece cooked for us and patiently answered our endless questions about life in Tuk and food from the land. And this was definitely not your average dinner. We started with beluga sashimi, followed by caribou soup and Canada goose soup, then beluga and caribou steak, with what she jokingly called the “white-man side” of mashed potatoes. Dessert was bakeapple tart.
+
+But that was exactly the point. Sitting around someone’s table, eating food harvested from the land and ocean around us, and hearing stories about life in Tuk was so much more than dinner. It was one of those travel experiences that gives you a tiny window into a place you otherwise would have only driven through.
+
+---
+
+### **The Arctic Ocean**
+
+We drove to the edge of the continent. There it was... yes, the Arctic Ocean. Mousse parked beside the sign. Family picture taken.
+
+And obviously, someone had to get into the water. Some people celebrate reaching the Arctic Ocean with a polar plunge. At 4°C, I decided that a few toes showed plenty of commitment to the cause.  
+Technically, I entered the Arctic Ocean. Nobody specified how much of me had to enter. It counts. We even got a certificate that authenticates it.
+
+And standing there tonight, muddy truck behind us, Arctic Ocean in front of us and Henri bundled between us, it finally sank in.
+
+This whole ridiculous idea that we've talked about and planned for so long isn't an idea anymore. We actually started and we drove Mousse north until there was literally no more northbound road.
+
+Tomorrow, after our MBA online class, we turn around and start driving south. A lot south.
+
+From the Arctic Ocean all the way toward the bottom of South America. The northern end of the road and the beginning of our Pan-American journey.
+
+Let's go.`,
+    coverImage: '/IMG_3785.jpeg',
+    gallery: [
+      {
+        url: '/IMG_3785.jpeg',
+        caption: 'Mousse at the Arctic Ocean / Tuktoyaktuk expedition cover photograph',
+        type: 'image'
+      },
+      {
+        url: "/Henri's spot.jpeg",
+        caption: 'Henri supervising Papa vs. the 280-lb flat tire from his bouncy chair on the Dempster Highway',
+        type: 'image'
+      },
+      {
+        url: '/departure.jpeg',
+        caption: 'Mousse navigating the muddy gravel stretches of the Dempster Highway',
+        type: 'image'
+      },
+      {
+        url: '/Henri.jpeg',
+        caption: 'Henri unbothered by his first Canadian snowball during a roadside snooze',
+        type: 'image'
+      }
+    ],
+    metrics: {
+      elevationM: 15,
+      tempC: 4,
+      kmTraveled: 3850,
+      odometerKm: 3850,
+      henriAge: '2.5 months',
+      activityType: 'Hiking The Dome & Reaching the Arctic Coast'
+    },
+    locationInsights: {
+      population: '937 (Tuktoyaktuk, NWT)',
+      culturalContext: 'Traditional territory of the Inuvialuit (69°27′ N, 133°02′ W)',
+      interestingFacts: [
+        'Tuk has pingos! A pingo is basically a hill with a giant chunk of ice hidden inside it. It forms when water trapped underground freezes, expands, and slowly pushes the ground upward. It has the second largest in the world.',
+        'The Inuvik–Tuktoyaktuk Highway, opened in 2017, made Tuk the first community on Canada\'s Arctic Ocean coast connected to the rest of Canada\'s road network year-round.',
+        'The ground is permanently frozen. 🧊 Tuk is built on permafrost, which means the ground below the surface stays frozen for at least two years, and in the Arctic, it can have been frozen for thousands of years. When permafrost thaws, the ground can sink or shift. Combined with powerful waves and less protective sea ice, this is one reason coastal erosion is such a big issue in Tuktoyaktuk.'
+      ],
+      activityTips: 'Beluga sashimi & traditional caribou supper at Guatsie\'s Catering, taking the Arctic Ocean polar toe dip, and visiting the Pingo Canadian Landmark.'
+    },
+    henriHighlight: 'The first time he saw snow (September 3, 2026)',
+    tags: ['Tuktoyaktuk', 'Arctic Ocean', 'Dempster Highway', 'Dawson City', 'Inuvik', 'Henri First Snow', 'Pingos', 'Permafrost'],
+    likesCount: 0,
+    commentsCount: 0
+  },
+
   // Entry 2 - Alberta to Yukon & Whitehorse Adventures
   {
     id: 'log-2-alberta-to-yukon',
@@ -561,8 +725,8 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     status: 'completed',
     elevationM: 320,
     summary: 'Celebrated Barton’s birthday in the historic Klondike gold rush capital before tackling the Dempster Highway north to the Arctic Ocean!',
-    thumbnail: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 2680
+    distanceFromStartKm: 2680,
+    relatedLogId: 'log-3-arctic-ocean-tuktoyaktuk'
   },
   {
     id: 'inuvik',
@@ -575,11 +739,11 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     date: 'September 3, 2026',
     status: 'completed',
     elevationM: 68,
-    summary: 'Crossed the Arctic Circle and arrived in Inuvik at the northern terminus of the Dempster Highway in the Mackenzie River Delta!',
+    summary: 'Crossed the Arctic Circle and arrived in Inuvik at the northern terminus of the Dempster Highway in the Mackenzie River Delta! Surprise reunion with fellow Newfoundlanders Quinn & Dena in the hospital parking lot.',
     henriNote: 'Henri officially crossed above the Arctic Circle (66°33′ N) and stared out across the northern tundra.',
     mbaNote: 'High-latitude Starlink communications testing and cold-weather remote supply management.',
-    thumbnail: 'https://images.unsplash.com/photo-1517411032315-54ef2cb783bb?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 3670
+    distanceFromStartKm: 3670,
+    relatedLogId: 'log-3-arctic-ocean-tuktoyaktuk'
   },
   {
     id: 'tuktoyaktuk',
@@ -593,10 +757,11 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     status: 'completed',
     elevationM: 5,
     summary: 'The Arctic Ocean reached! Driving the Inuvik-Tuktoyaktuk Highway all the way to the northernmost public road in North America at 69° North on the Beaufort Sea.',
-    henriNote: 'Baby Henri dipping his little toes into the Arctic Ocean surf at 69° North!',
-    mbaNote: 'Northern apex milestone achieved: 3,820 km from Lethbridge to the Arctic Ocean!',
-    thumbnail: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=600&q=80',
-    distanceFromStartKm: 3820
+    henriNote: 'Henri’s milestone: the very first time he saw snow on September 3, 2026 along the Dempster Highway!',
+    mbaNote: 'Northern apex milestone achieved: 3,850 km completed from Lethbridge up to the Arctic Ocean coast.',
+    thumbnail: '/IMG_3785.jpeg',
+    distanceFromStartKm: 3850,
+    relatedLogId: 'log-3-arctic-ocean-tuktoyaktuk'
   },
   {
     id: 'olympic_peninsula',
@@ -610,7 +775,6 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     status: 'upcoming',
     elevationM: 68,
     summary: 'Planned: Coastal rainforests, Puget Sound ferry crossings, and exploring the California Redwoods.',
-    thumbnail: 'https://images.unsplash.com/photo-1502175353174-a7a70e73b362?auto=format&fit=crop&w=600&q=80',
     distanceFromStartKm: 6920
   },
   {
@@ -625,8 +789,7 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     status: 'upcoming',
     elevationM: 12,
     summary: 'Planned: Desert coastal tracks, warm turquoise water, and off-grid solar camping with Henri.',
-    distanceFromStartKm: 9800,
-    thumbnail: 'https://images.unsplash.com/photo-1512813195386-6cf811ad3542?auto=format&fit=crop&w=600&q=80'
+    distanceFromStartKm: 9800
   },
   {
     id: 'costa_rica',
@@ -640,8 +803,7 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     status: 'upcoming',
     elevationM: 1200,
     summary: 'Planned: Cloud forests, wildlife encounters, and warm tropical sabbatical adventures.',
-    distanceFromStartKm: 15600,
-    thumbnail: 'https://images.unsplash.com/photo-1516026672322-bc52d61a55d5?auto=format&fit=crop&w=600&q=80'
+    distanceFromStartKm: 15600
   },
   {
     id: 'peru_andes',
@@ -655,8 +817,7 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     status: 'upcoming',
     elevationM: 3400,
     summary: 'Planned: High Andean passes, historic cultural sites, and alpaca watching with baby Henri.',
-    distanceFromStartKm: 22100,
-    thumbnail: 'https://images.unsplash.com/photo-1526392060635-9d6019884377?auto=format&fit=crop&w=600&q=80'
+    distanceFromStartKm: 22100
   },
   {
     id: 'ushuaia',
@@ -670,12 +831,28 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     status: 'upcoming',
     elevationM: 8,
     summary: 'Planned: The Southernmost point! 35,000 km sabbatical triumph and celebrating Henri’s 1st birthday at the end of the world.',
-    distanceFromStartKm: 34500,
-    thumbnail: 'https://images.unsplash.com/photo-1544735716-392fe2489ffa?auto=format&fit=crop&w=600&q=80'
+    distanceFromStartKm: 34500
   }
 ];
 
 export const INITIAL_MEDIA: MediaItem[] = [
+  {
+    id: 'media-tuk-cover-img3785',
+    title: 'North to the Arctic Ocean (Cover)',
+    type: 'image',
+    url: '/IMG_3785.jpeg',
+    thumbnailUrl: '/IMG_3785.jpeg',
+    caption: 'Official expedition photograph at the Arctic Ocean / Tuktoyaktuk, Northwest Territories',
+    locationName: 'Tuktoyaktuk, Northwest Territories',
+    coordinates: { lat: 69.4454, lng: -133.0342 },
+    date: 'September 4, 2026',
+    tags: ['Arctic Ocean', 'Tuktoyaktuk', 'Mousse', 'Cover', 'Expedition'],
+    author: 'Dr. Joannie Neveu',
+    featured: true,
+    journeyLeg: 'arctic_yukon',
+    likesCount: 0,
+    commentsCount: 0
+  },
   {
     id: 'media-henri-driving',
     title: 'Henri at the Wheel of Mousse',
@@ -689,8 +866,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 14,
-    commentsCount: 2
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-henris-spot',
@@ -705,8 +882,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 18,
-    commentsCount: 3
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-eddy-anne',
@@ -721,8 +898,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 12,
-    commentsCount: 1
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-brian-thiessen',
@@ -737,8 +914,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 15,
-    commentsCount: 2
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-gravel-lane',
@@ -753,7 +930,7 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: false,
     journeyLeg: 'arctic_yukon',
-    likesCount: 9,
+    likesCount: 0,
     commentsCount: 0
   },
   {
@@ -769,8 +946,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 11,
-    commentsCount: 1
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-old-family-truck',
@@ -785,7 +962,7 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: false,
     journeyLeg: 'arctic_yukon',
-    likesCount: 10,
+    likesCount: 0,
     commentsCount: 0
   },
   {
@@ -801,8 +978,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 22,
-    commentsCount: 4
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-sunset-mousse',
@@ -817,8 +994,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 25,
-    commentsCount: 3
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-departure',
@@ -833,8 +1010,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 19,
-    commentsCount: 2
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-family-portrait',
@@ -849,8 +1026,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: true,
     journeyLeg: 'arctic_yukon',
-    likesCount: 21,
-    commentsCount: 3
+    likesCount: 0,
+    commentsCount: 0
   },
   {
     id: 'media-runner',
@@ -865,7 +1042,7 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: false,
     journeyLeg: 'arctic_yukon',
-    likesCount: 8,
+    likesCount: 0,
     commentsCount: 0
   },
   {
@@ -881,8 +1058,8 @@ export const INITIAL_MEDIA: MediaItem[] = [
     author: 'Joannie & Barton',
     featured: false,
     journeyLeg: 'arctic_yukon',
-    likesCount: 16,
-    commentsCount: 1
+    likesCount: 0,
+    commentsCount: 0
   }
 ];
 
@@ -931,32 +1108,32 @@ export const INITIAL_RIG_PHOTOS: RigPhoto[] = [
   },
   {
     id: 'rig-photo-interior-1',
-    title: 'Interior Living Quarters – View 1',
-    caption: 'Custom 4-season habitat interior layout, dinette area, and optimized storage inside Mousse.',
+    title: 'Interior Living Quarters & Henri’s Cot – View 1',
+    caption: 'Interior living quarters featuring the custom-made cot for Henri that is removable to give us extra counter space.',
     url: '/interior1.jpeg',
     category: 'interior',
     uploadedAt: 'August 2026'
   },
   {
     id: 'rig-photo-interior-2',
-    title: 'Interior Galley & Kitchenette – View 2',
-    caption: 'Off-grid galley setup, kitchen prep counters, and functional cabinetry for life on the road.',
+    title: 'Interior Galley & Workstation Dinette – View 2',
+    caption: 'Off-grid galley setup, kitchen prep counters, functional cabinetry, and comfortable dining seating and workstation setup with 360° pneumatic table for remote MBA coursework.',
     url: '/interior2.jpeg',
     category: 'interior',
     uploadedAt: 'August 2026'
   },
   {
     id: 'rig-photo-interior-3',
-    title: 'Interior Workstation & Seating – View 3',
-    caption: 'Comfortable dining seating and workstation setup with 360° pneumatic table for remote MBA coursework.',
+    title: 'Overcab Queen Bed & Foldable Stairs – View 3',
+    caption: 'Warm insulated living space and sleeping quarters configured for Joannie, Barton, and baby Henri. Features a large queen-size bed for the night and foldable stairs to climb up.',
     url: '/interior3.jpeg',
     category: 'interior',
     uploadedAt: 'August 2026'
   },
   {
     id: 'rig-photo-interior-4',
-    title: 'Interior Living & Nursery Quarters – View 4',
-    caption: 'Warm insulated living space and sleeping quarters configured for Joannie, Barton, and baby Henri.',
+    title: 'Bathroom, Infinity Shower & Clesana Toilet – View 4',
+    caption: 'Enclosed wet bath featuring the high-efficiency recirculating Infinity Shower Summit and waterless Clesana C1 toilet with round swivel base for off-grid 4-season sanitation.',
     url: '/interior4.jpeg',
     category: 'interior',
     uploadedAt: 'August 2026'

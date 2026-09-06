@@ -21,20 +21,25 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
   isOpen,
   onClose,
   onSubscribe,
-  approvedSubscribersCount = 6
+  approvedSubscribersCount = 0
 }) => {
   const [email, setEmail] = useState<string>('');
   const [name, setName] = useState<string>('');
   const [relationshipNote, setRelationshipNote] = useState<string>('');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [submittedMessage, setSubmittedMessage] = useState<string | null>(null);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email.trim() || !email.includes('@')) return;
+    if (!email.trim() || !email.includes('@')) {
+      setErrorMessage('Please enter a valid email address.');
+      return;
+    }
 
+    setErrorMessage(null);
     setIsSubmitting(true);
     try {
       const res = await onSubscribe({
@@ -43,9 +48,10 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
         relationshipNote: relationshipNote.trim()
       });
 
-      setSubmittedMessage(res.message || 'Subscription request submitted for Joannie & Barton to review.');
-    } catch (err) {
+      setSubmittedMessage(res.message || 'Thank you! You are now subscribed. You will receive an email notification whenever a new journal entry is published.');
+    } catch (err: any) {
       console.error(err);
+      setErrorMessage(err?.message || 'Failed to subscribe. Please try again.');
     } finally {
       setIsSubmitting(false);
     }
@@ -66,7 +72,7 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
                 Subscribe for Updates
               </h2>
               <p className="text-xs text-stone-500 font-sans">
-                Get occasional journal updates directly from Joannie & Barton.
+                Receive an email notification when a new journal entry is posted.
               </p>
             </div>
           </div>
@@ -108,23 +114,15 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
                 <span>Expedition Email Dispatches</span>
               </div>
               <p className="text-[11px] text-blue-900/90">
-                Subscribe to receive personal email updates, photo albums, and road stories from Joannie & Barton as we journey 35,000 km across the Americas with baby Henri in Mousse.
+                Enter your email address below. You'll receive a direct notification each time Joannie & Barton publish a new expedition chapter as our family travels 35,000 km across the Americas with baby Henri.
               </p>
             </div>
 
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1">
-                Your Name *
-              </label>
-              <input
-                type="text"
-                required
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="e.g. Riley, Dr. Chen, Grandma Sarah"
-                className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900"
-              />
-            </div>
+            {errorMessage && (
+              <div className="p-3 bg-rose-50 border border-rose-200 rounded-xl text-rose-800 text-xs">
+                {errorMessage}
+              </div>
+            )}
 
             <div>
               <label className="block font-semibold text-stone-700 mb-1">
@@ -142,13 +140,26 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
 
             <div>
               <label className="block font-semibold text-stone-700 mb-1">
-                Note for Joannie & Barton (How do we know you?)
+                Your Name <span className="text-stone-400 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={name}
+                onChange={(e) => setName(e.target.value)}
+                placeholder="e.g. Riley, Grandma Sarah, Pierre"
+                className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900"
+              />
+            </div>
+
+            <div>
+              <label className="block font-semibold text-stone-700 mb-1">
+                Optional Note for Joannie & Barton <span className="text-stone-400 font-normal">(optional)</span>
               </label>
               <input
                 type="text"
                 value={relationshipNote}
                 onChange={(e) => setRelationshipNote(e.target.value)}
-                placeholder="e.g. Hospital colleague, MBA cohort, family friend"
+                placeholder="e.g. Hospital colleague, MBA cohort, family friend, follower"
                 className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900"
               />
             </div>
@@ -162,10 +173,10 @@ export const SubscribeModal: React.FC<SubscribeModalProps> = ({
               <button
                 type="submit"
                 disabled={isSubmitting}
-                className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm disabled:opacity-50"
+                className="bg-blue-900 hover:bg-blue-950 text-white font-semibold px-5 py-2.5 rounded-xl transition flex items-center gap-2 shadow-sm disabled:opacity-50 cursor-pointer"
               >
                 {isSubmitting ? <RefreshCw className="w-4 h-4 animate-spin" /> : <Send className="w-4 h-4" />}
-                <span>Request Subscription</span>
+                <span>Subscribe</span>
               </button>
             </div>
 

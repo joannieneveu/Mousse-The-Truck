@@ -32,6 +32,8 @@ interface AuthModalProps {
   currentUser: UserProfile | null;
   onUserChange: (user: UserProfile | null) => void;
   onOpenChangePassword?: () => void;
+  onOpenAdminSubscribersModal?: () => void;
+  subscribersCount?: number;
 }
 
 export const AuthModal: React.FC<AuthModalProps> = ({
@@ -40,6 +42,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   currentUser,
   onUserChange,
   onOpenChangePassword,
+  onOpenAdminSubscribersModal,
+  subscribersCount = 0
 }) => {
   const [activeTab, setActiveTab] = useState<'admin' | 'guest'>('admin');
   const [selectedAdmin, setSelectedAdmin] = useState<UserProfile>(ADMIN_USERS[0]);
@@ -385,7 +389,22 @@ export const AuthModal: React.FC<AuthModalProps> = ({
               </div>
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              {currentUser.isAdmin && onOpenAdminSubscribersModal && (
+                <button
+                  type="button"
+                  id="admin-subscribers-modal-btn"
+                  onClick={() => {
+                    onClose();
+                    onOpenAdminSubscribersModal();
+                  }}
+                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition"
+                  title="Manage Subscribers & Review List"
+                >
+                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
+                  <span>Subscribers ({subscribersCount || 0})</span>
+                </button>
+              )}
               {currentUser.isAdmin && onOpenChangePassword && (
                 <button
                   type="button"

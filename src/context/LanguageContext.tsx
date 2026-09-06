@@ -26,7 +26,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.signedInAs': 'Signed in as',
     'nav.home': 'Home',
     'nav.map': 'Route Map',
-    'nav.journal': 'Expedition Journals',
+    'nav.journal': 'Expedition Journal',
     'nav.gallery': 'Photo & Video Gallery',
     'nav.rig': 'Mousse (The Rig)',
 
@@ -36,7 +36,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'home.heroSubtitle': 'Medicine, MBA Studies & Motherhood on the Pan-American Highway',
     'home.heroNarrative': 'We are Joannie and Barton, a Newfoundland-based blended family, travelling with our newest addition, Henri. In August 2026, we set off in our custom moss-green overland truck, Mousse, on Mousse on the Loose: a year-long, 35,000 km journey from the Arctic to Antarctica, alongside remote Executive MBA studies. The older children will join us for stretches of the adventure between university, work and lives of their own.',
     'home.liveMapBtn': 'Explore Interactive Map',
-    'home.readChroniclesBtn': 'Read Expedition Journals',
+    'home.readChroniclesBtn': 'Read Expedition Journal',
     'home.seeRigBtn': 'Explore Mousse (The Rig)',
     'home.rigSpecsBadge': 'Custom 4x4 Overland Truck • Built for Extreme Latitudes',
 
@@ -73,8 +73,8 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Journal Section
     'home.recentJournals': 'Latest Expedition Chronicles',
-    'home.viewAllJournals': 'View All Journals',
-    'home.allCategories': 'All Categories',
+    'home.viewAllJournals': 'View Full Journal',
+    'home.allCategories': 'All Entries',
 
     // Footer
     'footer.disclaimer': 'Mousse on the Loose — Pan-American Overland Expedition from the Arctic to Antarctica.',
@@ -119,7 +119,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'nav.signedInAs': 'Connecté en tant que',
     'nav.home': 'Accueil',
     'nav.map': "Carte de l'itinéraire",
-    'nav.journal': "Journaux d'expédition",
+    'nav.journal': "Journal d'expédition",
     'nav.gallery': 'Galerie photos et vidéos',
     'nav.rig': 'Mousse (Le camion)',
 
@@ -129,7 +129,7 @@ export const translations: Record<Language, Record<string, string>> = {
     'home.heroSubtitle': 'Médecine, études MBA et maternité sur la route panaméricaine',
     'home.heroNarrative': "Nous sommes Joannie et Barton, une famille recomposée de Terre-Neuve voyageant avec notre plus récent moussaillon, Henri. En août 2026, nous sommes partis à bord de notre camion tout-terrain vert mousse sur mesure pour Mousse on the Loose : une expédition d'un an et 35 000 km de l'Arctique à l'Antarctique, tout en poursuivant des études d'Executive MBA à distance. Les plus grands enfants se joindront à nous pour certaines étapes de l'aventure entre leurs études universitaires, leur travail et leur vie personnelle.",
     'home.liveMapBtn': 'Explorer la carte interactive',
-    'home.readChroniclesBtn': "Lire les journaux d'expédition",
+    'home.readChroniclesBtn': "Lire le journal d'expédition",
     'home.seeRigBtn': 'Découvrir Mousse (Le camion)',
     'home.rigSpecsBadge': 'Camion 4x4 tout-terrain sur mesure • Conçu pour les latitudes extrêmes',
 
@@ -166,8 +166,8 @@ export const translations: Record<Language, Record<string, string>> = {
 
     // Journal Section
     'home.recentJournals': "Dernières chroniques d'expédition",
-    'home.viewAllJournals': 'Voir tous les journaux',
-    'home.allCategories': 'Toutes les catégories',
+    'home.viewAllJournals': 'Voir tout le journal',
+    'home.allCategories': 'Toutes les entrées',
 
     // Footer
     'footer.disclaimer': "Mousse on the Loose — Expédition tout-terrain panaméricaine de l'Arctique à l'Antarctique.",

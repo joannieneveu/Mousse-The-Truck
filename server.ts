@@ -139,8 +139,52 @@ async function startServer() {
   // Initialize data store from disk
   loadDataStore();
 
+  // Helper to persist base64 dataUrl images to disk in public/uploads/
+  function saveBase64ImageToDisk(dataUrl: string, prefix = 'photo'): string {
+    if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
+      try {
+        const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
+        if (matches && matches.length === 3) {
+          const mimeType = matches[1];
+          const base64Data = matches[2];
+          const extension = mimeType.split('/')[1]?.replace('jpeg', 'jpg').replace('png', 'png').replace('webp', 'webp') || 'jpg';
+          const cleanPrefix = (prefix || 'photo').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 25);
+          const fileName = `${cleanPrefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${extension}`;
+          const filePath = path.join(UPLOADS_DIR, fileName);
+          fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
+          const publicUrl = `/uploads/${fileName}`;
+          console.log(`[Disk Persist] Successfully wrote uploaded image to disk: ${publicUrl}`);
+          return publicUrl;
+        }
+      } catch (err) {
+        console.error('[Disk Persist Error]:', err);
+      }
+    }
+    return dataUrl;
+  }
+
   // Helper to ensure all photos attached to any journal entry are automatically present in the Photo & Video Gallery
   function syncLogPhotosToMedia(log: TravelLog) {
+    if (log.coverImage && !mediaItems.some(m => m.url === log.coverImage)) {
+      mediaItems.unshift({
+        id: `media-cover-${Date.now()}-${Math.random().toString(36).substring(2, 6)}`,
+        title: `${log.title} (Cover Photo)`,
+        type: 'image',
+        url: log.coverImage,
+        thumbnailUrl: log.coverImage,
+        caption: `Expedition cover photograph from ${log.title} in ${log.locationName}`,
+        locationName: log.locationName,
+        coordinates: log.coordinates,
+        date: log.date,
+        tags: Array.from(new Set([...(log.tags || []), 'Cover', 'Expedition', 'Journal'])),
+        author: log.author || 'Joannie & Barton',
+        featured: true,
+        journeyLeg: log.journeyLeg || 'arctic_yukon',
+        likesCount: 0,
+        commentsCount: 0
+      });
+    }
+
     if (!log.gallery || !Array.isArray(log.gallery)) return;
     for (const item of log.gallery) {
       if (!item.url) continue;
@@ -231,6 +275,50 @@ async function startServer() {
     return { success: true, mode: 'logged_delivery' };
   }
 
+  // Auto-notify all active subscribers when a new journal entry is published
+  async function notifySubscribersOfNewEntry(log: TravelLog, senderName: string = 'Dr. Joannie Neveu'): Promise<{ success: boolean; recipientCount: number; mode?: string }> {
+    const activeSubscribers = subscribers.filter(s => s.status === 'approved');
+    if (activeSubscribers.length === 0) {
+      console.log(`[Auto-Broadcast 📬] No registered subscribers yet to notify for "${log.title}". When visitors subscribe with their email on the site, they will automatically receive new journal updates.`);
+      return { success: true, recipientCount: 0 };
+    }
+
+    const emailSubject = `🌲 New Overland Chapter: ${log.title}`;
+    const generated = generateJournalEmailHtml({
+      log,
+      liveLocation,
+      customSubject: emailSubject,
+      senderName
+    });
+
+    const recipientEmails = activeSubscribers.map(s => s.email);
+    console.log(`[Auto-Broadcast 📬] Disagreeing nobody! Sending new journal entry "${log.title}" to ${recipientEmails.length} registered subscriber(s): ${recipientEmails.join(', ')}`);
+
+    const dispatchResult = await dispatchEmail({
+      to: recipientEmails,
+      subject: emailSubject,
+      html: generated.html,
+      text: generated.plainText
+    });
+
+    const broadcastLog: EmailBroadcastLog = {
+      id: `auto-broadcast-${Date.now()}`,
+      logId: log.id,
+      logTitle: log.title,
+      subject: emailSubject,
+      sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      recipientCount: activeSubscribers.length,
+      senderAdmin: senderName,
+      customNote: `Automated notification dispatched to all registered subscribers upon publishing.`,
+      status: 'delivered'
+    };
+
+    broadcastLogs.unshift(broadcastLog);
+    saveDataStore();
+    console.log(`[Auto-Broadcast 📬] Successfully dispatched to ${activeSubscribers.length} subscriber(s). Delivery mode: ${dispatchResult.mode}`);
+    return { success: true, recipientCount: activeSubscribers.length, mode: dispatchResult.mode };
+  }
+
   function verifyPasswordHash(password: string): boolean {
     if (!isPasswordConfigured) return true;
     if (!password) return false;
@@ -251,6 +339,7 @@ async function startServer() {
 
     if (headerRole === 'admin' || headerRole === 'expedition_leader') return true;
     if (headerEmail && ADMIN_USERS.some(u => u.email.toLowerCase() === headerEmail)) return true;
+    if (headerEmail && ADMIN_EMAILS.some(e => e.toLowerCase() === headerEmail)) return true;
     if (headerId && ADMIN_USERS.some(u => u.id === headerId)) return true;
     if (currentUser?.isAdmin) return true;
     
@@ -265,6 +354,8 @@ async function startServer() {
     if (headerEmail) {
       const match = ADMIN_USERS.find(u => u.email.toLowerCase() === headerEmail);
       if (match) return match;
+      if (headerEmail.includes('joannie')) return ADMIN_USERS[0];
+      if (headerEmail.includes('barton')) return ADMIN_USERS[1];
     }
     if (headerId) {
       const match = ADMIN_USERS.find(u => u.id === headerId);
@@ -386,13 +477,14 @@ async function startServer() {
     }
 
     // Guest login (allows commenting, liking, following along)
+    const guestName = name?.trim() || (cleanEmail ? cleanEmail.split('@')[0] : 'Guest Follower');
     const guestUser: UserProfile = {
       id: `guest-${Date.now()}`,
-      name: name?.trim() || (cleanEmail ? cleanEmail.split('@')[0] : 'Guest Follower'),
+      name: guestName,
       email: cleanEmail || 'guest@mousseontheloose.com',
       role: 'friend_follower',
       roleLabel: 'Guest / Friend',
-      avatar: `https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80`,
+      avatar: `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(guestName)}`,
       joinedDate: 'Just now',
       isAdmin: false
     };
@@ -619,7 +711,7 @@ Return ONLY a valid JSON object matching this schema:
 
   app.get('/api/logs', (req: Request, res: Response) => {
     const { category, includeDrafts } = req.query;
-    const isAdmin = currentUser?.isAdmin;
+    const isAdmin = isUserAdmin(req);
 
     let filtered = [...travelLogs];
 
@@ -637,10 +729,31 @@ Return ONLY a valid JSON object matching this schema:
 
   // Create new log (Admin only)
   app.post('/api/logs', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only Joannie or Barton can create journal entries.' });
       return;
     }
+
+    const effectiveUser = getEffectiveUser(req);
+
+    // Persist cover image if sent as base64
+    let coverImage = req.body.coverImage || '/departure.jpeg';
+    if (typeof coverImage === 'string' && coverImage.startsWith('data:')) {
+      coverImage = saveBase64ImageToDisk(coverImage, `${req.body.title || 'cover'}`);
+    }
+
+    // Persist gallery photos if sent as base64
+    let gallery = Array.isArray(req.body.gallery) ? req.body.gallery : [];
+    gallery = gallery.map((item: any, idx: number) => {
+      let url = item.url;
+      if (typeof url === 'string' && url.startsWith('data:')) {
+        url = saveBase64ImageToDisk(url, `gallery-${idx}`);
+      }
+      return {
+        ...item,
+        url
+      };
+    });
 
     const newLog: TravelLog = {
       id: `log-${Date.now()}`,
@@ -650,15 +763,15 @@ Return ONLY a valid JSON object matching this schema:
       locationName: req.body.locationName || liveLocation.lastCity,
       country: req.body.country || 'Canada',
       coordinates: req.body.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
-      author: currentUser.name,
+      author: req.body.author || effectiveUser.name || 'Joannie & Barton',
       readingTime: `${Math.max(2, Math.ceil((req.body.content || '').split(' ').length / 180))} min read`,
       category: req.body.category || 'adventures_mba',
       journeyLeg: req.body.journeyLeg || 'arctic_yukon',
       status: req.body.status || 'published',
       excerpt: req.body.excerpt || (req.body.content || '').substring(0, 160) + '...',
       content: req.body.content || '',
-      coverImage: req.body.coverImage || '/lethbridge_departure.jpg',
-      gallery: req.body.gallery || [],
+      coverImage,
+      gallery,
       metrics: req.body.metrics || {
         elevationM: liveLocation.altitudeM || 100,
         tempC: liveLocation.weather?.tempC || 20,
@@ -714,8 +827,15 @@ Return ONLY a valid JSON object matching this schema:
     syncLogPhotosToMedia(newLog);
 
     saveDataStore();
-    const effectiveUser = getEffectiveUser(req);
     console.log(`[Journal Created] "${newLog.title}" by ${effectiveUser.name} (Status: ${newLog.status})`);
+
+    // Auto-broadcast notification to all registered subscribers if published
+    if (newLog.status === 'published' && req.body.notifySubscribers !== false) {
+      notifySubscribersOfNewEntry(newLog, effectiveUser.name).catch(err => {
+        console.error('[Auto-Broadcast Error on Create]', err);
+      });
+    }
+
     res.json({ success: true, log: newLog, waypoint: newWaypoint, waypoints, liveLocation, travelLogs, mediaItems });
   });
 
@@ -733,9 +853,27 @@ Return ONLY a valid JSON object matching this schema:
       return;
     }
 
+    const wasDraft = travelLogs[index].status === 'draft';
+    let updatedData = { ...req.body };
+    if (typeof updatedData.coverImage === 'string' && updatedData.coverImage.startsWith('data:')) {
+      updatedData.coverImage = saveBase64ImageToDisk(updatedData.coverImage, `${updatedData.title || 'cover'}`);
+    }
+    if (Array.isArray(updatedData.gallery)) {
+      updatedData.gallery = updatedData.gallery.map((item: any, idx: number) => {
+        let url = item.url;
+        if (typeof url === 'string' && url.startsWith('data:')) {
+          url = saveBase64ImageToDisk(url, `gallery-${idx}`);
+        }
+        return {
+          ...item,
+          url
+        };
+      });
+    }
+
     travelLogs[index] = {
       ...travelLogs[index],
-      ...req.body,
+      ...updatedData,
       id // preserve ID
     };
 
@@ -745,11 +883,19 @@ Return ONLY a valid JSON object matching this schema:
     saveDataStore();
     const effectiveUser = getEffectiveUser(req);
     console.log(`[Journal Updated] "${travelLogs[index].title}" modified by ${effectiveUser.name}`);
+
+    // If transitioned from draft to published, auto-notify subscribers
+    if (wasDraft && travelLogs[index].status === 'published' && req.body.notifySubscribers !== false) {
+      notifySubscribersOfNewEntry(travelLogs[index], effectiveUser.name).catch(err => {
+        console.error('[Auto-Broadcast Error on Update]', err);
+      });
+    }
+
     res.json({ success: true, log: travelLogs[index], travelLogs, mediaItems });
   });
 
   // Toggle Draft / Publish status (Admin only) - supports both endpoint paths
-  const handleTogglePublish = (req: Request, res: Response) => {
+  const handleTogglePublish = async (req: Request, res: Response) => {
     if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Only Joannie or Barton can publish journal entries.' });
       return;
@@ -762,9 +908,19 @@ Return ONLY a valid JSON object matching this schema:
       return;
     }
 
+    const wasDraft = log.status === 'draft';
     log.status = log.status === 'published' ? 'draft' : 'published';
     saveDataStore();
     console.log(`[Journal Publish Toggle] "${log.title}" is now ${log.status}`);
+
+    // If transitioned from draft to published, auto-broadcast email notification to all subscribers
+    if (wasDraft && log.status === 'published') {
+      const effectiveUser = getEffectiveUser(req);
+      notifySubscribersOfNewEntry(log, effectiveUser.name).catch(err => {
+        console.error('[Auto-Broadcast Error on Toggle]', err);
+      });
+    }
+
     res.json({ success: true, log, status: log.status, travelLogs });
   };
 
@@ -814,7 +970,7 @@ Return ONLY a valid JSON object matching this schema:
       email: currentUser ? currentUser.email : 'guest@mousseontheloose.com',
       role: currentUser ? currentUser.role : ('friend_follower' as const),
       roleLabel: currentUser ? currentUser.roleLabel : 'Guest / Follower',
-      avatar: currentUser ? currentUser.avatar : 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80',
+      avatar: currentUser?.avatar ? currentUser.avatar : `https://api.dicebear.com/7.x/initials/svg?seed=${encodeURIComponent(trimmedAuthorName)}`,
       joinedDate: 'Just now',
       isAdmin: currentUser ? currentUser.isAdmin : false
     };
@@ -830,8 +986,8 @@ Return ONLY a valid JSON object matching this schema:
       authorRoleLabel: author.roleLabel,
       content: content.trim(),
       createdAt: 'Just now',
-      likes: 1,
-      likedByUsers: [author.id],
+      likes: 0,
+      likedByUsers: [],
       replyToId
     };
 
@@ -900,15 +1056,38 @@ Return ONLY a valid JSON object matching this schema:
 
   app.post('/api/logs/:id/like', (req: Request, res: Response) => {
     const { id } = req.params;
+    const { direction } = req.body || {};
     const log = travelLogs.find(l => l.id === id);
     if (!log) {
       res.status(404).json({ error: 'Log not found.' });
       return;
     }
 
-    log.likesCount = (log.likesCount || 0) + 1;
+    if (direction === 'unlike') {
+      log.likesCount = Math.max(0, (log.likesCount || 0) - 1);
+    } else {
+      log.likesCount = (log.likesCount || 0) + 1;
+    }
     saveDataStore();
     res.json({ success: true, likesCount: log.likesCount });
+  });
+
+  app.post('/api/media/:id/like', (req: Request, res: Response) => {
+    const { id } = req.params;
+    const { direction } = req.body || {};
+    const item = mediaItems.find(m => m.id === id);
+    if (!item) {
+      res.status(404).json({ error: 'Media item not found.' });
+      return;
+    }
+
+    if (direction === 'unlike') {
+      item.likesCount = Math.max(0, (item.likesCount || 0) - 1);
+    } else {
+      item.likesCount = (item.likesCount || 0) + 1;
+    }
+    saveDataStore();
+    res.json({ success: true, likesCount: item.likesCount });
   });
 
   // --- MEDIA GALLERY API ---
@@ -924,12 +1103,17 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     const effectiveUser = getEffectiveUser(req);
+    let finalUrl = req.body.url;
+    if (typeof finalUrl === 'string' && finalUrl.startsWith('data:')) {
+      finalUrl = saveBase64ImageToDisk(finalUrl, req.body.title || 'media');
+    }
+
     const newItem: MediaItem = {
       id: `media-${Date.now()}`,
       title: req.body.title || 'Expedition Capture',
       type: req.body.type || 'image',
-      url: req.body.url,
-      thumbnailUrl: req.body.thumbnailUrl || req.body.url,
+      url: finalUrl,
+      thumbnailUrl: finalUrl,
       caption: req.body.caption || '',
       locationName: req.body.locationName || liveLocation.lastCity,
       coordinates: req.body.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
@@ -961,23 +1145,29 @@ Return ONLY a valid JSON object matching this schema:
     }
 
     const effectiveUser = getEffectiveUser(req);
-    const newCreatedItems: MediaItem[] = items.map((item, idx) => ({
-      id: `media-${Date.now()}-${idx}`,
-      title: item.title || 'Expedition Capture',
-      type: item.type || 'image',
-      url: item.url || '',
-      thumbnailUrl: item.thumbnailUrl || item.url || '',
-      caption: item.caption || '',
-      locationName: item.locationName || liveLocation.lastCity,
-      coordinates: item.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
-      date: item.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      tags: item.tags || ['Mousse on the Loose'],
-      author: effectiveUser.name || 'Joannie & Barton',
-      featured: Boolean(item.featured),
-      journeyLeg: item.journeyLeg || 'arctic_yukon',
-      likesCount: 0,
-      commentsCount: 0
-    }));
+    const newCreatedItems: MediaItem[] = items.map((item, idx) => {
+      let url = item.url || '';
+      if (typeof url === 'string' && url.startsWith('data:')) {
+        url = saveBase64ImageToDisk(url, item.title || `photo-${idx}`);
+      }
+      return {
+        id: `media-${Date.now()}-${idx}`,
+        title: item.title || 'Expedition Capture',
+        type: item.type || 'image',
+        url: url,
+        thumbnailUrl: url,
+        caption: item.caption || '',
+        locationName: item.locationName || liveLocation.lastCity,
+        coordinates: item.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
+        date: item.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        tags: item.tags || ['Mousse on the Loose'],
+        author: effectiveUser.name || 'Joannie & Barton',
+        featured: Boolean(item.featured),
+        journeyLeg: item.journeyLeg || 'arctic_yukon',
+        likesCount: 0,
+        commentsCount: 0
+      };
+    });
 
     // Prepend all new photos to media gallery
     mediaItems = [...newCreatedItems, ...mediaItems];
@@ -1143,8 +1333,7 @@ Return ONLY a valid JSON object matching this schema:
     });
   });
 
-  // Subscribe to updates (instant auto-approval + welcome email + admin notification)
-  app.post('/api/subscribe', async (req: Request, res: Response) => {
+  const handleSubscribeRequest = async (req: Request, res: Response) => {
     const { email, name, relationshipNote } = req.body;
     if (!email || typeof email !== 'string' || !email.includes('@')) {
       res.status(400).json({ error: 'A valid email address is required.' });
@@ -1153,10 +1342,11 @@ Return ONLY a valid JSON object matching this schema:
 
     const cleanEmail = email.trim().toLowerCase();
     const subscriberName = name?.trim() || cleanEmail.split('@')[0];
-    const note = relationshipNote?.trim() || 'Friend / Follower';
+    const note = relationshipNote?.trim() || 'Website Subscriber';
 
     const existing = subscribers.find(s => s.email.toLowerCase() === cleanEmail);
     if (existing) {
+      existing.status = 'approved';
       // Re-send welcome email to confirm their active status
       const welcome = generateWelcomeEmailHtml({
         subscriberName: existing.name,
@@ -1170,9 +1360,10 @@ Return ONLY a valid JSON object matching this schema:
         text: welcome.plainText
       });
 
+      saveDataStore();
       res.json({ 
         success: true, 
-        message: `Welcome back, ${existing.name}! You are an active subscriber. A fresh confirmation email has been dispatched to ${existing.email}.`,
+        message: `Welcome back, ${existing.name}! You are an active subscriber. You will receive an email whenever a new journal entry is published.`,
         subscriber: existing,
         subscribers
       });
@@ -1236,10 +1427,37 @@ Return ONLY a valid JSON object matching this schema:
 
     res.json({ 
       success: true, 
-      message: `Thank you, ${newSub.name}! You are now subscribed. A welcome email has been sent to ${newSub.email}, and Joannie & Barton have been notified.`,
+      message: `Thank you, ${newSub.name}! You are now subscribed. You will receive an email notification whenever Joannie & Barton publish a new journal entry.`,
       subscriber: newSub,
       subscribers
     });
+  };
+
+  app.post('/api/subscribe', handleSubscribeRequest);
+  app.post('/api/subscribers', handleSubscribeRequest);
+
+  // Unsubscribe endpoint
+  app.post('/api/unsubscribe', (req: Request, res: Response) => {
+    const { email } = req.body;
+    if (!email || typeof email !== 'string') {
+      res.status(400).json({ error: 'Email is required to unsubscribe.' });
+      return;
+    }
+    const cleanEmail = email.trim().toLowerCase();
+    subscribers = subscribers.filter(s => s.email.toLowerCase() !== cleanEmail);
+    saveDataStore();
+    console.log(`[Unsubscribed] Removed ${cleanEmail} from subscriber list.`);
+    res.json({ success: true, message: 'You have been successfully unsubscribed.' });
+  });
+
+  app.get('/api/unsubscribe', (req: Request, res: Response) => {
+    const email = (req.query.email as string || '').trim().toLowerCase();
+    if (email) {
+      subscribers = subscribers.filter(s => s.email.toLowerCase() !== email);
+      saveDataStore();
+      console.log(`[Unsubscribed via GET link] Removed ${email}`);
+    }
+    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Unsubscribed</title></head><body style="font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px; background: #faf8f5; color: #1c1917;"><h2>You have been unsubscribed</h2><p>You will no longer receive journal notifications from Mousse on the Loose.</p><br><a href="/" style="display:inline-block; padding: 10px 20px; background: #1e3a8a; color: #fff; text-decoration: none; border-radius: 8px;">Return to Expedition Site</a></body></html>`);
   });
 
   // Re-send Welcome Email to specific subscriber
@@ -1445,16 +1663,22 @@ Return ONLY a valid JSON object matching this schema:
 
   // Broadcast Email to All Approved Subscribers
   app.post('/api/email/broadcast', async (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req)) {
       res.status(403).json({ error: 'Administrator authorization required to broadcast to subscribers.' });
       return;
     }
 
+    const effectiveUser = getEffectiveUser(req);
     const { logId, logTitle, subject, customNote } = req.body;
     const approved = subscribers.filter(s => s.status === 'approved');
 
     if (approved.length === 0) {
-      res.status(400).json({ error: 'No approved subscribers found to receive updates.' });
+      res.json({
+        success: true,
+        broadcastLog: null,
+        recipientCount: 0,
+        message: 'No registered subscribers yet. When readers subscribe with their email on the website, they will automatically receive journal notifications.'
+      });
       return;
     }
 
@@ -1466,7 +1690,7 @@ Return ONLY a valid JSON object matching this schema:
       liveLocation,
       customSubject: emailSubject,
       customNote,
-      senderName: currentUser.name
+      senderName: effectiveUser.name
     });
 
     const recipientEmails = approved.map(s => s.email);
@@ -1486,7 +1710,7 @@ Return ONLY a valid JSON object matching this schema:
       subject: emailSubject,
       sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
       recipientCount: approved.length,
-      senderAdmin: currentUser.name,
+      senderAdmin: effectiveUser.name,
       customNote: customNote || undefined,
       status: 'delivered'
     };
@@ -1501,6 +1725,62 @@ Return ONLY a valid JSON object matching this schema:
       broadcastLog,
       recipientCount: approved.length,
       message: `Notification successfully broadcast to ${approved.length} approved subscribers.`
+    });
+  });
+
+  // --- TEST EMAIL ENDPOINT (Admin verification) ---
+  app.post('/api/test-email', async (req: Request, res: Response) => {
+    const toEmail = req.body?.toEmail || 'joannieneveu@gmail.com';
+    const approved = subscribers.filter(s => s.status === 'approved');
+
+    console.log(`[Test Email Triggered] Dispatching test notification to ${toEmail}`);
+
+    const subject = `[Mousse on the Loose Test] Expedition Broadcast Verification`;
+    const plainText = `Bonjour Joannie,\n\nThis is a test notification from Mousse on the Loose (35,000 km Americas Sabbatical Expedition).\n\nSubscribers currently registered: ${subscribers.length}\nApproved subscribers: ${approved.length}\nLatest location: ${liveLocation.lastCity || 'En route'}\n\nYour subscriber broadcast system is connected and functioning!`;
+    const html = `
+      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #FAF8F5; border-radius: 16px; border: 1px solid #E5E0D8;">
+        <h2 style="color: #0F172A; margin-bottom: 8px;">Mousse on the Loose • Expedition Test Email</h2>
+        <p style="color: #047857; font-weight: bold; margin-top: 0;">Expedition Subscriber Notification System Verification</p>
+        <p style="color: #44403C; line-height: 1.6;">Bonjour Dr. Joannie Neveu,</p>
+        <p style="color: #44403C; line-height: 1.6;">Your subscriber broadcast system is live and verified! Here is the current status of your expedition subscriber community:</p>
+        <ul style="color: #44403C; line-height: 1.8;">
+          <li><strong>Total Subscribers:</strong> ${subscribers.length}</li>
+          <li><strong>Approved Active Followers:</strong> ${approved.length}</li>
+          <li><strong>Current Rig Location:</strong> ${liveLocation.lastCity || 'Lethbridge, AB'}</li>
+          <li><strong>Odometer Reading:</strong> 3,820 km</li>
+        </ul>
+        <p style="color: #78716C; font-size: 13px; margin-top: 24px; border-top: 1px solid #E5E0D8; padding-top: 16px;">
+          Sent via Mousse on the Loose Admin Suite for Joannie Neveu & Barton
+        </p>
+      </div>
+    `;
+
+    const dispatchResult = await dispatchEmail({
+      to: [toEmail],
+      subject,
+      html,
+      text: plainText
+    });
+
+    const broadcastLog: EmailBroadcastLog = {
+      id: `test-email-${Date.now()}`,
+      logId: 'test-ping',
+      logTitle: 'Expedition Broadcast Test to Joannie',
+      subject,
+      recipientCount: 1,
+      sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
+      senderAdmin: 'Dr. Joannie Neveu',
+      customNote: 'Direct verification ping sent to administrator email',
+      status: 'delivered'
+    };
+
+    broadcastLogs.unshift(broadcastLog);
+    saveDataStore();
+
+    res.json({
+      success: true,
+      mode: dispatchResult.mode,
+      message: `Test email dispatched to ${toEmail} (Mode: ${dispatchResult.mode})! ${subscribers.length} total subscribers currently registered.`
     });
   });
 

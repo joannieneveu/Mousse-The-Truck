@@ -55,6 +55,7 @@ interface TravelLogDetailProps {
   currentUser: UserProfile | null;
   onBack: () => void;
   onOpenAuthModal: () => void;
+  onOpenSubscribeModal?: () => void;
   onViewLocationOnMap?: (lat: number, lng: number) => void;
   onTogglePublish?: (logId: string) => Promise<void>;
   onDeleteLog?: (logId: string) => Promise<void>;
@@ -69,6 +70,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   currentUser,
   onBack,
   onOpenAuthModal,
+  onOpenSubscribeModal,
   onViewLocationOnMap,
   onTogglePublish,
   onDeleteLog,
@@ -77,7 +79,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   onUploadBatchMedia,
   onOpenMediaGallery
 }) => {
-  const [likes, setLikes] = useState<number>(log.likesCount || 14);
+  const [likes, setLikes] = useState<number>(typeof log.likesCount === 'number' ? log.likesCount : 0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
   const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
@@ -87,6 +89,46 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [authorName, setAuthorName] = useState<string>(currentUser?.name || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
+
+  // Inline subscription state
+  const [inlineEmail, setInlineEmail] = useState<string>('');
+  const [isSubscribing, setIsSubscribing] = useState<boolean>(false);
+  const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
+  const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'success' | 'error'>('idle');
+
+  const handleInlineSubscribe = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!inlineEmail.trim() || !inlineEmail.includes('@')) {
+      setSubscribeStatus('error');
+      setSubscribeMessage('Please enter a valid email address.');
+      return;
+    }
+
+    setIsSubscribing(true);
+    setSubscribeStatus('idle');
+    setSubscribeMessage(null);
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email: inlineEmail.trim() })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setSubscribeStatus('success');
+        setSubscribeMessage(data.message || 'You are subscribed! You will receive an email whenever a new journal entry is published.');
+        setInlineEmail('');
+      } else {
+        setSubscribeStatus('error');
+        setSubscribeMessage(data.error || 'Failed to subscribe. Please try again.');
+      }
+    } catch {
+      setSubscribeStatus('error');
+      setSubscribeMessage('Network error. Please try again.');
+    } finally {
+      setIsSubscribing(false);
+    }
+  };
 
   // Bottom Journal Photos State
   const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState<boolean>(false);
@@ -238,23 +280,46 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       .catch(() => {
         setComments([]);
       });
-  }, [log.id]);
+
+    setLikes(typeof log.likesCount === 'number' ? log.likesCount : 0);
+    try {
+      const stored = localStorage.getItem(`mousse_liked_log_${log.id}`);
+      setHasLiked(stored === 'true');
+    } catch {
+      // ignore
+    }
+  }, [log.id, log.likesCount]);
 
   const handleLikeLog = async () => {
-    if (!hasLiked) {
-      setLikes(prev => prev + 1);
-      setHasLiked(true);
+    const nextLiked = !hasLiked;
+    setHasLiked(nextLiked);
+    setLikes(prev => nextLiked ? prev + 1 : Math.max(0, prev - 1));
+    try {
+      localStorage.setItem(`mousse_liked_log_${log.id}`, nextLiked ? 'true' : 'false');
+    } catch {
+      // ignore
+    }
+
+    if (nextLiked) {
       confetti({
         particleCount: 30,
         spread: 50,
         origin: { y: 0.8 }
       });
+    }
 
-      try {
-        await fetch(`/api/logs/${log.id}/like`, { method: 'POST' });
-      } catch (e) {
-        // ignore
+    try {
+      const res = await fetch(`/api/logs/${log.id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction: nextLiked ? 'like' : 'unlike' })
+      });
+      const data = await res.json();
+      if (typeof data.likesCount === 'number') {
+        setLikes(data.likesCount);
       }
+    } catch (e) {
+      // ignore
     }
   };
 
@@ -358,7 +423,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
   // Upload Photo File(s) from computer / iPhoto (via file input or drag-and-drop)
   const handleUploadFilesToEntry = async (files: FileList | File[]) => {
-    if (!currentUser?.isAdmin || !files || files.length === 0) return;
+    if (!files || files.length === 0) return;
 
     setIsUploadingPhoto(true);
     const newItems: { url: string; caption: string; type: 'image' | 'video' }[] = [];
@@ -392,7 +457,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         coordinates: log.coordinates,
         journeyLeg: log.journeyLeg || 'arctic_yukon',
         tags: Array.from(new Set([...(log.tags || []), 'Journal', log.category])),
-        author: currentUser.name || log.author,
+        author: currentUser?.name || log.author || 'Dr. Joannie Neveu',
         date: log.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         type: file.type.startsWith('video/') ? 'video' : 'image'
       });
@@ -423,7 +488,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   // Upload single photo via URL / Modal
   const handleAddSinglePhotoSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!uploadPhotoUrl.trim() || !currentUser?.isAdmin) return;
+    if (!uploadPhotoUrl.trim()) return;
 
     setIsUploadingPhoto(true);
     const caption = uploadPhotoCaption.trim() || `Expedition moment at ${log.locationName}`;
@@ -503,17 +568,8 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     }
   };
 
-  const getCategoryBadge = (cat: JournalCategory) => {
-    switch (cat) {
-      case 'adventures_mba':
-        return { label: 'Barton & Joannie: Adventures & MBA', bg: 'bg-blue-100 text-blue-950 border-blue-200' };
-      case 'henri_milestones':
-        return { label: 'Henri’s Milestones', bg: 'bg-rose-100 text-rose-900 border-rose-200' };
-      case 'visits_along_the_way':
-        return { label: 'Visits Along the Way', bg: 'bg-emerald-100 text-emerald-900 border-emerald-200' };
-      default:
-        return { label: 'Journal Entry', bg: 'bg-stone-100 text-stone-800 border-stone-200' };
-    }
+  const getCategoryBadge = (_cat?: JournalCategory) => {
+    return { label: 'Expedition Journal', bg: 'bg-blue-100 text-blue-950 border-blue-200' };
   };
 
   const badge = getCategoryBadge(log.category);
@@ -528,7 +584,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           className="inline-flex items-center gap-2 text-xs font-semibold text-stone-600 hover:text-stone-900 transition bg-white border border-stone-200 px-3.5 py-2 rounded-xl shadow-xs hover:bg-stone-50"
         >
           <ArrowLeft className="w-4 h-4" />
-          <span>Back to All Journals</span>
+          <span>Back to Expedition Journal</span>
         </button>
 
         <div className="flex items-center gap-2">
@@ -859,32 +915,28 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
               </button>
             )}
 
-            {currentUser?.isAdmin && (
-              <>
-                <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Upload To This Entry</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={(e) => {
-                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                    }}
-                    className="hidden"
-                  />
-                </label>
+            <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
+              <FolderOpen className="w-3.5 h-3.5" />
+              <span>Upload Photos to This Entry</span>
+              <input
+                type="file"
+                multiple
+                accept="image/*,video/*"
+                onChange={(e) => {
+                  if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                }}
+                className="hidden"
+              />
+            </label>
 
-                <button
-                  type="button"
-                  onClick={() => setIsAddPhotoModalOpen(true)}
-                  className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Photo</span>
-                </button>
-              </>
-            )}
+            <button
+              type="button"
+              onClick={() => setIsAddPhotoModalOpen(true)}
+              className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
+            >
+              <Plus className="w-3.5 h-3.5" />
+              <span>Add Photo</span>
+            </button>
           </div>
         </div>
 
@@ -944,93 +996,90 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                       <span>Leave a comment</span>
                     </button>
 
-                    {currentUser?.isAdmin && (
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => {
-                            setEditingPhotoIdx(idx);
-                            setEditingCaptionText(item.caption || '');
-                          }}
-                          className="text-stone-600 hover:text-blue-900 font-medium flex items-center gap-1"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Edit</span>
-                        </button>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          setEditingPhotoIdx(idx);
+                          setEditingCaptionText(item.caption || '');
+                        }}
+                        className="text-stone-600 hover:text-blue-900 font-medium flex items-center gap-1"
+                        title="Edit photo description"
+                      >
+                        <Edit3 className="w-3 h-3" />
+                        <span>Edit</span>
+                      </button>
 
-                        <button
-                          onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
-                          className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
-                          title="Remove photo from this entry"
-                        >
-                          <Trash2 className="w-3 h-3" />
-                          <span>Remove</span>
-                        </button>
-                      </div>
-                    )}
+                      <button
+                        onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
+                        className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
+                        title="Remove photo from this entry"
+                      >
+                        <Trash2 className="w-3 h-3" />
+                        <span>Remove</span>
+                      </button>
+                    </div>
                   </div>
                 </div>
               </div>
             ))}
           </div>
         ) : (
-          /* Empty State for Admin */
-          currentUser?.isAdmin ? (
-            <div 
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDraggingPhoto(true);
-              }}
-              onDragLeave={() => setIsDraggingPhoto(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDraggingPhoto(false);
-                if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
-              }}
-              className={`p-8 text-center rounded-3xl border-2 border-dashed transition space-y-3 ${
-                isDraggingPhoto 
-                  ? 'border-blue-900 bg-blue-50/90' 
-                  : 'border-stone-300 bg-white/70 hover:bg-white hover:border-stone-400'
-              }`}
-            >
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-900 mx-auto flex items-center justify-center">
-                <Upload className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-serif font-bold text-stone-900 text-base">
-                  No photos added to this journal entry yet
-                </h4>
-                <p className="text-xs text-stone-500 max-w-md mx-auto">
-                  Drag and drop photos directly from your <strong>iPhoto / Photos library</strong> or computer files here. They will appear right at the bottom of this journal entry and automatically be published in the <strong>Photo & Video Gallery tab</strong>!
-                </p>
-              </div>
-              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-                <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Choose Photos from Computer</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={(e) => {
-                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                    }}
-                    className="hidden"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsAddPhotoModalOpen(true)}
-                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
-                >
-                  Enter Photo URL / Preset
-                </button>
-              </div>
+          /* Empty State */
+          <div 
+            onDragOver={(e) => {
+              e.preventDefault();
+              setIsDraggingPhoto(true);
+            }}
+            onDragLeave={() => setIsDraggingPhoto(false)}
+            onDrop={(e) => {
+              e.preventDefault();
+              setIsDraggingPhoto(false);
+              if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
+            }}
+            className={`p-8 text-center rounded-3xl border-2 border-dashed transition space-y-3 ${
+              isDraggingPhoto 
+                ? 'border-blue-900 bg-blue-50/90' 
+                : 'border-stone-300 bg-white/70 hover:bg-white hover:border-stone-400'
+            }`}
+          >
+            <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-900 mx-auto flex items-center justify-center">
+              <Upload className="w-6 h-6" />
             </div>
-          ) : null
+            <div className="space-y-1">
+              <h4 className="font-serif font-bold text-stone-900 text-base">
+                No photos added to this journal entry yet
+              </h4>
+              <p className="text-xs text-stone-500 max-w-md mx-auto">
+                Drag and drop photos directly from your <strong>iPhoto / Photos library</strong> or computer files here. They will appear right at the bottom of this journal entry and automatically be published in the <strong>Photo & Video Gallery tab</strong>!
+              </p>
+            </div>
+            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+              <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
+                <FolderOpen className="w-3.5 h-3.5" />
+                <span>Choose Photos from Computer</span>
+                <input
+                  type="file"
+                  multiple
+                  accept="image/*,video/*"
+                  onChange={(e) => {
+                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                  }}
+                  className="hidden"
+                />
+              </label>
+              <button
+                type="button"
+                onClick={() => setIsAddPhotoModalOpen(true)}
+                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
+              >
+                Enter Photo URL / Preset
+              </button>
+            </div>
+          </div>
         )}
 
-        {/* Drag & Drop Quick Dropzone Bar for Admin when photos already exist */}
-        {currentUser?.isAdmin && galleryList.length > 0 && (
+        {/* Drag & Drop Quick Dropzone Bar when photos already exist */}
+        {galleryList.length > 0 && (
           <div
             onDragOver={(e) => {
               e.preventDefault();
@@ -1103,6 +1152,54 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
         <div className="text-xs text-stone-500">
           {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+        </div>
+      </div>
+
+      {/* Inline Email Subscription Section */}
+      <div id="journal-detail-subscribe-banner" className="bg-[#FAF8F5] border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs font-sans">
+        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
+          <div className="space-y-1.5 max-w-xl">
+            <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 uppercase tracking-wider">
+              <Mail className="w-4 h-4 text-blue-900" />
+              <span>Never Miss a Chapter</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
+              Get notified when we post a new journal entry
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-serif">
+              Enter your email address to receive direct notifications as Joannie, Barton, and baby Henri journey 35,000 km across the Americas.
+            </p>
+          </div>
+
+          <div className="lg:shrink-0 w-full lg:w-auto">
+            {subscribeStatus === 'success' ? (
+              <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-5 py-3 text-xs flex items-center gap-2 max-w-md">
+                <Check className="w-4 h-4 text-emerald-700 shrink-0" />
+                <span>{subscribeMessage || "You are subscribed! You'll receive future journal entries."}</span>
+              </div>
+            ) : (
+              <form onSubmit={handleInlineSubscribe} className="flex flex-col sm:flex-row gap-2 max-w-md w-full">
+                <input
+                  type="email"
+                  required
+                  value={inlineEmail}
+                  onChange={(e) => setInlineEmail(e.target.value)}
+                  placeholder="Enter your email address..."
+                  className="px-4 py-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 min-w-[240px]"
+                />
+                <button
+                  type="submit"
+                  disabled={isSubscribing}
+                  className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-60"
+                >
+                  {isSubscribing ? 'Subscribing...' : 'Subscribe'}
+                </button>
+              </form>
+            )}
+            {subscribeStatus === 'error' && (
+              <p className="text-[11px] text-rose-600 mt-1.5 font-medium">{subscribeMessage}</p>
+            )}
+          </div>
         </div>
       </div>
 
@@ -1535,9 +1632,9 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
               <div className="flex flex-wrap gap-1.5">
                 {[
                   { label: '🏔️ Coast Departure', url: '/departure.jpeg' },
-                  { label: '⚡ 400W Solar Rig', url: '/solar panel.jpeg' },
+                  { label: '⚡ 1100W Solar Rig', url: '/solar panel.jpeg' },
                   { label: '🛋️ Birch Interior', url: '/interior1.jpeg' },
-                  { label: '⛺ Tundra Camp', url: 'https://images.unsplash.com/photo-1510312305653-8ed496efae75?auto=format&fit=crop&w=1200&q=80' }
+                  { label: '🌅 Mousse Sunset', url: '/moussesunset.jpeg' }
                 ].map((preset, pIdx) => (
                   <button
                     key={pIdx}

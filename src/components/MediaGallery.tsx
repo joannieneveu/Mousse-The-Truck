@@ -68,7 +68,14 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
   const [sortBy, setSortBy] = useState<'newest' | 'popular'>('newest');
   const [activeMedia, setActiveMedia] = useState<MediaItem | null>(null);
   const [isUploadModalOpen, setIsUploadModalOpen] = useState<boolean>(false);
-  const [likedMediaIds, setLikedMediaIds] = useState<Record<string, boolean>>({});
+  const [likedMediaIds, setLikedMediaIds] = useState<Record<string, boolean>>(() => {
+    try {
+      const stored = localStorage.getItem('mousse_liked_media_items');
+      return stored ? JSON.parse(stored) : {};
+    } catch {
+      return {};
+    }
+  });
 
   // Edit media & caption modal state
   const [editingMedia, setEditingMedia] = useState<MediaItem | null>(null);
@@ -269,14 +276,6 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     }
   };
 
-  // Preset demo images
-  const PRESET_DEMO_IMAGES = [
-    { title: 'Henri on the Dempster Tundra', url: 'https://images.unsplash.com/photo-1519689680058-324335c77eba?auto=format&fit=crop&w=1200&q=80', loc: 'Dempster Highway, Yukon' },
-    { title: 'Salmon Glacier Panoramic Sunset', url: 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80', loc: 'Stewart-Cassiar, BC' },
-    { title: 'Tuktoyaktuk Arctic Waves', url: 'https://images.unsplash.com/photo-1483921020237-2ff51e8e4b22?auto=format&fit=crop&w=1200&q=80', loc: 'Beaufort Sea, NWT' },
-    { title: 'Emerald Lake Canoe Reflection', url: 'https://images.unsplash.com/photo-1507525428034-b723cf961d3e?auto=format&fit=crop&w=1200&q=80', loc: 'Yoho National Park' },
-  ];
-
   // Extract all unique tags
   const allTags = Array.from(new Set(mediaList.flatMap(m => m.tags)));
 
@@ -294,16 +293,24 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
 
   const handleLikeMedia = async (e: React.MouseEvent, item: MediaItem) => {
     e.stopPropagation();
-    const isLiked = likedMediaIds[item.id];
-    setLikedMediaIds(prev => ({ ...prev, [item.id]: !isLiked }));
+    const isLiked = !!likedMediaIds[item.id];
+    const nextLiked = !isLiked;
+    setLikedMediaIds(prev => {
+      const next = { ...prev, [item.id]: nextLiked };
+      try {
+        localStorage.setItem('mousse_liked_media_items', JSON.stringify(next));
+      } catch (err) {}
+      return next;
+    });
+
     setMediaList(prev => prev.map(m => {
       if (m.id === item.id) {
-        return { ...m, likesCount: (m.likesCount || 0) + (isLiked ? -1 : 1) };
+        return { ...m, likesCount: Math.max(0, (m.likesCount || 0) + (nextLiked ? 1 : -1)) };
       }
       return m;
     }));
 
-    if (!isLiked) {
+    if (nextLiked) {
       confetti({
         particleCount: 20,
         spread: 40,
@@ -312,7 +319,11 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
     }
 
     try {
-      await fetch(`/api/media/${item.id}/like`, { method: 'POST' });
+      await fetch(`/api/media/${item.id}/like`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ direction: nextLiked ? 'like' : 'unlike' })
+      });
     } catch (err) {
       // ignore
     }
@@ -433,47 +444,44 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
           </p>
         </div>
 
-        {/* Admin-only Upload Actions in Header */}
-        {currentUser?.isAdmin && (
-          <div className="flex items-center gap-2.5">
-            <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition self-start md:self-auto font-sans">
-              <FolderOpen className="w-4 h-4" />
-              <span>Upload From Files / iPhoto</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={handleFileInputBatch}
-                className="hidden"
-              />
-            </label>
-            <button
-              onClick={() => setIsUploadModalOpen(true)}
-              className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-2xs transition self-start md:self-auto font-sans"
-            >
-              <Upload className="w-4 h-4 text-stone-600" />
-              <span>Single Upload</span>
-            </button>
-          </div>
-        )}
+        {/* Upload Actions in Header */}
+        <div className="flex items-center gap-2.5">
+          <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition self-start md:self-auto font-sans">
+            <FolderOpen className="w-4 h-4" />
+            <span>Upload From Files / iPhoto</span>
+            <input
+              type="file"
+              multiple
+              accept="image/*,video/*"
+              onChange={handleFileInputBatch}
+              className="hidden"
+            />
+          </label>
+          <button
+            onClick={() => setIsUploadModalOpen(true)}
+            className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-2xs transition self-start md:self-auto font-sans"
+          >
+            <Upload className="w-4 h-4 text-stone-600" />
+            <span>Single Upload</span>
+          </button>
+        </div>
       </div>
 
-      {/* DRAG & DROP PHOTO DROPZONE HERO BANNER (Admin Only) */}
-      {currentUser?.isAdmin && (
-        <div
-          id="gallery-drag-dropzone"
-          onDragOver={(e) => {
-            e.preventDefault();
-            setIsHeroDragging(true);
-          }}
-          onDragLeave={() => setIsHeroDragging(false)}
-          onDrop={handleDropOnGalleryHero}
-          className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition p-6 sm:p-8 text-center font-sans ${
-            isHeroDragging 
-              ? 'border-blue-900 bg-blue-50/90 scale-101 shadow-lg' 
-              : 'border-stone-300 bg-white/80 hover:bg-white hover:border-stone-400 shadow-2xs'
-          }`}
-        >
+      {/* DRAG & DROP PHOTO DROPZONE HERO BANNER */}
+      <div
+        id="gallery-drag-dropzone"
+        onDragOver={(e) => {
+          e.preventDefault();
+          setIsHeroDragging(true);
+        }}
+        onDragLeave={() => setIsHeroDragging(false)}
+        onDrop={handleDropOnGalleryHero}
+        className={`relative overflow-hidden rounded-3xl border-2 border-dashed transition p-6 sm:p-8 text-center font-sans ${
+          isHeroDragging 
+            ? 'border-blue-900 bg-blue-50/90 scale-101 shadow-lg' 
+            : 'border-stone-300 bg-white/80 hover:bg-white hover:border-stone-400 shadow-2xs'
+        }`}
+      >
           <div className="max-w-xl mx-auto space-y-4">
             <div className="w-14 h-14 mx-auto rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center shadow-xs">
               <Layers className="w-7 h-7" />
@@ -509,7 +517,6 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
             </div>
           </div>
         </div>
-      )}
 
       {/* Filter Bar */}
       <div className="bg-white border border-stone-200/90 p-4 rounded-3xl space-y-3 shadow-sm font-sans">
@@ -652,17 +659,15 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                     </p>
                   )}
 
-                  {currentUser?.isAdmin && (
-                    <div className="pt-1.5 flex justify-end">
-                      <button
-                        onClick={(e) => openEditModal(item, e)}
-                        className="text-blue-900 hover:text-blue-950 font-sans font-semibold text-[11px] flex items-center gap-1 hover:underline"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                        <span>Edit Caption</span>
-                      </button>
-                    </div>
-                  )}
+                  <div className="pt-1.5 flex justify-end">
+                    <button
+                      onClick={(e) => openEditModal(item, e)}
+                      className="text-blue-900 hover:text-blue-950 font-sans font-semibold text-[11px] flex items-center gap-1 hover:underline"
+                    >
+                      <Edit3 className="w-3 h-3" />
+                      <span>Edit Caption</span>
+                    </button>
+                  </div>
                 </div>
               </div>
 
@@ -787,30 +792,9 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                   required
                   value={uploadUrl}
                   onChange={(e) => setUploadUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/... or https://..."
+                  placeholder="https://..."
                   className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
                 />
-              </div>
-
-              {/* Sample Presets */}
-              <div className="space-y-1.5 bg-stone-100/70 p-3 rounded-2xl border border-stone-200">
-                <div className="text-[11px] font-semibold text-stone-600">Quick Test Presets:</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {PRESET_DEMO_IMAGES.map((preset, idx) => (
-                    <button
-                      key={idx}
-                      type="button"
-                      onClick={() => {
-                        setUploadTitle(preset.title);
-                        setUploadUrl(preset.url);
-                        setUploadLocation(preset.loc);
-                      }}
-                      className="px-2.5 py-1 bg-white hover:bg-stone-50 border border-stone-200 rounded-lg text-[11px] text-stone-700 transition"
-                    >
-                      {preset.title}
-                    </button>
-                  ))}
-                </div>
               </div>
 
               <div>
@@ -886,15 +870,13 @@ export const MediaGallery: React.FC<MediaGalleryProps> = ({
                   <span className="text-xs font-semibold px-2.5 py-0.5 rounded-full bg-stone-200 text-stone-700 uppercase">
                     {activeMedia.type}
                   </span>
-                  {currentUser?.isAdmin && (
-                    <button
-                      onClick={(e) => openEditModal(activeMedia, e)}
-                      className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 transition shadow-xs ml-2"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      <span>Edit Caption</span>
-                    </button>
-                  )}
+                  <button
+                    onClick={(e) => openEditModal(activeMedia, e)}
+                    className="bg-amber-500 hover:bg-amber-600 text-white text-xs font-semibold px-3 py-1 rounded-full flex items-center gap-1 transition shadow-xs ml-2"
+                  >
+                    <Edit3 className="w-3 h-3" />
+                    <span>Edit Caption</span>
+                  </button>
                 </div>
                 <div className="text-xs text-stone-500 flex items-center gap-2">
                   <span>📍 {activeMedia.locationName}</span>

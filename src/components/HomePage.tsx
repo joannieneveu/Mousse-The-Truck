@@ -24,7 +24,9 @@ import {
   Instagram,
   Home,
   Upload,
-  ArrowUpRight
+  ArrowUpRight,
+  Plus,
+  ShieldCheck
 } from 'lucide-react';
 import { LiveLocation, TravelLog, Waypoint, FamilyMember } from '../types';
 import { INITIAL_FAMILY_MEMBERS } from '../data/initialData';
@@ -38,6 +40,9 @@ interface HomePageProps {
   waypoints: Waypoint[];
   onOpenSubscribeModal: () => void;
   isAdmin?: boolean;
+  onOpenAdminSubscribersModal?: () => void;
+  subscribersCount?: number;
+  onCreateLog?: () => void;
 }
 
 export const HomePage: React.FC<HomePageProps> = ({
@@ -47,7 +52,10 @@ export const HomePage: React.FC<HomePageProps> = ({
   recentLogs,
   waypoints,
   onOpenSubscribeModal,
-  isAdmin = false
+  isAdmin = false,
+  onOpenAdminSubscribersModal,
+  subscribersCount = 0,
+  onCreateLog
 }) => {
   const { language, t } = useLanguage();
   const isFr = language === 'fr';
@@ -164,6 +172,50 @@ export const HomePage: React.FC<HomePageProps> = ({
   return (
     <div id="home-page" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16 animate-in fade-in duration-300 font-sans">
       
+      {/* ADMIN EXPEDITION COMMAND BAR */}
+      {isAdmin && (
+        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-4 sm:p-5 shadow-md border border-blue-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-2xl bg-blue-600/30 border border-blue-400/30 flex items-center justify-center shrink-0">
+              <ShieldCheck className="w-5 h-5 text-blue-300" />
+            </div>
+            <div>
+              <div className="flex items-center gap-2">
+                <span className="font-bold text-white text-sm">Expedition Command: Dr. Joannie Neveu</span>
+                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
+                  Administrator Active
+                </span>
+              </div>
+              <p className="text-xs text-blue-200/80 mt-0.5">
+                Manage expedition subscribers, write new journal chronicles, and broadcast updates to your followers.
+              </p>
+            </div>
+          </div>
+          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
+            {onOpenAdminSubscribersModal && (
+              <button
+                id="home-manage-subscribers-btn"
+                onClick={onOpenAdminSubscribersModal}
+                className="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition"
+              >
+                <Users className="w-3.5 h-3.5" />
+                <span>Manage Subscribers ({subscribersCount || 0})</span>
+              </button>
+            )}
+            {onCreateLog && (
+              <button
+                id="home-create-log-btn"
+                onClick={onCreateLog}
+                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>+ Write Journal Entry</span>
+              </button>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* HERO SECTION WITH CUSTOM "MOUSSE ON THE LOOSE" GRAPHIC EMBLEM */}
       <section className="relative rounded-3xl overflow-hidden border border-stone-200/90 bg-[#FAF8F5] shadow-xs">
         <div className="p-6 sm:p-10 lg:p-12 grid grid-cols-1 lg:grid-cols-12 gap-10 items-center">
@@ -265,7 +317,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="px-5 py-3 bg-white hover:bg-stone-100 text-slate-900 border border-stone-300 rounded-2xl font-semibold text-sm flex items-center gap-2 transition"
               >
                 <BookOpen className="w-4 h-4 text-blue-900" />
-                <span>{isFr ? 'Lire les journaux d\'expédition' : 'Read Expedition Journals'}</span>
+                <span>{isFr ? 'Lire le journal d\'expédition' : 'Read Expedition Journal'}</span>
               </button>
 
               <a
@@ -536,6 +588,119 @@ export const HomePage: React.FC<HomePageProps> = ({
           </div>
 
         </div>
+      </section>
+
+      {/* LATEST FIELD JOURNAL ENTRIES */}
+      <section id="recent-journal-section" className="space-y-6 pt-4 border-t border-stone-200">
+        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
+          <div>
+            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900 uppercase tracking-wider mb-1">
+              <BookOpen className="w-3.5 h-3.5" />
+              <span>{isFr ? 'Derniers récits d\'expédition' : 'Latest Field Journal Entries'}</span>
+            </div>
+            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
+              {isFr ? 'Chroniques du front de l\'aventure' : 'Chronicles from the Expedition Trail'}
+            </h2>
+          </div>
+          <div className="flex items-center gap-3">
+            {isAdmin && onCreateLog && (
+              <button
+                onClick={onCreateLog}
+                className="bg-blue-900 hover:bg-blue-950 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+              >
+                <Plus className="w-3.5 h-3.5" />
+                <span>{isFr ? '+ Nouvelle entrée' : '+ Write Entry'}</span>
+              </button>
+            )}
+            <button
+              onClick={() => onNavigateTab('journal')}
+              className="text-xs font-semibold text-blue-900 hover:text-blue-950 flex items-center gap-1"
+            >
+              <span>{isFr ? 'Voir tous les récits' : 'View full journal'}</span>
+              <ChevronRight className="w-4 h-4" />
+            </button>
+          </div>
+        </div>
+
+        {recentLogs && recentLogs.length > 0 ? (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {recentLogs.slice(0, 4).map((log, idx) => (
+              <article
+                key={log.id}
+                onClick={() => onSelectLog(log)}
+                className="bg-white border border-stone-200 rounded-3xl overflow-hidden shadow-xs hover:shadow-md transition cursor-pointer flex flex-col justify-between group"
+              >
+                <div className="relative h-56 sm:h-64 overflow-hidden bg-stone-100">
+                  <img
+                    src={log.coverImage || '/departure.jpeg'}
+                    alt={log.title}
+                    referrerPolicy="no-referrer"
+                    className="w-full h-full object-cover group-hover:scale-105 transition duration-500"
+                  />
+                  <div className="absolute inset-0 bg-gradient-to-t from-black/75 via-black/20 to-transparent"></div>
+                  
+                  {idx === 0 && (
+                    <span className="absolute top-3 left-3 bg-emerald-600 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                      {isFr ? 'Dernier récit publié' : 'Latest Chapter'}
+                    </span>
+                  )}
+                  {log.status === 'draft' && (
+                    <span className="absolute top-3 right-3 bg-amber-500 text-white text-[10px] font-bold uppercase tracking-wider px-2.5 py-1 rounded-full shadow-sm">
+                      Draft
+                    </span>
+                  )}
+
+                  <div className="absolute bottom-3 left-3 right-3 text-white">
+                    <div className="flex items-center gap-2 text-[11px] font-medium opacity-95 mb-1">
+                      <Calendar className="w-3.5 h-3.5" />
+                      <span>{log.date}</span>
+                      <span>•</span>
+                      <MapPin className="w-3.5 h-3.5" />
+                      <span className="truncate">{log.locationName}</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="p-6 space-y-3 flex-1 flex flex-col justify-between">
+                  <div className="space-y-2">
+                    <div className="flex items-center justify-between gap-2">
+                      <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 bg-blue-50 px-2.5 py-0.5 rounded-full border border-blue-200">
+                        {isFr ? 'Journal d\'expédition' : 'Expedition Journal'}
+                      </span>
+                      {log.metrics?.odometerKm && (
+                        <span className="text-[11px] font-mono font-semibold text-stone-600 bg-stone-100 px-2 py-0.5 rounded-md">
+                          {log.metrics.odometerKm.toLocaleString()} km
+                        </span>
+                      )}
+                    </div>
+
+                    <h3 className="text-lg sm:text-xl font-bold text-slate-900 leading-snug group-hover:text-blue-900 transition">
+                      {log.title}
+                    </h3>
+
+                    <p className="text-xs sm:text-sm text-stone-600 line-clamp-3 leading-relaxed font-normal">
+                      {log.excerpt || log.content.replace(/[#*`_>]/g, '').slice(0, 160) + '...'}
+                    </p>
+                  </div>
+
+                  <div className="pt-4 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-blue-900">
+                    <span className="text-stone-500 font-normal">
+                      {log.readingTime || '4 min read'}
+                    </span>
+                    <span className="inline-flex items-center gap-1 group-hover:translate-x-1 transition font-bold">
+                      {isFr ? 'Lire le récit complet' : 'Read Full Dispatch'}
+                      <ArrowRight className="w-3.5 h-3.5" />
+                    </span>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        ) : (
+          <div className="bg-white border border-stone-200 rounded-3xl p-10 text-center text-stone-500 text-sm">
+            {isFr ? 'Aucun article de journal disponible pour le moment.' : 'No journal dispatches published yet.'}
+          </div>
+        )}
       </section>
 
       {/* OUR BLENDED FAMILY: EXPEDITION TRIO & FAMILY AT HOME (MERGED FROM FAMILY TAB) */}
@@ -833,7 +998,7 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="px-4 py-2.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-semibold rounded-xl text-xs flex items-center gap-1.5 transition"
               >
                 <BookOpen className="w-3.5 h-3.5 text-amber-400" />
-                <span>{isFr ? "Lire les journaux d'expédition" : 'Read Expedition Journals'}</span>
+                <span>{isFr ? "Lire le journal d'expédition" : 'Read Expedition Journal'}</span>
               </button>
             </div>
           </div>

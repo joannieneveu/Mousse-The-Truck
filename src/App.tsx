@@ -57,7 +57,15 @@ function AppContent() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(INITIAL_MEDIA);
   const [rigPhotos, setRigPhotos] = useState<RigPhoto[]>(INITIAL_RIG_PHOTOS);
   const [subscribers, setSubscribers] = useState<Subscriber[]>(INITIAL_SUBSCRIBERS);
-  const [currentUser, setCurrentUser] = useState<UserProfile | null>(PRESET_USERS[0]);
+  const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
+    try {
+      const saved = localStorage.getItem('mousse_current_user');
+      if (saved) return JSON.parse(saved);
+    } catch {
+      // ignore
+    }
+    return PRESET_USERS[0];
+  });
   
   const [selectedLog, setSelectedLog] = useState<TravelLog | null>(null);
   const [isSubscribeModalOpen, setIsSubscribeModalOpen] = useState<boolean>(false);
@@ -65,6 +73,19 @@ function AppContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
+
+  // Keep currentUser synced in localStorage
+  useEffect(() => {
+    try {
+      if (currentUser) {
+        localStorage.setItem('mousse_current_user', JSON.stringify(currentUser));
+      } else {
+        localStorage.removeItem('mousse_current_user');
+      }
+    } catch {
+      // ignore
+    }
+  }, [currentUser]);
 
   // Global Drag and Drop state
   const [globalDroppedPhotos, setGlobalDroppedPhotos] = useState<ProcessedPhoto[]>([]);
@@ -78,8 +99,8 @@ function AppContent() {
   // Auth headers helper
   const getAuthHeaders = () => ({
     'Content-Type': 'application/json',
-    'x-user-email': currentUser?.email || 'barton.bilingual@alumni.harvard.edu',
-    'x-user-id': currentUser?.id || 'admin-barton',
+    'x-user-email': currentUser?.email || 'joannieneveu@gmail.com',
+    'x-user-id': currentUser?.id || 'user_joannie',
     'x-user-role': currentUser?.isAdmin ? 'admin' : (currentUser?.role || 'admin')
   });
 
@@ -474,18 +495,24 @@ function AppContent() {
       } else if (data.subscriber) {
         setSubscribers(prev => [data.subscriber, ...prev]);
       }
-      return { success: true, message: data.message || 'Subscription request submitted for Joannie & Barton to review.' };
+      return { 
+        success: true, 
+        message: data.message || 'You are subscribed! You will receive an email notification whenever Joannie & Barton publish a new journal entry.' 
+      };
     } catch (err) {
       const localSub = {
         id: `sub-${Date.now()}`,
         email: sub.email,
         name: sub.name,
         relationshipNote: sub.relationshipNote,
-        dateRequested: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        status: 'pending' as const
+        subscribedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
+        status: 'approved' as const
       };
       setSubscribers(prev => [localSub, ...prev]);
-      return { success: true, message: 'Subscription request submitted for Joannie & Barton to review.' };
+      return { 
+        success: true, 
+        message: 'You are subscribed! You will receive an email notification whenever Joannie & Barton publish a new journal entry.' 
+      };
     }
   };
 
@@ -656,6 +683,7 @@ function AppContent() {
         liveLocation={liveLocation}
         currentUser={currentUser}
         pendingSubscribersCount={pendingSubscribersCount}
+        totalSubscribersCount={subscribers.length}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenPinModal={() => setIsPinModalOpen(true)}
         onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
@@ -682,6 +710,12 @@ function AppContent() {
             waypoints={waypoints}
             onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
             isAdmin={Boolean(currentUser?.isAdmin)}
+            onOpenAdminSubscribersModal={() => setIsAdminSubscribersOpen(true)}
+            subscribersCount={subscribers.length}
+            onCreateLog={() => {
+              setActiveTab('journal');
+              setSelectedLog(null);
+            }}
           />
         )}
 
@@ -726,6 +760,7 @@ function AppContent() {
               currentUser={currentUser}
               onBack={() => setSelectedLog(null)}
               onOpenAuthModal={() => setIsAuthModalOpen(true)}
+              onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
               onViewLocationOnMap={handleViewLocationOnMap}
               onTogglePublish={handleTogglePublishLog}
               onDeleteLog={handleDeleteLog}
@@ -749,6 +784,7 @@ function AppContent() {
               currentUser={currentUser}
               liveLocation={liveLocation}
               isAdmin={currentUser?.isAdmin}
+              onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
             />
           )
         )}
@@ -825,7 +861,7 @@ function AppContent() {
               </li>
               <li>
                 <button onClick={() => { setActiveTab('journal'); setSelectedLog(null); }} className="hover:text-blue-400 transition">
-                  {language === 'fr' ? 'Les 3 journaux d\'expédition' : 'The 3 Expedition Journals'}
+                  {language === 'fr' ? 'Journal d\'expédition' : 'Expedition Journal'}
                 </button>
               </li>
               <li>
@@ -906,6 +942,8 @@ function AppContent() {
         currentUser={currentUser}
         onUserChange={(user) => setCurrentUser(user)}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
+        onOpenAdminSubscribersModal={() => setIsAdminSubscribersOpen(true)}
+        subscribersCount={subscribers.length}
       />
 
       {/* 3b. Admin Change Password Modal */}

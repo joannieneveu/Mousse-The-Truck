@@ -24,7 +24,7 @@ export function generateJournalEmailHtml(options: GenerateEmailOptions): { html:
   const country = log.country || 'Canada';
   const date = log.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
   const author = log.author || senderName;
-  const coverImage = log.coverImage || 'https://images.unsplash.com/photo-1506744038136-46273834b3fb?auto=format&fit=crop&w=1200&q=80';
+  const coverImage = log.coverImage || '/departure.jpeg';
   const resolvedCoverImage = coverImage.startsWith('http') 
     ? coverImage 
     : (coverImage.startsWith('/') ? `${appBaseUrl}${coverImage}` : `${appBaseUrl}/${coverImage}`);
@@ -32,15 +32,8 @@ export function generateJournalEmailHtml(options: GenerateEmailOptions): { html:
   const excerpt = log.excerpt || (log.content ? log.content.substring(0, 240).replace(/[#*`_>]/g, '') + '...' : 'A new chapter of our overland sabbatical journey has been published.');
   
   // Category label
-  let categoryLabel = 'Adventures & MBA on the Road';
-  let categoryColor = '#1E3A8A';
-  if (log.category === 'henri_milestones') {
-    categoryLabel = "Henri's Milestones (Baby on Board 🍼)";
-    categoryColor = '#065F46';
-  } else if (log.category === 'visits_along_the_way') {
-    categoryLabel = 'Visits Along the Way & Family Reconnections';
-    categoryColor = '#7C2D12';
-  }
+  const categoryLabel = 'Expedition Journal Dispatch';
+  const categoryColor = '#1E3A8A';
 
   const defaultSubject = customSubject || `🌲 New Overland Chapter: ${title}`;
 

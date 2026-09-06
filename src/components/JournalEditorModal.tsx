@@ -37,7 +37,8 @@ import {
   Columns,
   Type,
   FolderOpen,
-  Mail
+  Mail,
+  Loader2
 } from 'lucide-react';
 import { RichTextRenderer } from '../utils/richTextRenderer';
 import { extractPhotosFromDropEvent, extractPhotosFromFileInput, ProcessedPhoto } from '../utils/photoDropHelper';
@@ -93,7 +94,7 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const [date, setDate] = useState<string>(initialLog?.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }));
   const [locationName, setLocationName] = useState<string>(initialLog?.locationName || liveLocation?.lastCity || 'Lethbridge & Heading North');
   const [country, setCountry] = useState<string>(initialLog?.country || 'Canada');
-  const [category, setCategory] = useState<JournalCategory>(initialLog?.category || 'adventures_mba');
+  const [category, setCategory] = useState<JournalCategory>(initialLog?.category || 'expedition_journal');
   const [status, setStatus] = useState<'draft' | 'published'>(initialLog?.status || 'published');
   const [fontFamily, setFontFamily] = useState<'serif' | 'sans' | 'mono' | 'handwriting'>(initialLog?.fontFamily || 'serif');
   const [content, setContent] = useState<string>(initialLog?.content || '');
@@ -157,6 +158,7 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const [notifySubscribersOnPublish, setNotifySubscribersOnPublish] = useState<boolean>(true);
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
 
   // Load subscribers if not passed as prop
   React.useEffect(() => {
@@ -299,10 +301,35 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
     setGallery(prev => prev.filter((_, i) => i !== index));
   };
 
+  // Helper to persist base64 photo directly to server /public/uploads/ disk
+  const uploadImageToServer = async (dataUrl: string, filename: string): Promise<string> => {
+    if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, filename })
+      });
+      const data = await res.json();
+      if (data?.url) {
+        return data.url;
+      }
+    } catch (err) {
+      console.warn('[Upload API fallback]: Could not upload directly to server, will save via payload:', err);
+    }
+    return dataUrl;
+  };
+
   const handleCoverFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const photos = await extractPhotosFromFileInput(e);
     if (photos.length > 0) {
-      setCoverImage(photos[0].dataUrl);
+      setIsUploadingPhoto(true);
+      try {
+        const permanentUrl = await uploadImageToServer(photos[0].dataUrl, photos[0].name);
+        setCoverImage(permanentUrl);
+      } finally {
+        setIsUploadingPhoto(false);
+      }
     }
   };
 
@@ -312,19 +339,33 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
     setIsDraggingCover(false);
     const photos = await extractPhotosFromDropEvent(e);
     if (photos.length > 0) {
-      setCoverImage(photos[0].dataUrl);
+      setIsUploadingPhoto(true);
+      try {
+        const permanentUrl = await uploadImageToServer(photos[0].dataUrl, photos[0].name);
+        setCoverImage(permanentUrl);
+      } finally {
+        setIsUploadingPhoto(false);
+      }
     }
   };
 
   const handleGalleryFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const photos = await extractPhotosFromFileInput(e);
     if (photos.length > 0) {
-      const newItems = photos.map(p => ({
-        url: p.dataUrl,
-        caption: p.cleanTitle,
-        type: p.type
-      }));
-      setGallery(prev => [...prev, ...newItems]);
+      setIsUploadingPhoto(true);
+      try {
+        const newItems = await Promise.all(photos.map(async (p) => {
+          const permanentUrl = await uploadImageToServer(p.dataUrl, p.name);
+          return {
+            url: permanentUrl,
+            caption: p.cleanTitle,
+            type: p.type
+          };
+        }));
+        setGallery(prev => [...prev, ...newItems]);
+      } finally {
+        setIsUploadingPhoto(false);
+      }
     }
   };
 
@@ -334,12 +375,20 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
     setIsDraggingGallery(false);
     const photos = await extractPhotosFromDropEvent(e);
     if (photos.length > 0) {
-      const newItems = photos.map(p => ({
-        url: p.dataUrl,
-        caption: p.cleanTitle,
-        type: p.type
-      }));
-      setGallery(prev => [...prev, ...newItems]);
+      setIsUploadingPhoto(true);
+      try {
+        const newItems = await Promise.all(photos.map(async (p) => {
+          const permanentUrl = await uploadImageToServer(p.dataUrl, p.name);
+          return {
+            url: permanentUrl,
+            caption: p.cleanTitle,
+            type: p.type
+          };
+        }));
+        setGallery(prev => [...prev, ...newItems]);
+      } finally {
+        setIsUploadingPhoto(false);
+      }
     }
   };
 
@@ -380,9 +429,9 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
         interestingFacts,
         activityTips
       } : undefined,
-      henriHighlight: category === 'henri_milestones' ? henriHighlight : undefined,
-      mbaHighlight: category === 'adventures_mba' ? mbaHighlight : undefined,
-      visitorHighlight: category === 'visits_along_the_way' ? visitorHighlight : undefined,
+      henriHighlight: henriHighlight || undefined,
+      mbaHighlight: mbaHighlight || undefined,
+      visitorHighlight: visitorHighlight || undefined,
       addLocationPing,
       updateLiveCity,
       region: country
@@ -501,74 +550,6 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
                   Publish Live
                 </button>
               </div>
-            </div>
-          </div>
-
-          {/* Stream Category Selection */}
-          <div>
-            <label className="block font-bold text-stone-800 mb-1.5">
-              Expedition Stream Category *
-            </label>
-            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
-              <label className={`p-3 rounded-2xl border cursor-pointer flex flex-col justify-between transition ${
-                category === 'adventures_mba' 
-                  ? 'bg-blue-50 border-blue-900 ring-2 ring-blue-900 text-blue-950 shadow-xs' 
-                  : 'bg-white border-stone-200 text-stone-700 hover:border-stone-300'
-              }`}>
-                <div className="flex items-center gap-1.5 font-bold mb-1">
-                  <GraduationCap className="w-4 h-4 text-blue-900" />
-                  <span>Adventures & MBA</span>
-                </div>
-                <p className="text-[11px] text-stone-500">Sabbatical expedition stories, truck operations & MBA coursework</p>
-                <input 
-                  type="radio" 
-                  name="journal_cat" 
-                  value="adventures_mba" 
-                  checked={category === 'adventures_mba'} 
-                  onChange={() => setCategory('adventures_mba')} 
-                  className="sr-only" 
-                />
-              </label>
-
-              <label className={`p-3 rounded-2xl border cursor-pointer flex flex-col justify-between transition ${
-                category === 'henri_milestones' 
-                  ? 'bg-rose-50 border-rose-700 ring-2 ring-rose-700 text-rose-950 shadow-xs' 
-                  : 'bg-white border-stone-200 text-stone-700 hover:border-stone-300'
-              }`}>
-                <div className="flex items-center gap-1.5 font-bold mb-1">
-                  <Baby className="w-4 h-4 text-rose-700" />
-                  <span>Henri’s Milestones</span>
-                </div>
-                <p className="text-[11px] text-stone-500">First swims, developmental milestones & baby memories</p>
-                <input 
-                  type="radio" 
-                  name="journal_cat" 
-                  value="henri_milestones" 
-                  checked={category === 'henri_milestones'} 
-                  onChange={() => setCategory('henri_milestones')} 
-                  className="sr-only" 
-                />
-              </label>
-
-              <label className={`p-3 rounded-2xl border cursor-pointer flex flex-col justify-between transition ${
-                category === 'visits_along_the_way' 
-                  ? 'bg-emerald-50 border-emerald-700 ring-2 ring-emerald-700 text-emerald-950 shadow-xs' 
-                  : 'bg-white border-stone-200 text-stone-700 hover:border-stone-300'
-              }`}>
-                <div className="flex items-center gap-1.5 font-bold mb-1">
-                  <Users className="w-4 h-4 text-emerald-700" />
-                  <span>Visits Along The Way</span>
-                </div>
-                <p className="text-[11px] text-stone-500">Reconnecting with family, medical colleagues & northern friends</p>
-                <input 
-                  type="radio" 
-                  name="journal_cat" 
-                  value="visits_along_the_way" 
-                  checked={category === 'visits_along_the_way'} 
-                  onChange={() => setCategory('visits_along_the_way')} 
-                  className="sr-only" 
-                />
-              </label>
             </div>
           </div>
 
@@ -1034,6 +1015,12 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
 
           {/* Cover Photo */}
           <div className="space-y-2">
+            {isUploadingPhoto && (
+              <div className="flex items-center gap-2 p-3 bg-blue-50 border border-blue-200 rounded-xl text-xs text-blue-900 font-semibold animate-pulse shadow-2xs">
+                <Loader2 className="w-4 h-4 animate-spin shrink-0 text-blue-700" />
+                <span>Saving and permanently storing uploaded photo on server...</span>
+              </div>
+            )}
             <div className="flex items-center justify-between">
               <label className="block font-bold text-stone-700">
                 Cover Photo
@@ -1113,64 +1100,42 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
             )}
           </div>
 
-          {/* Specific Highlight based on Category */}
-          {category === 'henri_milestones' && (
-            <div className="bg-rose-50 border border-rose-200 rounded-2xl p-4 space-y-2">
-              <label className="block font-bold text-rose-900 flex items-center gap-1.5">
-                <Baby className="w-4 h-4 text-rose-700" />
-                <span>Henri’s Specific Milestone on this Entry</span>
-              </label>
-              <input
-                type="text"
-                value={henriHighlight}
-                onChange={(e) => setHenriHighlight(e.target.value)}
-                placeholder="e.g. Henri’s very first swim in Liard Hot Springs in pouring rain"
-                className="w-full bg-white border border-rose-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-rose-700 text-xs"
-              />
-              <div className="flex items-center gap-2 pt-1">
-                <span className="text-[11px] font-semibold text-rose-800">Henri’s Age at this date:</span>
+          {/* Optional Expedition Highlights & Notes */}
+          <div className="bg-stone-50 border border-stone-200 rounded-2xl p-4 space-y-3">
+            <div className="text-xs font-bold text-stone-700 uppercase tracking-wider">
+              Optional Highlights & Notes
+            </div>
+
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-stone-600 flex items-center gap-1">
+                  <Baby className="w-3.5 h-3.5 text-rose-600" />
+                  <span>Henri’s Milestone (Optional)</span>
+                </label>
                 <input
                   type="text"
-                  value={henriAge}
-                  onChange={(e) => setHenriAge(e.target.value)}
-                  placeholder="e.g. 2.5 months"
-                  className="w-32 bg-white border border-rose-300 rounded-lg px-2 py-1 text-xs"
+                  value={henriHighlight}
+                  onChange={(e) => setHenriHighlight(e.target.value)}
+                  placeholder="e.g. First swim in Liard Hot Springs"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs"
+                />
+              </div>
+
+              <div className="space-y-1">
+                <label className="text-[11px] font-semibold text-stone-600 flex items-center gap-1">
+                  <Users className="w-3.5 h-3.5 text-emerald-600" />
+                  <span>People & Visits Along The Way (Optional)</span>
+                </label>
+                <input
+                  type="text"
+                  value={visitorHighlight}
+                  onChange={(e) => setVisitorHighlight(e.target.value)}
+                  placeholder="e.g. Visited family and friends in Edmonton"
+                  className="w-full bg-white border border-stone-300 rounded-xl px-3 py-1.5 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs"
                 />
               </div>
             </div>
-          )}
-
-          {category === 'adventures_mba' && (
-            <div className="bg-blue-50 border border-blue-200 rounded-2xl p-4 space-y-2">
-              <label className="block font-bold text-blue-950 flex items-center gap-1.5">
-                <GraduationCap className="w-4 h-4 text-blue-900" />
-                <span>MBA / Expedition Operations Note</span>
-              </label>
-              <input
-                type="text"
-                value={mbaHighlight}
-                onChange={(e) => setMbaHighlight(e.target.value)}
-                placeholder="e.g. Live operations management: troubleshooting errands, Starlink logistics, and gear prep on the road."
-                className="w-full bg-white border border-blue-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs"
-              />
-            </div>
-          )}
-
-          {category === 'visits_along_the_way' && (
-            <div className="bg-emerald-50 border border-emerald-200 rounded-2xl p-4 space-y-2">
-              <label className="block font-bold text-emerald-950 flex items-center gap-1.5">
-                <Users className="w-4 h-4 text-emerald-700" />
-                <span>Who We Visited / Reconnected With</span>
-              </label>
-              <input
-                type="text"
-                value={visitorHighlight}
-                onChange={(e) => setVisitorHighlight(e.target.value)}
-                placeholder="e.g. Visited Uncle Eddy & Anne in Red Deer, Thiessen family farm in DeBolt, and friends Nadia & Mark in Edmonton"
-                className="w-full bg-white border border-emerald-300 rounded-xl px-3.5 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-emerald-700 text-xs"
-              />
-            </div>
-          )}
+          </div>
 
           {/* Expedition Gallery Photos */}
           <div className="bg-white border border-stone-300 rounded-2xl p-4 space-y-3">
@@ -1536,9 +1501,9 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
             content: content || 'Draft journal entry content...',
             coverImage: coverImage || '/hot spring.jpeg',
             gallery,
-            henriHighlight: category === 'henri_milestones' ? henriHighlight : undefined,
-            mbaHighlight: category === 'adventures_mba' ? mbaHighlight : undefined,
-            visitorHighlight: category === 'visits_along_the_way' ? visitorHighlight : undefined,
+            henriHighlight: henriHighlight || undefined,
+            mbaHighlight: mbaHighlight || undefined,
+            visitorHighlight: visitorHighlight || undefined,
             readingTime: `${Math.max(2, Math.ceil(content.split(/\s+/).length / 180))} min read`
           }}
           subscribers={subscribersList}

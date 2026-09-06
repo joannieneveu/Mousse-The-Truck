@@ -33,23 +33,81 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
   onDeleteSubscriber,
   adminName
 }) => {
-  const [activeTab, setActiveTab] = useState<'pending' | 'approved'>('pending');
+  const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending'>('all');
   const [searchQuery, setSearchQuery] = useState('');
   const [actionInProgress, setActionInProgress] = useState<string | null>(null);
   const [broadcastSent, setBroadcastSent] = useState(false);
   const [showEmailPreview, setShowEmailPreview] = useState(false);
+  const [showAddForm, setShowAddForm] = useState(false);
+  const [newName, setNewName] = useState('');
+  const [newEmail, setNewEmail] = useState('');
+  const [newNote, setNewNote] = useState('');
+  const [isAdding, setIsAdding] = useState(false);
+  const [testEmailStatus, setTestEmailStatus] = useState<string | null>(null);
 
   if (!isOpen) return null;
 
   const pendingSubscribers = subscribers.filter(s => s.status === 'pending');
   const approvedSubscribers = subscribers.filter(s => s.status === 'approved');
 
-  const currentList = activeTab === 'pending' ? pendingSubscribers : approvedSubscribers;
+  const currentList = activeTab === 'all' 
+    ? subscribers 
+    : (activeTab === 'pending' ? pendingSubscribers : approvedSubscribers);
+
   const filteredList = currentList.filter(s => 
     s.name.toLowerCase().includes(searchQuery.toLowerCase()) || 
     s.email.toLowerCase().includes(searchQuery.toLowerCase()) ||
     (s.relationshipNote && s.relationshipNote.toLowerCase().includes(searchQuery.toLowerCase()))
   );
+
+  const handleAddSubscriber = async (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!newEmail.trim()) return;
+    setIsAdding(true);
+    try {
+      const res = await fetch('/api/subscribe', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          name: newName.trim() || newEmail.split('@')[0],
+          email: newEmail.trim(),
+          relationshipNote: newNote.trim() || 'Added directly by Joannie & Barton'
+        })
+      });
+      const data = await res.json();
+      if (data.subscriber) {
+        setNewName('');
+        setNewEmail('');
+        setNewNote('');
+        setShowAddForm(false);
+        alert(`Successfully added ${data.subscriber.name} (${data.subscriber.email}) to subscribers!`);
+        window.location.reload();
+      } else {
+        alert(data.error || 'Failed to add subscriber.');
+      }
+    } catch (err) {
+      alert('Error adding subscriber: ' + String(err));
+    } finally {
+      setIsAdding(false);
+    }
+  };
+
+  const handleSendTestToAdmin = async () => {
+    setTestEmailStatus('Sending test email to joannieneveu@gmail.com...');
+    try {
+      const res = await fetch('/api/test-email', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ toEmail: 'joannieneveu@gmail.com' })
+      });
+      const data = await res.json();
+      setTestEmailStatus(data.message || 'Test email dispatched to joannieneveu@gmail.com!');
+      setTimeout(() => setTestEmailStatus(null), 5000);
+    } catch (err) {
+      setTestEmailStatus('Failed to send test email: ' + String(err));
+      setTimeout(() => setTestEmailStatus(null), 5000);
+    }
+  };
 
   const handleApprove = async (id: string) => {
     setActionInProgress(id);
@@ -116,32 +174,126 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
             <p className="text-[11px] text-blue-900/80 mt-0.5">
               Approved subscribers will receive notification emails whenever new journal dispatches are published.
             </p>
+            {testEmailStatus && (
+              <p className="text-xs font-semibold text-emerald-800 bg-emerald-50 px-2.5 py-1 rounded-lg mt-2 border border-emerald-200 inline-block">
+                {testEmailStatus}
+              </p>
+            )}
           </div>
-          <div className="flex items-center gap-2 shrink-0">
+          <div className="flex flex-wrap items-center gap-2 shrink-0">
+            <button
+              onClick={handleSendTestToAdmin}
+              className="bg-white hover:bg-emerald-50 text-emerald-900 border border-emerald-300 px-3 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-2xs text-xs"
+              title="Send a live test dispatch to Joannie's email (joannieneveu@gmail.com)"
+            >
+              <Send className="w-3.5 h-3.5 text-emerald-700" />
+              <span>Test Email to Joannie</span>
+            </button>
             <button
               onClick={() => setShowEmailPreview(true)}
-              className="bg-white hover:bg-stone-50 text-blue-950 border border-blue-200 px-3.5 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-2xs text-xs"
+              className="bg-white hover:bg-stone-50 text-blue-950 border border-blue-200 px-3 py-2 rounded-xl font-semibold transition flex items-center gap-1.5 shadow-2xs text-xs"
             >
               <Eye className="w-3.5 h-3.5 text-blue-800" />
-              <span>Preview Email Template</span>
+              <span>Preview Email</span>
             </button>
             <button
               onClick={handleSimulateBroadcast}
               disabled={broadcastSent || approvedSubscribers.length === 0}
-              className="bg-blue-900 hover:bg-blue-950 text-white px-4 py-2 rounded-xl font-medium transition flex items-center gap-1.5 shadow-sm text-xs disabled:opacity-50"
+              className="bg-blue-900 hover:bg-blue-950 text-white px-3.5 py-2 rounded-xl font-medium transition flex items-center gap-1.5 shadow-sm text-xs disabled:opacity-50"
             >
               {broadcastSent ? <Check className="w-3.5 h-3.5 text-emerald-400" /> : <Send className="w-3.5 h-3.5" />}
-              <span>{broadcastSent ? 'Update Dispatched!' : 'Send Test Notification'}</span>
+              <span>{broadcastSent ? 'Update Dispatched!' : 'Send Notification'}</span>
             </button>
           </div>
         </div>
 
+        {/* Add Subscriber Form (Collapsible) */}
+        {showAddForm && (
+          <form onSubmit={handleAddSubscriber} className="bg-amber-50/70 border border-amber-200 rounded-2xl p-4 text-xs space-y-3 animate-in fade-in duration-150">
+            <div className="flex items-center justify-between">
+              <span className="font-bold text-amber-950 text-sm">Add New Subscriber Manually</span>
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="text-stone-400 hover:text-stone-600 text-xs"
+              >
+                ✕ Close
+              </button>
+            </div>
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <input
+                type="text"
+                value={newName}
+                onChange={e => setNewName(e.target.value)}
+                placeholder="Full Name (e.g. John Doe)"
+                className="bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none focus:border-amber-600"
+                required
+              />
+              <input
+                type="email"
+                value={newEmail}
+                onChange={e => setNewEmail(e.target.value)}
+                placeholder="Email Address"
+                className="bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none focus:border-amber-600"
+                required
+              />
+              <input
+                type="text"
+                value={newNote}
+                onChange={e => setNewNote(e.target.value)}
+                placeholder="Relationship (e.g. Friend, Family, Colleague)"
+                className="bg-white border border-stone-300 rounded-xl px-3 py-2 text-xs text-stone-800 focus:outline-none focus:border-amber-600"
+              />
+            </div>
+            <div className="flex justify-end gap-2">
+              <button
+                type="button"
+                onClick={() => setShowAddForm(false)}
+                className="px-3 py-1.5 rounded-xl border border-stone-300 bg-white hover:bg-stone-50 text-stone-700"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isAdding}
+                className="px-4 py-1.5 rounded-xl bg-amber-700 hover:bg-amber-800 text-white font-semibold disabled:opacity-50"
+              >
+                {isAdding ? 'Adding...' : 'Add & Approve Subscriber'}
+              </button>
+            </div>
+          </form>
+        )}
+
         {/* Tabs & Search */}
         <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3 border-b border-stone-200 pb-3">
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              onClick={() => setActiveTab('all')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                activeTab === 'all'
+                  ? 'bg-blue-900 text-white shadow-sm'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              <Users className="w-3.5 h-3.5" />
+              <span>All Subscribers ({subscribers.length})</span>
+            </button>
+
+            <button
+              onClick={() => setActiveTab('approved')}
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
+                activeTab === 'approved'
+                  ? 'bg-slate-900 text-white shadow-sm'
+                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
+              }`}
+            >
+              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
+              <span>Approved Circle ({approvedSubscribers.length})</span>
+            </button>
+
             <button
               onClick={() => setActiveTab('pending')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
+              className={`px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
                 activeTab === 'pending'
                   ? 'bg-blue-900 text-white shadow-sm'
                   : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
@@ -157,29 +309,27 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
                 </span>
               )}
             </button>
-
-            <button
-              onClick={() => setActiveTab('approved')}
-              className={`px-4 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 transition ${
-                activeTab === 'approved'
-                  ? 'bg-slate-900 text-white shadow-sm'
-                  : 'bg-stone-100 text-stone-600 hover:bg-stone-200'
-              }`}
-            >
-              <UserCheck className="w-3.5 h-3.5 text-emerald-400" />
-              <span>Approved Circle ({approvedSubscribers.length})</span>
-            </button>
           </div>
 
-          <div className="relative">
-            <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
-            <input
-              type="text"
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search subscribers..."
-              className="bg-white border border-stone-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:border-blue-900 w-full sm:w-48"
-            />
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setShowAddForm(!showAddForm)}
+              className="bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-300/80 px-3 py-1.5 rounded-xl text-xs font-semibold flex items-center gap-1 transition shrink-0"
+              title="Add subscriber manually"
+            >
+              <span>+ Add Person</span>
+            </button>
+
+            <div className="relative">
+              <Search className="w-3.5 h-3.5 text-stone-400 absolute left-3 top-1/2 -translate-y-1/2" />
+              <input
+                type="text"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Search subscribers..."
+                className="bg-white border border-stone-200 rounded-xl pl-8 pr-3 py-1.5 text-xs text-stone-800 focus:outline-none focus:border-blue-900 w-full sm:w-44"
+              />
+            </div>
           </div>
         </div>
 
@@ -191,12 +341,12 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
                 <div>
                   <Check className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
                   <p className="font-semibold text-stone-700">All pending requests reviewed!</p>
-                  <p className="text-[11px] text-stone-500 mt-1">New requests from followers will appear here for your approval.</p>
+                  <p className="text-[11px] text-stone-500 mt-1">All subscribers are currently approved and active.</p>
                 </div>
               ) : (
                 <div>
                   <Users className="w-8 h-8 mx-auto text-stone-400 mb-2" />
-                  <p className="font-semibold text-stone-700">No approved subscribers found</p>
+                  <p className="font-semibold text-stone-700">No subscribers found</p>
                 </div>
               )}
             </div>

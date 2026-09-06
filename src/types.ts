@@ -1,7 +1,8 @@
 export type JournalCategory = 
-  | 'adventures_mba'       // Barton & Joannie: Adventures & MBA on the Road
-  | 'henri_milestones'     // Henri's Milestones
-  | 'visits_along_the_way'; // Visits Along the Way
+  | 'expedition_journal'   // Single unified Expedition Journal
+  | 'adventures_mba'       // Legacy compatibility
+  | 'henri_milestones'
+  | 'visits_along_the_way';
 
 export type JourneyLeg = 
   | 'all'

@@ -199,9 +199,9 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
       category: 'solar_power' as const
     },
     {
-      title: 'Mousse Interior Living Quarters',
+      title: 'Mousse Interior & Henri’s Cot',
       url: '/interior1.jpeg',
-      caption: 'Custom 4-season habitat interior layout, dinette area, and optimized storage.',
+      caption: 'Custom-made cot for Henri that is removable to give us extra kitchen counter space.',
       category: 'interior' as const
     }
   ];
@@ -362,6 +362,52 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
         })()}
       </div>
 
+      {/* Wilderness Vans Official Photo Showcase Box */}
+      <div id="wilderness-vans-photos-box" className="rounded-3xl border border-stone-800 bg-gradient-to-br from-stone-900 via-slate-900 to-blue-950 text-white p-6 sm:p-8 shadow-sm space-y-4">
+        <div className="flex flex-col lg:flex-row items-start lg:items-center justify-between gap-6">
+          <div className="space-y-2 max-w-2xl">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-semibold bg-white/10 text-amber-300 border border-white/10">
+              <Camera className="w-3.5 h-3.5" />
+              <span>Wilderness Vans Official Showcase</span>
+            </div>
+            <h3 className="text-xl sm:text-2xl font-serif font-bold text-white tracking-tight">
+              All Photos from Wilderness Vans
+            </h3>
+            <p className="text-xs sm:text-sm text-stone-300 leading-relaxed font-sans">
+              View the complete official photography album by builder Wilderness Vans for our 2026 Ford F-550 Crew Cab (Build #1743, G3 4-season habitat), featuring comprehensive high-resolution exterior, interior, dinette, galley, storage, and chassis photos.
+            </p>
+          </div>
+
+          <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 shrink-0 w-full lg:w-auto">
+            <a
+              id="wilderness-vans-photos-btn"
+              href="https://www.wildernessvans.com/2026-f-550-crew-cab-1743-g3/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="w-full sm:w-auto inline-flex items-center justify-center gap-2.5 px-6 py-3.5 rounded-2xl bg-amber-400 hover:bg-amber-300 text-slate-950 font-bold text-sm shadow-md hover:shadow-lg transition-all transform hover:-translate-y-0.5 cursor-pointer group"
+            >
+              <ImageIcon className="w-4 h-4 text-slate-950" />
+              <span>View All Wilderness Vans Photos</span>
+              <ExternalLink className="w-4 h-4 text-slate-950 group-hover:translate-x-0.5 transition-transform" />
+            </a>
+          </div>
+        </div>
+
+        <div className="pt-3 border-t border-white/10 flex flex-wrap items-center justify-between text-xs text-stone-400 gap-2 font-mono text-[11px]">
+          <a
+            href="https://www.wildernessvans.com/2026-f-550-crew-cab-1743-g3/"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="text-amber-200/90 hover:text-amber-200 underline underline-offset-2 break-all"
+          >
+            https://www.wildernessvans.com/2026-f-550-crew-cab-1743-g3/
+          </a>
+          <span className="text-stone-400 font-sans">
+            Build #1743 • 2026 F-550 Crew Cab G3
+          </span>
+        </div>
+      </div>
+
       {/* Rig Photo Gallery Section */}
       <div className="space-y-6 pt-4">
         <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-4">
@@ -375,16 +421,28 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
             </p>
           </div>
 
-          {/* Upload Button (Admin Only) */}
-          {isAdmin && (
-            <button
-              onClick={() => setIsUploadOpen(true)}
-              className="bg-blue-900 hover:bg-blue-950 text-white px-5 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-sm transition self-start sm:self-auto"
+          <div className="flex items-center gap-2.5 self-start sm:self-auto flex-wrap">
+            <a
+              href="https://www.wildernessvans.com/2026-f-550-crew-cab-1743-g3/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="bg-white hover:bg-stone-50 text-stone-800 border border-stone-300 px-4 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-xs transition"
             >
-              <Upload className="w-4 h-4" />
-              <span>Upload Rig Photo</span>
-            </button>
-          )}
+              <ExternalLink className="w-3.5 h-3.5 text-blue-900" />
+              <span>Wilderness Vans Album</span>
+            </a>
+
+            {/* Upload Button (Admin Only) */}
+            {isAdmin && (
+              <button
+                onClick={() => setIsUploadOpen(true)}
+                className="bg-blue-900 hover:bg-blue-950 text-white px-5 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-sm transition"
+              >
+                <Upload className="w-4 h-4" />
+                <span>Upload Rig Photo</span>
+              </button>
+            )}
+          </div>
         </div>
 
         {/* Photo Category Filter Pills */}

@@ -150,5 +150,10 @@ export async function clearAdminPassword(): Promise<void> {
  */
 export function isExpeditionAdminEmail(email: string): boolean {
   const clean = (email || '').trim().toLowerCase();
-  return clean === 'joannie@mun.ca' || clean === 'barton@mun.ca';
+  return (
+    clean === 'joannieneveu@gmail.com' ||
+    clean === 'joannie@mun.ca' ||
+    clean === 'barton.bilingual@alumni.harvard.edu' ||
+    clean === 'barton@mun.ca'
+  );
 }
