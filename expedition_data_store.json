@@ -207,7 +207,7 @@
         "lat": 69.4454,
         "lng": -133.0342
       },
-      "author": "Dr. Joannie Neveu",
+      "author": "Dr. Joannie Neveu & Barton Thiessen",
       "readingTime": "7 min read",
       "category": "adventures_mba",
       "journeyLeg": "arctic_yukon",
@@ -1234,5 +1234,5 @@
     "adminPasswordSalt": null,
     "adminPasswordHash": null
   },
-  "lastSaved": "2026-09-06T18:18:06.763Z"
+  "lastSaved": "2026-09-06T20:53:35.753Z"
 }

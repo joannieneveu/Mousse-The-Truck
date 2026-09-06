@@ -52,12 +52,48 @@ import {
 function AppContent() {
   const { t, language } = useLanguage();
   const [activeTab, setActiveTab] = useState<'home' | 'map' | 'journal' | 'gallery' | 'rig'>('home');
-  const [waypoints, setWaypoints] = useState<Waypoint[]>(INITIAL_WAYPOINTS);
-  const [liveLocation, setLiveLocation] = useState<LiveLocation>(INITIAL_LIVE_LOCATION);
-  const [travelLogs, setTravelLogs] = useState<TravelLog[]>(INITIAL_TRAVEL_LOGS);
-  const [mediaItems, setMediaItems] = useState<MediaItem[]>(INITIAL_MEDIA);
-  const [rigPhotos, setRigPhotos] = useState<RigPhoto[]>(INITIAL_RIG_PHOTOS);
-  const [subscribers, setSubscribers] = useState<Subscriber[]>(INITIAL_SUBSCRIBERS);
+  const [waypoints, setWaypoints] = useState<Waypoint[]>(() => {
+    try {
+      const saved = localStorage.getItem('mousse_waypoints');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_WAYPOINTS;
+  });
+  const [liveLocation, setLiveLocation] = useState<LiveLocation>(() => {
+    try {
+      const saved = localStorage.getItem('mousse_live_location');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_LIVE_LOCATION;
+  });
+  const [travelLogs, setTravelLogs] = useState<TravelLog[]>(() => {
+    try {
+      const saved = localStorage.getItem('mousse_travel_logs');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_TRAVEL_LOGS;
+  });
+  const [mediaItems, setMediaItems] = useState<MediaItem[]>(() => {
+    try {
+      const saved = localStorage.getItem('mousse_media_items');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_MEDIA;
+  });
+  const [rigPhotos, setRigPhotos] = useState<RigPhoto[]>(() => {
+    try {
+      const saved = localStorage.getItem('mousse_rig_photos');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_RIG_PHOTOS;
+  });
+  const [subscribers, setSubscribers] = useState<Subscriber[]>(() => {
+    try {
+      const saved = localStorage.getItem('mousse_subscribers');
+      if (saved) return JSON.parse(saved);
+    } catch {}
+    return INITIAL_SUBSCRIBERS;
+  });
   // User Authentication State: Strict requirement - opening page is AUTOMATICALLY GUEST!
   // Only when an administrator logs in will currentUser be set to Joannie or Barton.
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
@@ -80,6 +116,43 @@ function AppContent() {
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
+
+  // Synchronize state changes to localStorage for 100% offline & static hosting reliability
+  useEffect(() => {
+    try {
+      localStorage.setItem('mousse_travel_logs', JSON.stringify(travelLogs));
+    } catch {}
+  }, [travelLogs]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mousse_subscribers', JSON.stringify(subscribers));
+    } catch {}
+  }, [subscribers]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mousse_live_location', JSON.stringify(liveLocation));
+    } catch {}
+  }, [liveLocation]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mousse_waypoints', JSON.stringify(waypoints));
+    } catch {}
+  }, [waypoints]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mousse_media_items', JSON.stringify(mediaItems));
+    } catch {}
+  }, [mediaItems]);
+
+  useEffect(() => {
+    try {
+      localStorage.setItem('mousse_rig_photos', JSON.stringify(rigPhotos));
+    } catch {}
+  }, [rigPhotos]);
 
   // Keep admin user synced in localStorage
   useEffect(() => {
@@ -715,35 +788,61 @@ function AppContent() {
         body: JSON.stringify(updatedFields)
       });
 
-      if (!res.ok || !res.data) {
-        return { success: false, error: res.error || 'Failed to update journal entry.' };
+      if (res.ok && res.data) {
+        const data = res.data;
+        if (Array.isArray(data.mediaItems)) {
+          setMediaItems(data.mediaItems);
+        }
+        if (Array.isArray(data.travelLogs)) {
+          setTravelLogs(data.travelLogs);
+        } else if (data.log) {
+          setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...data.log } : l));
+        } else {
+          setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...updatedFields } : l));
+        }
+
+        // Always update selectedLog if it matches this log ID using functional state updater
+        setSelectedLog(prev => {
+          if (prev && prev.id === logId) {
+            const match = Array.isArray(data.travelLogs) ? data.travelLogs.find((l: TravelLog) => l.id === logId) : null;
+            return match || data.log || { ...prev, ...updatedFields };
+          }
+          return prev;
+        });
+
+        return { success: true, log: data.log };
       }
 
-      const data = res.data;
-      if (Array.isArray(data.mediaItems)) {
-        setMediaItems(data.mediaItems);
-      }
-      if (Array.isArray(data.travelLogs)) {
-        setTravelLogs(data.travelLogs);
-      } else if (data.log) {
-        setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...data.log } : l));
-      } else {
-        setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...updatedFields } : l));
-      }
+      // Static hosting fallback (e.g. GitHub Pages 405, 404, or network offline)
+      let fallbackLog: TravelLog | undefined;
+      setTravelLogs(prev => prev.map(l => {
+        if (l.id === logId) {
+          fallbackLog = { ...l, ...updatedFields };
+          return fallbackLog;
+        }
+        return l;
+      }));
 
-      // Always update selectedLog if it matches this log ID using functional state updater
       setSelectedLog(prev => {
         if (prev && prev.id === logId) {
-          const match = Array.isArray(data.travelLogs) ? data.travelLogs.find((l: TravelLog) => l.id === logId) : null;
-          return match || data.log || { ...prev, ...updatedFields };
+          return { ...prev, ...updatedFields };
         }
         return prev;
       });
 
-      return { success: true, log: data.log };
+      return { success: true, log: fallbackLog };
     } catch (err: any) {
-      console.error('Failed to update log on server:', err);
-      return { success: false, error: err.message || 'Error updating journal entry.' };
+      console.warn('Applying offline / static domain fallback for log update:', err);
+      let fallbackLog: TravelLog | undefined;
+      setTravelLogs(prev => prev.map(l => {
+        if (l.id === logId) {
+          fallbackLog = { ...l, ...updatedFields };
+          return fallbackLog;
+        }
+        return l;
+      }));
+      setSelectedLog(prev => (prev && prev.id === logId ? { ...prev, ...updatedFields } : prev));
+      return { success: true, log: fallbackLog };
     }
   };
 
@@ -1021,6 +1120,7 @@ function AppContent() {
         subscribers={subscribers}
         onApproveSubscriber={handleApproveSubscriber}
         onDeleteSubscriber={handleDeleteSubscriber}
+        onAddSubscriber={(newSub) => setSubscribers(prev => [newSub, ...prev])}
         adminName={currentUser?.name || 'Joannie & Barton'}
       />
 

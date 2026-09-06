@@ -39,7 +39,7 @@ export async function safeFetchJson<T = any>(
     } else if (res.status === 502 || res.status === 503 || res.status === 504) {
       errorMessage = 'The server is temporarily busy or reconnecting. Please retry in a few moments.';
     } else if (res.status === 405) {
-      errorMessage = 'The hosting server does not support POST requests on this domain (405). Using direct email dispatch fallback.';
+      errorMessage = 'Static domain hosting (405). Local browser persistence active.';
     } else if (res.status === 404) {
       errorMessage = 'The requested journal entry or API endpoint was not found on the server (404).';
     } else if (res.status === 403) {

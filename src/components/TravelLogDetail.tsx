@@ -1544,7 +1544,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           onSave={async (data) => {
             if (onUpdateLog) {
               const res = await onUpdateLog(log.id, data);
-              if (res && res.success === false) {
+              if (res && res.success === false && !res.error?.includes('405')) {
                 throw new Error(res.error || 'Failed to save modifications to the journal entry.');
               }
               if (res && res.log) {

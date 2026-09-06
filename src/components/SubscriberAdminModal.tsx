@@ -24,6 +24,7 @@ interface SubscriberAdminModalProps {
   subscribers: Subscriber[];
   onApproveSubscriber: (id: string) => Promise<void>;
   onDeleteSubscriber: (id: string) => Promise<void>;
+  onAddSubscriber?: (sub: Subscriber) => void;
   adminName: string;
 }
 
@@ -33,6 +34,7 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
   subscribers,
   onApproveSubscriber,
   onDeleteSubscriber,
+  onAddSubscriber,
   adminName
 }) => {
   const [activeTab, setActiveTab] = useState<'all' | 'approved' | 'pending'>('all');
@@ -98,12 +100,13 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
         })
       });
       if (result.ok && result.data?.subscriber) {
+        const added = result.data.subscriber;
         setNewName('');
         setNewEmail('');
         setNewNote('');
         setShowAddForm(false);
-        alert(`Successfully added ${result.data.subscriber.name} (${result.data.subscriber.email}) to subscribers!`);
-        window.location.reload();
+        if (onAddSubscriber) onAddSubscriber(added);
+        setWelcomeModalSubscriber(added);
       } else {
         const localSub: Subscriber = {
           id: `sub-${Date.now()}`,
@@ -118,7 +121,7 @@ export const SubscriberAdminModal: React.FC<SubscriberAdminModalProps> = ({
         setNewEmail('');
         setNewNote('');
         setShowAddForm(false);
-        alert(`Successfully added ${localSub.name} (${localSub.email})!`);
+        if (onAddSubscriber) onAddSubscriber(localSub);
         setWelcomeModalSubscriber(localSub);
       }
     } catch (err) {

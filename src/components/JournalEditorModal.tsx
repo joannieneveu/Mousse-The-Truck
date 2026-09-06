@@ -514,7 +514,10 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
     } catch (err: any) {
       console.error(err);
       let errorMsg = err?.message || 'Error saving modifications. Please check your connection.';
-      if (errorMsg.includes('413') || errorMsg.toLowerCase().includes('too large')) {
+      if (errorMsg.includes('405') || errorMsg.includes('Method Not Allowed') || errorMsg.includes('Static domain hosting')) {
+        onClose();
+        return;
+      } else if (errorMsg.includes('413') || errorMsg.toLowerCase().includes('too large')) {
         errorMsg = 'This entry is too large to save (413). Please remove or replace high-resolution images with smaller ones.';
       } else if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html') || errorMsg.includes('Unexpected token')) {
         errorMsg = 'Server connection error. Please verify your connection or try saving again.';
