@@ -32,6 +32,7 @@ import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { GlobalDropzoneOverlay } from './components/GlobalDropzoneOverlay';
 import { BatchPhotoUploadModal } from './components/BatchPhotoUploadModal';
 import { ProcessedPhoto } from './utils/photoDropHelper';
+import { safeFetchJson } from './utils/safeFetch';
 import { LanguageProvider, useLanguage } from './context/LanguageContext';
 import { 
   Compass, 
@@ -708,15 +709,17 @@ function AppContent() {
   // Update an existing log
   const handleUpdateLog = async (logId: string, updatedFields: Partial<TravelLog>): Promise<{ success: boolean; error?: string; log?: TravelLog }> => {
     try {
-      const res = await fetch(`/api/logs/${logId}`, {
+      const res = await safeFetchJson<any>(`/api/logs/${encodeURIComponent(logId)}`, {
         method: 'PUT',
         headers: getAuthHeaders(),
         body: JSON.stringify(updatedFields)
       });
-      const data = await res.json();
-      if (!res.ok) {
-        return { success: false, error: data.error || 'Failed to update journal entry.' };
+
+      if (!res.ok || !res.data) {
+        return { success: false, error: res.error || 'Failed to update journal entry.' };
       }
+
+      const data = res.data;
       if (Array.isArray(data.mediaItems)) {
         setMediaItems(data.mediaItems);
       }

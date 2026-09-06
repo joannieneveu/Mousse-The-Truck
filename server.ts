@@ -1,4 +1,4 @@
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import crypto from 'crypto';
@@ -203,11 +203,19 @@ async function startServer() {
   function saveBase64ImageToDisk(dataUrl: string, prefix = 'photo'): string {
     if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
       try {
-        const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-          const mimeType = matches[1];
-          const base64Data = matches[2];
-          const extension = mimeType.split('/')[1]?.replace('jpeg', 'jpg').replace('png', 'png').replace('webp', 'webp') || 'jpg';
+        const commaIndex = dataUrl.indexOf(',');
+        if (commaIndex !== -1) {
+          const meta = dataUrl.substring(0, commaIndex);
+          const base64Data = dataUrl.substring(commaIndex + 1);
+          const mimeMatch = meta.match(/data:([^;]+)/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+          let extension = 'jpg';
+          if (mimeType.includes('png')) extension = 'png';
+          else if (mimeType.includes('webp')) extension = 'webp';
+          else if (mimeType.includes('gif')) extension = 'gif';
+          else if (mimeType.includes('mp4')) extension = 'mp4';
+          else if (mimeType.includes('quicktime') || mimeType.includes('mov')) extension = 'mov';
+
           const cleanPrefix = (prefix || 'photo').toLowerCase().replace(/[^a-z0-9]+/g, '-').slice(0, 25);
           const fileName = `${cleanPrefix}-${Date.now()}-${Math.random().toString(36).substring(2, 7)}.${extension}`;
           const filePath = path.join(UPLOADS_DIR, fileName);
@@ -877,137 +885,23 @@ Return ONLY a valid JSON object matching this schema:
 
   // Create new log (Admin only)
   app.post('/api/logs', (req: Request, res: Response) => {
-    if (!isUserAdmin(req)) {
-      res.status(403).json({ error: 'Only Joannie or Barton can create journal entries.' });
-      return;
-    }
-
-    const effectiveUser = getEffectiveUser(req);
-
-    // Persist cover image if sent as base64
-    let coverImage = req.body.coverImage || '/departure.jpeg';
-    if (typeof coverImage === 'string' && coverImage.startsWith('data:')) {
-      coverImage = saveBase64ImageToDisk(coverImage, `${req.body.title || 'cover'}`);
-    }
-
-    // Persist gallery photos if sent as base64
-    let gallery = Array.isArray(req.body.gallery) ? req.body.gallery : [];
-    gallery = gallery.map((item: any, idx: number) => {
-      let url = item.url;
-      if (typeof url === 'string' && url.startsWith('data:')) {
-        url = saveBase64ImageToDisk(url, `gallery-${idx}`);
+    try {
+      if (!isUserAdmin(req)) {
+        res.status(403).json({ success: false, error: 'Only Joannie or Barton can create journal entries.' });
+        return;
       }
-      return {
-        ...item,
-        url
-      };
-    });
 
-    const newLog: TravelLog = {
-      id: `log-${Date.now()}`,
-      title: req.body.title || 'Untitled Journal Entry',
-      slug: (req.body.title || 'untitled-entry').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
-      date: req.body.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      locationName: req.body.locationName || liveLocation.lastCity,
-      country: req.body.country || 'Canada',
-      coordinates: req.body.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
-      author: req.body.author || effectiveUser.name || 'Joannie & Barton',
-      readingTime: `${Math.max(2, Math.ceil((req.body.content || '').split(' ').length / 180))} min read`,
-      category: req.body.category || 'adventures_mba',
-      journeyLeg: req.body.journeyLeg || 'arctic_yukon',
-      status: req.body.status || 'published',
-      excerpt: req.body.excerpt || (req.body.content || '').substring(0, 160) + '...',
-      content: req.body.content || '',
-      coverImage,
-      gallery,
-      metrics: req.body.metrics || {
-        elevationM: liveLocation.altitudeM || 100,
-        tempC: liveLocation.weather?.tempC || 20,
-        kmTraveled: 0,
-        henriAge: '2.5 months'
-      },
-      locationInsights: req.body.locationInsights,
-      henriHighlight: req.body.henriHighlight,
-      mbaHighlight: req.body.mbaHighlight,
-      visitorHighlight: req.body.visitorHighlight,
-      tags: req.body.tags || ['Mousse on the Loose', 'Expedition'],
-      likesCount: 0,
-      commentsCount: 0
-    };
+      const effectiveUser = getEffectiveUser(req);
 
-    travelLogs.unshift(newLog);
-
-    // If adding a location ping on the route map
-    let newWaypoint: Waypoint | null = null;
-    if (req.body.addLocationPing !== false && newLog.coordinates) {
-      newWaypoint = {
-        id: `waypoint-log-${newLog.id}`,
-        name: newLog.locationName,
-        region: req.body.region || newLog.country,
-        country: newLog.country,
-        leg: newLog.journeyLeg,
-        journeyLeg: newLog.journeyLeg,
-        lat: newLog.coordinates.lat,
-        lng: newLog.coordinates.lng,
-        date: newLog.date,
-        status: 'completed',
-        elevationM: newLog.metrics?.elevationM || 100,
-        summary: newLog.title,
-        description: newLog.excerpt,
-        category: newLog.category === 'henri_milestones' ? 'baby_milestone' : (newLog.category === 'visits_along_the_way' ? 'family_reunion' : 'overland_camp'),
-        thumbnail: newLog.coverImage,
-        coverImage: newLog.coverImage,
-        relatedLogId: newLog.id
-      };
-
-      waypoints.push(newWaypoint);
-      
-      // Update live location city if requested
-      if (req.body.updateLiveCity) {
-        liveLocation.lastCity = newLog.locationName;
-        liveLocation.lat = newLog.coordinates.lat;
-        liveLocation.lng = newLog.coordinates.lng;
-        liveLocation.timestamp = new Date().toISOString();
+      // Persist cover image if sent as base64
+      let coverImage = req.body.coverImage || '/departure.jpeg';
+      if (typeof coverImage === 'string' && coverImage.startsWith('data:')) {
+        coverImage = saveBase64ImageToDisk(coverImage, `${req.body.title || 'cover'}`);
       }
-    }
 
-    // Automatically sync all photos from this journal entry to the global Photo & Video Gallery
-    syncLogPhotosToMedia(newLog);
-
-    saveDataStore();
-    console.log(`[Journal Created] "${newLog.title}" by ${effectiveUser.name} (Status: ${newLog.status})`);
-
-    // Auto-broadcast notification to all registered subscribers if published
-    if (newLog.status === 'published' && req.body.notifySubscribers !== false) {
-      notifySubscribersOfNewEntry(newLog, effectiveUser.name).catch(err => {
-        console.error('[Auto-Broadcast Error on Create]', err);
-      });
-    }
-
-    res.json({ success: true, log: newLog, waypoint: newWaypoint, waypoints, liveLocation, travelLogs, mediaItems });
-  });
-
-  // Edit / Update existing log (Admin only)
-  app.put('/api/logs/:id', (req: Request, res: Response) => {
-    if (!isUserAdmin(req)) {
-      res.status(403).json({ error: 'Only Joannie or Barton can modify journal entries.' });
-      return;
-    }
-
-    const { id } = req.params;
-    const index = travelLogs.findIndex(l => l.id === id);
-    if (index === -1) {
-      res.status(404).json({ error: 'Journal entry not found.' });
-      return;
-    }
-
-    const wasDraft = travelLogs[index].status === 'draft';
-    let updatedData = { ...req.body };
-    if (typeof updatedData.coverImage === 'string' && updatedData.coverImage.startsWith('data:')) {
-      updatedData.coverImage = saveBase64ImageToDisk(updatedData.coverImage, `${updatedData.title || 'cover'}`);
-    }
-    if (Array.isArray(updatedData.gallery)) {
-      updatedData.gallery = updatedData.gallery.map((item: any, idx: number) => {
+      // Persist gallery photos if sent as base64
+      let gallery = Array.isArray(req.body.gallery) ? req.body.gallery : [];
+      gallery = gallery.map((item: any, idx: number) => {
         let url = item.url;
         if (typeof url === 'string' && url.startsWith('data:')) {
           url = saveBase64ImageToDisk(url, `gallery-${idx}`);
@@ -1018,38 +912,162 @@ Return ONLY a valid JSON object matching this schema:
         };
       });
 
-      // Synchronize updated photo captions with global media items
-      for (const item of updatedData.gallery) {
-        if (item.url && item.caption) {
-          const match = mediaItems.find(m => m.url === item.url);
-          if (match) {
-            match.caption = item.caption;
+      const newLog: TravelLog = {
+        id: `log-${Date.now()}`,
+        title: req.body.title || 'Untitled Journal Entry',
+        slug: (req.body.title || 'untitled-entry').toLowerCase().replace(/[^a-z0-9]+/g, '-'),
+        date: req.body.date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
+        locationName: req.body.locationName || liveLocation.lastCity,
+        country: req.body.country || 'Canada',
+        coordinates: req.body.coordinates || { lat: liveLocation.lat, lng: liveLocation.lng },
+        author: req.body.author || effectiveUser.name || 'Joannie & Barton',
+        readingTime: `${Math.max(2, Math.ceil((req.body.content || '').split(' ').length / 180))} min read`,
+        category: req.body.category || 'adventures_mba',
+        journeyLeg: req.body.journeyLeg || 'arctic_yukon',
+        status: req.body.status || 'published',
+        excerpt: req.body.excerpt || (req.body.content || '').substring(0, 160) + '...',
+        content: req.body.content || '',
+        coverImage,
+        gallery,
+        metrics: req.body.metrics || {
+          elevationM: liveLocation.altitudeM || 100,
+          tempC: liveLocation.weather?.tempC || 20,
+          kmTraveled: 0,
+          henriAge: '2.5 months'
+        },
+        locationInsights: req.body.locationInsights,
+        henriHighlight: req.body.henriHighlight,
+        mbaHighlight: req.body.mbaHighlight,
+        visitorHighlight: req.body.visitorHighlight,
+        tags: req.body.tags || ['Mousse on the Loose', 'Expedition'],
+        likesCount: 0,
+        commentsCount: 0
+      };
+
+      travelLogs.unshift(newLog);
+
+      // If adding a location ping on the route map
+      let newWaypoint: Waypoint | null = null;
+      if (req.body.addLocationPing !== false && newLog.coordinates) {
+        newWaypoint = {
+          id: `waypoint-log-${newLog.id}`,
+          name: newLog.locationName,
+          region: req.body.region || newLog.country,
+          country: newLog.country,
+          leg: newLog.journeyLeg,
+          journeyLeg: newLog.journeyLeg,
+          lat: newLog.coordinates.lat,
+          lng: newLog.coordinates.lng,
+          date: newLog.date,
+          status: 'completed',
+          elevationM: newLog.metrics?.elevationM || 100,
+          summary: newLog.title,
+          description: newLog.excerpt,
+          category: newLog.category === 'henri_milestones' ? 'baby_milestone' : (newLog.category === 'visits_along_the_way' ? 'family_reunion' : 'overland_camp'),
+          thumbnail: newLog.coverImage,
+          coverImage: newLog.coverImage,
+          relatedLogId: newLog.id
+        };
+
+        waypoints.push(newWaypoint);
+        
+        // Update live location city if requested
+        if (req.body.updateLiveCity) {
+          liveLocation.lastCity = newLog.locationName;
+          liveLocation.lat = newLog.coordinates.lat;
+          liveLocation.lng = newLog.coordinates.lng;
+          liveLocation.timestamp = new Date().toISOString();
+        }
+      }
+
+      // Automatically sync all photos from this journal entry to the global Photo & Video Gallery
+      syncLogPhotosToMedia(newLog);
+
+      saveDataStore();
+      console.log(`[Journal Created] "${newLog.title}" by ${effectiveUser.name} (Status: ${newLog.status})`);
+
+      // Auto-broadcast notification to all registered subscribers if published
+      if (newLog.status === 'published' && req.body.notifySubscribers !== false) {
+        notifySubscribersOfNewEntry(newLog, effectiveUser.name).catch(err => {
+          console.error('[Auto-Broadcast Error on Create]', err);
+        });
+      }
+
+      res.json({ success: true, log: newLog, waypoint: newWaypoint, waypoints, liveLocation, travelLogs, mediaItems });
+    } catch (err: any) {
+      console.error('[POST /api/logs Error]:', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to create journal entry.' });
+    }
+  });
+
+  // Edit / Update existing log (Admin only)
+  app.put('/api/logs/:id', (req: Request, res: Response) => {
+    try {
+      if (!isUserAdmin(req)) {
+        res.status(403).json({ success: false, error: 'Only Joannie or Barton can modify journal entries.' });
+        return;
+      }
+
+      const { id } = req.params;
+      const index = travelLogs.findIndex(l => l.id === id);
+      if (index === -1) {
+        res.status(404).json({ success: false, error: 'Journal entry not found.' });
+        return;
+      }
+
+      const wasDraft = travelLogs[index].status === 'draft';
+      let updatedData = { ...req.body };
+      if (typeof updatedData.coverImage === 'string' && updatedData.coverImage.startsWith('data:')) {
+        updatedData.coverImage = saveBase64ImageToDisk(updatedData.coverImage, `${updatedData.title || 'cover'}`);
+      }
+      if (Array.isArray(updatedData.gallery)) {
+        updatedData.gallery = updatedData.gallery.map((item: any, idx: number) => {
+          let url = item.url;
+          if (typeof url === 'string' && url.startsWith('data:')) {
+            url = saveBase64ImageToDisk(url, `gallery-${idx}`);
+          }
+          return {
+            ...item,
+            url
+          };
+        });
+
+        // Synchronize updated photo captions with global media items
+        for (const item of updatedData.gallery) {
+          if (item.url && item.caption) {
+            const match = mediaItems.find(m => m.url === item.url);
+            if (match) {
+              match.caption = item.caption;
+            }
           }
         }
       }
+
+      travelLogs[index] = {
+        ...travelLogs[index],
+        ...updatedData,
+        id // preserve ID
+      };
+
+      // Automatically sync photos from this journal entry to the global Photo & Video Gallery
+      syncLogPhotosToMedia(travelLogs[index]);
+
+      saveDataStore();
+      const effectiveUser = getEffectiveUser(req);
+      console.log(`[Journal Updated] "${travelLogs[index].title}" modified by ${effectiveUser.name}`);
+
+      // If transitioned from draft to published, auto-notify subscribers
+      if (wasDraft && travelLogs[index].status === 'published' && req.body.notifySubscribers !== false) {
+        notifySubscribersOfNewEntry(travelLogs[index], effectiveUser.name).catch(err => {
+          console.error('[Auto-Broadcast Error on Update]', err);
+        });
+      }
+
+      res.json({ success: true, log: travelLogs[index], travelLogs, mediaItems });
+    } catch (err: any) {
+      console.error('[PUT /api/logs/:id Error]:', err);
+      res.status(500).json({ success: false, error: err.message || 'Failed to update journal entry.' });
     }
-
-    travelLogs[index] = {
-      ...travelLogs[index],
-      ...updatedData,
-      id // preserve ID
-    };
-
-    // Automatically sync photos from this journal entry to the global Photo & Video Gallery
-    syncLogPhotosToMedia(travelLogs[index]);
-
-    saveDataStore();
-    const effectiveUser = getEffectiveUser(req);
-    console.log(`[Journal Updated] "${travelLogs[index].title}" modified by ${effectiveUser.name}`);
-
-    // If transitioned from draft to published, auto-notify subscribers
-    if (wasDraft && travelLogs[index].status === 'published' && req.body.notifySubscribers !== false) {
-      notifySubscribersOfNewEntry(travelLogs[index], effectiveUser.name).catch(err => {
-        console.error('[Auto-Broadcast Error on Update]', err);
-      });
-    }
-
-    res.json({ success: true, log: travelLogs[index], travelLogs, mediaItems });
   });
 
   // Toggle Draft / Publish status (Admin only) - supports both endpoint paths
@@ -1378,22 +1396,31 @@ Return ONLY a valid JSON object matching this schema:
     try {
       const { dataUrl, filename, title } = req.body;
       if (!dataUrl) {
-        res.status(400).json({ error: 'No image data provided for upload.' });
+        res.status(400).json({ success: false, error: 'No image data provided for upload.' });
         return;
       }
 
       // If dataUrl is a base64 string, write to disk
       if (typeof dataUrl === 'string' && dataUrl.startsWith('data:')) {
-        const matches = dataUrl.match(/^data:([A-Za-z-+\/]+);base64,(.+)$/);
-        if (matches && matches.length === 3) {
-          const mimeType = matches[1];
-          const base64Data = matches[2];
-          const extension = mimeType.split('/')[1]?.replace('jpeg', 'jpg').replace('png', 'png').replace('webp', 'webp') || 'jpg';
+        const commaIndex = dataUrl.indexOf(',');
+        if (commaIndex !== -1) {
+          const meta = dataUrl.substring(0, commaIndex);
+          const base64Data = dataUrl.substring(commaIndex + 1);
+          const mimeMatch = meta.match(/data:([^;]+)/);
+          const mimeType = mimeMatch ? mimeMatch[1] : 'image/jpeg';
+          let extension = 'jpg';
+          if (mimeType.includes('png')) extension = 'png';
+          else if (mimeType.includes('webp')) extension = 'webp';
+          else if (mimeType.includes('gif')) extension = 'gif';
+          else if (mimeType.includes('mp4')) extension = 'mp4';
+          else if (mimeType.includes('quicktime') || mimeType.includes('mov')) extension = 'mov';
+
           const safeName = (filename || title || `upload-${Date.now()}`)
             .toLowerCase()
             .replace(/[^a-z0-9]+/g, '-')
-            .replace(/^-+|-+$/g, '');
-          const finalFileName = `${safeName}-${Date.now()}.${extension}`;
+            .replace(/^-+|-+$/g, '')
+            .slice(0, 30);
+          const finalFileName = `${safeName}-${Date.now()}-${Math.random().toString(36).substring(2, 6)}.${extension}`;
           const filePath = path.join(UPLOADS_DIR, finalFileName);
 
           fs.writeFileSync(filePath, Buffer.from(base64Data, 'base64'));
@@ -1940,6 +1967,24 @@ Return ONLY a valid JSON object matching this schema:
       mode: dispatchResult.mode,
       message: `Test email dispatched to ${toEmail} (Mode: ${dispatchResult.mode})! ${subscribers.length} total subscribers currently registered.`
     });
+  });
+
+  // Explicit 404 handler for unmatched API routes so they NEVER fall through to Vite / SPA index.html
+  app.all('/api/*', (req: Request, res: Response) => {
+    res.status(404).json({ success: false, error: `API endpoint ${req.method} ${req.path} not found.` });
+  });
+
+  // Global error handler returning JSON instead of Express default HTML
+  app.use((err: any, req: Request, res: Response, next: NextFunction) => {
+    console.error('[API Server Error]:', err);
+    if (res.headersSent) {
+      return next(err);
+    }
+    const status = err.status || err.statusCode || (err.type === 'entity.too.large' ? 413 : 500);
+    const message = err.type === 'entity.too.large'
+      ? 'Payload too large. Please reduce photo sizes or upload photos individually.'
+      : (err.message || 'An unexpected server error occurred.');
+    res.status(status).json({ success: false, error: message });
   });
 
   // --- VITE MIDDLEWARE SETUP ---

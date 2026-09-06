@@ -458,8 +458,11 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         headers,
         body: JSON.stringify({ dataUrl, filename: filename || `entry-photo-${Date.now()}` })
       });
-      const data = await res.json();
-      if (data?.url) return data.url;
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data?.url) return data.url;
+      }
     } catch (err) {
       console.warn('Server upload fallback:', err);
     }
@@ -1539,16 +1542,18 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(false)}
           onSave={async (data) => {
-            setLog(prev => ({ ...prev, ...data }));
             if (onUpdateLog) {
               const res = await onUpdateLog(log.id, data);
               if (res && res.success === false) {
-                setLog(initialLogProp);
                 throw new Error(res.error || 'Failed to save modifications to the journal entry.');
               }
               if (res && res.log) {
                 setLog(res.log);
+              } else {
+                setLog(prev => ({ ...prev, ...data }));
               }
+            } else {
+              setLog(prev => ({ ...prev, ...data }));
             }
             showToast('✨ Journal entry modifications saved and updated on website.');
             setIsEditorOpen(false);

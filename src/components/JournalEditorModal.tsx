@@ -306,14 +306,23 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const uploadImageToServer = async (dataUrl: string, filename: string): Promise<string> => {
     if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;
     try {
+      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+      const adminToken = localStorage.getItem('mousse_admin_token');
+      if (adminToken) {
+        headers['x-admin-token'] = adminToken;
+        headers['Authorization'] = `Bearer ${adminToken}`;
+      }
       const res = await fetch('/api/upload', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
+        headers,
         body: JSON.stringify({ dataUrl, filename })
       });
-      const data = await res.json();
-      if (data?.url) {
-        return data.url;
+      const contentType = (res.headers.get('content-type') || '').toLowerCase();
+      if (contentType.includes('application/json')) {
+        const data = await res.json();
+        if (data?.url) {
+          return data.url;
+        }
       }
     } catch (err) {
       console.warn('[Upload API fallback]: Could not upload directly to server, will save via payload:', err);
@@ -398,6 +407,38 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
     if (!title.trim() || !content.trim()) return;
 
     setIsSubmitting(true);
+    setSaveError('');
+
+    // Ensure cover image and gallery images are persisted as URLs on server rather than huge base64 strings
+    let resolvedCoverImage = coverImage.trim() || '/departure.jpeg';
+    if (resolvedCoverImage.startsWith('data:')) {
+      try {
+        resolvedCoverImage = await uploadImageToServer(resolvedCoverImage, `${title.trim()}-cover`);
+        setCoverImage(resolvedCoverImage);
+      } catch (err) {
+        console.warn('Cover upload fallback:', err);
+      }
+    }
+
+    let resolvedGallery = [...gallery];
+    let galleryModified = false;
+    for (let i = 0; i < resolvedGallery.length; i++) {
+      const item = resolvedGallery[i];
+      if (item.url && item.url.startsWith('data:')) {
+        try {
+          const uploadedUrl = await uploadImageToServer(item.url, `${title.trim()}-photo-${i}`);
+          if (uploadedUrl !== item.url) {
+            resolvedGallery[i] = { ...item, url: uploadedUrl };
+            galleryModified = true;
+          }
+        } catch (err) {
+          console.warn('Gallery upload fallback:', err);
+        }
+      }
+    }
+    if (galleryModified) {
+      setGallery(resolvedGallery);
+    }
 
     const logPayload: Partial<TravelLog> & { addLocationPing?: boolean; updateLiveCity?: boolean; region?: string } = {
       title: title.trim(),
@@ -410,8 +451,8 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
       status,
       fontFamily,
       content,
-      coverImage: coverImage.trim() || '/departure.jpeg',
-      gallery,
+      coverImage: resolvedCoverImage,
+      gallery: resolvedGallery,
       readingTime: `${Math.max(2, Math.ceil(content.split(/\s+/).length / 180))} min read`,
       excerpt: content.substring(0, 160).replace(/[#*`_>]/g, '') + '...',
       metrics: {
@@ -438,7 +479,6 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
       region: country
     };
 
-    setSaveError('');
     try {
       const result: any = await onSave(logPayload);
       if (result && result.success === false) {
@@ -450,9 +490,15 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
       // If publishing live and notify subscribers is enabled, trigger broadcast dispatch
       if (status === 'published' && notifySubscribersOnPublish) {
         try {
+          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
+          const adminToken = localStorage.getItem('mousse_admin_token');
+          if (adminToken) {
+            headers['x-admin-token'] = adminToken;
+            headers['Authorization'] = `Bearer ${adminToken}`;
+          }
           await fetch('/api/email/broadcast', {
             method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
+            headers,
             body: JSON.stringify({
               logId: initialLog?.id || `log-${Date.now()}`,
               logTitle: title.trim(),
@@ -467,7 +513,13 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
       onClose();
     } catch (err: any) {
       console.error(err);
-      setSaveError(err.message || 'Error saving modifications. Please check your connection.');
+      let errorMsg = err?.message || 'Error saving modifications. Please check your connection.';
+      if (errorMsg.includes('413') || errorMsg.toLowerCase().includes('too large')) {
+        errorMsg = 'This entry is too large to save (413). Please remove or replace high-resolution images with smaller ones.';
+      } else if (errorMsg.includes('<!DOCTYPE') || errorMsg.includes('<html') || errorMsg.includes('Unexpected token')) {
+        errorMsg = 'Server connection error. Please verify your connection or try saving again.';
+      }
+      setSaveError(errorMsg);
     } finally {
       setIsSubmitting(false);
     }
