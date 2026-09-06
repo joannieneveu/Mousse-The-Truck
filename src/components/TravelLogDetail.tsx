@@ -1117,6 +1117,33 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
             </label>
           </div>
         )}
+
+        {/* Visitor Discovery Banner: All Expedition Photos in Gallery */}
+        <div className="bg-[#FAF8F5] border border-stone-200/90 rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs mt-4">
+          <div className="flex items-start sm:items-center gap-3">
+            <div className="w-9 h-9 rounded-xl bg-blue-900/10 text-blue-900 flex items-center justify-center shrink-0">
+              <ImageIcon className="w-5 h-5 text-blue-900" />
+            </div>
+            <div>
+              <h4 className="font-serif font-bold text-stone-900 text-sm">
+                Looking for all expedition pictures?
+              </h4>
+              <p className="text-xs text-stone-600">
+                Visitors can find the full collection of all authentic expedition photos, truck build details, and family milestones in the <strong>Photo &amp; Video Gallery</strong> tab.
+              </p>
+            </div>
+          </div>
+          {onOpenMediaGallery && (
+            <button
+              type="button"
+              onClick={onOpenMediaGallery}
+              className="shrink-0 px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+            >
+              <Layers className="w-3.5 h-3.5" />
+              <span>Explore Photo &amp; Video Gallery →</span>
+            </button>
+          )}
+        </div>
       </div>
 
       {/* Tags */}

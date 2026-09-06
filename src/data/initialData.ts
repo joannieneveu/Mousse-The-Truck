@@ -289,22 +289,7 @@ Let's go.`,
     gallery: [
       {
         url: '/IMG_3785.jpeg',
-        caption: 'Mousse at the Arctic Ocean / Tuktoyaktuk expedition cover photograph',
-        type: 'image'
-      },
-      {
-        url: "/Henri's spot.jpeg",
-        caption: 'Henri supervising Papa vs. the 280-lb flat tire from his bouncy chair on the Dempster Highway',
-        type: 'image'
-      },
-      {
-        url: '/departure.jpeg',
-        caption: 'Mousse navigating the muddy gravel stretches of the Dempster Highway',
-        type: 'image'
-      },
-      {
-        url: '/Henri.jpeg',
-        caption: 'Henri unbothered by his first Canadian snowball during a roadside snooze',
+        caption: 'Mousse reaching the Arctic Ocean in Tuktoyaktuk, Northwest Territories (69°27′ N) — the northern terminus of our Pan-American journey!',
         type: 'image'
       }
     ],
@@ -837,229 +822,530 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
 
 export const INITIAL_MEDIA: MediaItem[] = [
   {
-    id: 'media-tuk-cover-img3785',
-    title: 'North to the Arctic Ocean (Cover)',
-    type: 'image',
-    url: '/IMG_3785.jpeg',
-    thumbnailUrl: '/IMG_3785.jpeg',
-    caption: 'Official expedition photograph at the Arctic Ocean / Tuktoyaktuk, Northwest Territories',
-    locationName: 'Tuktoyaktuk, Northwest Territories',
-    coordinates: { lat: 69.4454, lng: -133.0342 },
-    date: 'September 4, 2026',
-    tags: ['Arctic Ocean', 'Tuktoyaktuk', 'Mousse', 'Cover', 'Expedition'],
-    author: 'Dr. Joannie Neveu',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-tuk-arctic-ocean",
+    "title": "North to the Arctic Ocean at Tuktoyaktuk",
+    "type": "image",
+    "url": "/IMG_3785.jpeg",
+    "caption": "Mousse parked at the iconic Arctic Ocean sign in Tuktoyaktuk, Northwest Territories (69°27′ N). 3,850 km from Lethbridge to the end of the road!",
+    "locationName": "Tuktoyaktuk, Northwest Territories",
+    "coordinates": {
+      "lat": 69.4454,
+      "lng": -133.0342
+    },
+    "date": "September 3, 2026",
+    "tags": [
+      "Arctic Ocean",
+      "Tuktoyaktuk",
+      "Mousse",
+      "Milestone",
+      "Northwest Territories"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-henri-driving',
-    title: 'Henri at the Wheel of Mousse',
-    type: 'image',
-    url: '/Henri is driving this expedition.jpeg',
-    caption: 'Chief Sunrise Supervisor Henri taking the steering wheel of Mousse and directing navigation for our 35,000 km expedition to South America!',
-    locationName: 'Alaska Highway Corridor, Northern BC / Yukon',
-    coordinates: { lat: 58.8050, lng: -122.6972 },
-    date: 'August 30, 2026',
-    tags: ['Henri', 'Driver', 'Mousse', 'Baby Explorer', 'Alaska Highway'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-henri-driving",
+    "title": "Henri at the Wheel of Mousse",
+    "type": "image",
+    "url": "/Henri is driving this expedition.jpeg",
+    "caption": "Chief Navigator Henri taking the steering wheel of Mousse and plotting our course north along the Alaska Highway.",
+    "locationName": "Northern Alberta / Alaska Highway",
+    "coordinates": {
+      "lat": 55.2,
+      "lng": -118.8
+    },
+    "date": "August 29, 2026",
+    "tags": [
+      "Henri",
+      "Mousse",
+      "Steering Wheel",
+      "Chief Navigator"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-henris-spot',
-    title: 'Henri’s Custom Truck Cot & Travel Haven',
-    type: 'image',
-    url: "/Henri's spot.jpeg",
-    caption: "Henri settled into his car seat inside Mousse, cozy and secure as we travel through the Canadian North.",
-    locationName: 'Liard Hot Springs, Northern British Columbia',
-    coordinates: { lat: 59.4269, lng: -126.0964 },
-    date: 'August 30, 2026',
-    tags: ['Henri', 'Truck Habitat', 'Car Seat', 'Interior', 'Mousse'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-hot-spring",
+    "title": "Henri’s First Swim at Liard River Hot Springs",
+    "type": "image",
+    "url": "/hot spring.jpeg",
+    "caption": "Henri’s very first swim in the warm mineral waters of Liard River Hot Springs in northern BC, surrounded by boreal forest and pouring rain.",
+    "locationName": "Liard River Hot Springs, British Columbia",
+    "coordinates": {
+      "lat": 59.426,
+      "lng": -126.091
+    },
+    "date": "August 30, 2026",
+    "tags": [
+      "Liard Hot Springs",
+      "Henri",
+      "First Swim",
+      "British Columbia"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-eddy-anne',
-    title: 'Visiting Uncle Eddy & Anne in Red Deer',
-    type: 'image',
-    url: '/Eddy and Anne.jpeg',
-    caption: 'First stop along our northern route: visiting Barton’s Uncle Eddy and his wife Anne in Red Deer, celebrating family roots at the launch of our 35,000 km journey.',
-    locationName: 'Red Deer, Alberta',
-    coordinates: { lat: 52.2690, lng: -113.8116 },
-    date: 'August 29, 2026',
-    tags: ['Red Deer', 'Uncle Eddy', 'Family Roots', 'Alberta', 'Heritage'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-henris-spot",
+    "title": "Henri’s Custom Truck Cot & Travel Haven",
+    "type": "image",
+    "url": "/Henri's spot.jpeg",
+    "caption": "Baby Henri nestled into his custom truck cot inside Mousse, cozied up for our first roadside sleep in the wilderness.",
+    "locationName": "Wilderness Campsite, Northern Alberta",
+    "coordinates": {
+      "lat": 54.5,
+      "lng": -116.5
+    },
+    "date": "August 28, 2026",
+    "tags": [
+      "Henri",
+      "Van Life",
+      "Custom Cot",
+      "Overland Home"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-brian-thiessen',
-    title: 'Henri Meeting Brian Thiessen in Calgary',
-    type: 'image',
-    url: '/Henri and Brian Thiessen.jpeg',
-    caption: 'Our first night on the road: baby Henri meeting Brian Thiessen (Barton’s first cousin once removed!) in Calgary before pointing Mousse north.',
-    locationName: 'Calgary, Alberta',
-    coordinates: { lat: 51.0447, lng: -114.0719 },
-    date: 'August 28, 2026',
-    tags: ['Calgary', 'Family', 'Thiessen', 'Henri', 'Expedition Launch'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-sunset-mousse",
+    "title": "Mousse at Golden Hour Sunset",
+    "type": "image",
+    "url": "/moussesunset.jpeg",
+    "caption": "Mousse parked under a big northern sky as sunset paints the horizon gold along the open highway.",
+    "locationName": "Northern Alberta Foothills",
+    "coordinates": {
+      "lat": 53.9,
+      "lng": -115.8
+    },
+    "date": "August 29, 2026",
+    "tags": [
+      "Mousse",
+      "Golden Hour",
+      "Sunset",
+      "Wilderness Camping"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-gravel-lane',
-    title: 'Gravel Lane to Grandma’s House & Family Farm',
-    type: 'image',
-    url: "/gravel lane to grandma's house.jpeg",
-    caption: 'Following dusty gravel roads out to the old Thiessen family farm in DeBolt, northern Alberta, where Barton’s dad grew up.',
-    locationName: 'DeBolt, Northern Alberta',
-    coordinates: { lat: 55.2044, lng: -118.0167 },
-    date: 'August 29, 2026',
-    tags: ['DeBolt', 'Gravel Road', 'Alberta', 'Family Roots', 'Heritage'],
-    author: 'Joannie & Barton',
-    featured: false,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-departure",
+    "title": "The Grand Departure from Lethbridge",
+    "type": "image",
+    "url": "/departure.jpeg",
+    "caption": "Joannie, Barton, and baby Henri all packed into Mousse, officially setting off from Lethbridge on our 35,000 km expedition!",
+    "locationName": "Lethbridge, Alberta",
+    "coordinates": {
+      "lat": 49.6956,
+      "lng": -112.8451
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Departure",
+      "Lethbridge",
+      "Expedition Launch",
+      "Family"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-thiessen-truck',
-    title: 'Generations of Trucks: The Thiessen Farm Legacy',
-    type: 'image',
-    url: "/Thiessen's truck.jpeg",
-    caption: 'Generations of trucks and family history on the farm in DeBolt. Nicholas (Nikolai) Thiessen’s heritage truck and Mousse bridging decades of adventure.',
-    locationName: 'DeBolt, Northern Alberta',
-    coordinates: { lat: 55.2044, lng: -118.0167 },
-    date: 'August 29, 2026',
-    tags: ['DeBolt', 'Vintage Truck', 'Thiessen Family', 'Alberta', 'Heritage'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-thiessen-truck",
+    "title": "Generations of Trucks: The Thiessen Farm Legacy",
+    "type": "image",
+    "url": "/Thiessen's truck.jpeg",
+    "caption": "Nikolai Thiessen’s heritage truck and Mousse side-by-side on the farm in DeBolt. Decades of adventure and family travel spanning generations.",
+    "locationName": "DeBolt, Northern Alberta",
+    "coordinates": {
+      "lat": 55.22,
+      "lng": -118.03
+    },
+    "date": "August 29, 2026",
+    "tags": [
+      "Thiessen Farm",
+      "Generations",
+      "Trucks",
+      "Family Heritage"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-old-family-truck',
-    title: 'Grandfather Nikolai Thiessen’s Vintage GMC Truck',
-    type: 'image',
-    url: '/old family truck.jpeg',
-    caption: 'Still inside the garage decades later: Nikolai (Nicholas) Thiessen’s vintage GMC pickup truck parked on the farm in DeBolt where Barton’s dad was raised.',
-    locationName: 'DeBolt, Northern Alberta',
-    coordinates: { lat: 55.2044, lng: -118.0167 },
-    date: 'August 29, 2026',
-    tags: ['DeBolt', 'Nikolai Thiessen', 'Vintage GMC', 'Family History', 'Heritage'],
-    author: 'Joannie & Barton',
-    featured: false,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-old-family-truck",
+    "title": "Grandfather Nikolai Thiessen’s Vintage GMC Truck",
+    "type": "image",
+    "url": "/old family truck.jpeg",
+    "caption": "Grandfather Nikolai’s classic GMC truck, lovingly preserved in the DeBolt farm garage decades after the farm was sold in 1994.",
+    "locationName": "DeBolt, Northern Alberta",
+    "coordinates": {
+      "lat": 55.22,
+      "lng": -118.03
+    },
+    "date": "August 29, 2026",
+    "tags": [
+      "Vintage Truck",
+      "GMC",
+      "Family History",
+      "DeBolt"
+    ],
+    "author": "Joannie & Barton",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-hot-spring',
-    title: 'Henri’s First Swim at Liard River Hot Springs',
-    type: 'image',
-    url: '/hot spring.jpeg',
-    caption: 'Henri’s very first swim in the warm mineral pools of Liard River Hot Springs in northern BC, surrounded by steam and pouring rain.',
-    locationName: 'Liard River Hot Springs, Northern British Columbia',
-    coordinates: { lat: 59.4269, lng: -126.0964 },
-    date: 'August 30, 2026',
-    tags: ['Liard Hot Springs', 'Henri First Swim', 'BC', 'Mineral Springs'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-gravel-lane",
+    "title": "Gravel Lane to Grandma’s House & Family Farm",
+    "type": "image",
+    "url": "/gravel lane to grandma's house.jpeg",
+    "caption": "Dusty northern Alberta gravel roads leading to the historic Thiessen family farm in DeBolt, bridging generations of family memories.",
+    "locationName": "DeBolt, Northern Alberta",
+    "coordinates": {
+      "lat": 55.22,
+      "lng": -118.03
+    },
+    "date": "August 29, 2026",
+    "tags": [
+      "DeBolt",
+      "Family Heritage",
+      "Alberta",
+      "Gravel Roads"
+    ],
+    "author": "Joannie & Barton",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-sunset-mousse',
-    title: 'Mousse at Golden Hour Sunset',
-    type: 'image',
-    url: '/moussesunset.jpeg',
-    caption: 'Our custom moss-green Ford F550 expedition rig Mousse glowing under the golden sunset as the 35,000 km Arctic to Antarctica journey begins.',
-    locationName: 'Alberta Foothills & Big Sky',
-    coordinates: { lat: 53.5461, lng: -113.4938 },
-    date: 'August 28, 2026',
-    tags: ['Mousse', 'Golden Hour', 'Expedition Rig', 'Sunset', 'Alberta'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-eddy-anne",
+    "title": "Visiting Uncle Eddy & Anne in Red Deer",
+    "type": "image",
+    "url": "/Eddy and Anne.jpeg",
+    "caption": "Special family moments with Barton’s Uncle Eddy and Anne in Red Deer, Alberta as we embark on our Pan-American sabbatical.",
+    "locationName": "Red Deer, Alberta",
+    "coordinates": {
+      "lat": 52.2681,
+      "lng": -113.8112
+    },
+    "date": "August 28, 2026",
+    "tags": [
+      "Family",
+      "Red Deer",
+      "Thiessen Family",
+      "Reunion"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-departure',
-    title: 'The Family Departure: Lethbridge, Alberta',
-    type: 'image',
-    url: '/departure.jpeg',
-    caption: 'Joannie, Barton, and baby Henri setting off from Lethbridge on the 35,000 km journey.',
-    locationName: 'Lethbridge, Alberta',
-    coordinates: { lat: 49.6956, lng: -112.8451 },
-    date: 'August 28, 2026',
-    tags: ['Departure', 'Family', 'Henri', 'Lethbridge', 'Launch'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-brian-thiessen",
+    "title": "Henri Meeting Brian Thiessen in Calgary",
+    "type": "image",
+    "url": "/Henri and Brian Thiessen.jpeg",
+    "caption": "Our first night in Calgary: Baby Henri meeting Brian Thiessen (Barton’s first cousin once removed!).",
+    "locationName": "Calgary, Alberta",
+    "coordinates": {
+      "lat": 51.0447,
+      "lng": -114.0719
+    },
+    "date": "August 28, 2026",
+    "tags": [
+      "Family",
+      "Calgary",
+      "Thiessen Family",
+      "Baby Henri"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-family-portrait',
-    title: 'Family Travel Moments in the Canadian North',
-    type: 'image',
-    url: '/Family.jpeg',
-    caption: 'Joannie, Barton, and baby Henri exploring the Canadian wilderness together in Mousse.',
-    locationName: 'Northern British Columbia & Yukon Corridor',
-    coordinates: { lat: 60.1000, lng: -128.5000 },
-    date: 'August 30, 2026',
-    tags: ['Family', 'Joannie', 'Barton', 'Henri', 'North'],
-    author: 'Joannie & Barton',
-    featured: true,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-mousse-rig",
+    "title": "Mousse at Wilderness Van",
+    "type": "image",
+    "url": "/Mousse1.jpeg",
+    "caption": "Mousse awaiting pickup in the garage at Wilderness Van in Alberta, completely outfitted and ready for 35,000 km across the Americas.",
+    "locationName": "Wilderness Van, Alberta",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Wilderness Van",
+      "Mousse",
+      "Rig Build",
+      "Pickup Day"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-runner',
-    title: 'Trail Running and Fresh Mountain Air',
-    type: 'image',
-    url: '/Runner.jpeg',
-    caption: 'Trail stops and fresh mountain air along the Alaska Highway corridor during rest breaks.',
-    locationName: 'Alaska Highway Corridor',
-    coordinates: { lat: 59.8500, lng: -127.5000 },
-    date: 'August 30, 2026',
-    tags: ['Running', 'Trails', 'Alaska Highway', 'Wilderness'],
-    author: 'Joannie & Barton',
-    featured: false,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-solar-panels",
+    "title": "1100W Solar Array on Mousse’s Roof",
+    "type": "image",
+    "url": "/solar panel.jpeg",
+    "caption": "High-capacity 1100W off-grid solar panel roof array on Mousse, powering our induction cooktop, Starlink satellite dish, and living systems.",
+    "locationName": "Wilderness Van, Alberta",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Solar Power",
+      "Off-Grid",
+      "Rig Build",
+      "Mousse"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   },
   {
-    id: 'media-mousse-rig',
-    title: 'Mousse at Wilderness Van',
-    type: 'image',
-    url: '/Mousse1.jpeg',
-    caption: 'Mousse in the garage waiting for pickup at Wilderness Van in Alberta.',
-    locationName: 'Wilderness Van, Alberta',
-    coordinates: { lat: 51.2917, lng: -114.0144 },
-    date: 'August 27, 2026',
-    tags: ['Mousse', 'Ford F550', 'Overland', 'Wilderness Van'],
-    author: 'Joannie & Barton',
-    featured: false,
-    journeyLeg: 'arctic_yukon',
-    likesCount: 0,
-    commentsCount: 0
+    "id": "media-interior-kitchen",
+    "title": "Mousse Interior: Birch Kitchen & Galley",
+    "type": "image",
+    "url": "/interior1.jpeg",
+    "caption": "Handcrafted birch cabinetry, induction cooktop, deep sink, and marine refrigerator inside Mousse.",
+    "locationName": "Wilderness Van, Alberta",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Interior",
+      "Kitchen",
+      "Rig Build",
+      "Van Life"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-interior-dinette",
+    "title": "Mousse Interior: Dining Dinette & Work Nook",
+    "type": "image",
+    "url": "/interior2.jpeg",
+    "caption": "Spacious dining nook and convertible seating area for family meals, remote Executive MBA coursework, and evening route planning.",
+    "locationName": "Wilderness Van, Alberta",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Interior",
+      "Dinette",
+      "Rig Build",
+      "Van Life"
+    ],
+    "author": "Joannie & Barton",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-interior-storage",
+    "title": "Mousse Interior: Overhead Cabinetry & Storage",
+    "type": "image",
+    "url": "/interior3.jpeg",
+    "caption": "Lightweight aluminium and birch overhead lockers engineered for rattle-free travel on washboard gravel roads.",
+    "locationName": "Wilderness Van, Alberta",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Interior",
+      "Storage",
+      "Rig Build",
+      "Van Life"
+    ],
+    "author": "Joannie & Barton",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-interior-panoramic",
+    "title": "Mousse Interior: Panoramic Windows & Living Space",
+    "type": "image",
+    "url": "/interior4.jpeg",
+    "caption": "Bright living space with double-glazed arctic-rated awning windows providing panoramic wilderness views in every direction.",
+    "locationName": "Wilderness Van, Alberta",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Interior",
+      "Living Quarters",
+      "Rig Build",
+      "Van Life"
+    ],
+    "author": "Joannie & Barton",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-family-portrait",
+    "title": "Joannie, Barton & Baby Henri",
+    "type": "image",
+    "url": "/Family.jpeg",
+    "caption": "The expedition family together: Joannie, Barton, and baby Henri ready for 35,000 kilometres of Pan-American discovery.",
+    "locationName": "Newfoundland & Labrador",
+    "coordinates": {
+      "lat": 47.5615,
+      "lng": -52.7126
+    },
+    "date": "August 10, 2026",
+    "tags": [
+      "Family",
+      "Portrait",
+      "The Crew",
+      "Henri"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-henri-baby",
+    "title": "Baby Henri Cozy in Bed",
+    "type": "image",
+    "url": "/Henri.jpeg",
+    "caption": "Henri resting peacefully and comfortably before our epic journey from the Arctic Ocean to South America.",
+    "locationName": "Expedition Prep, Canada",
+    "coordinates": {
+      "lat": 47.56,
+      "lng": -52.71
+    },
+    "date": "August 16, 2026",
+    "tags": [
+      "Henri",
+      "Family",
+      "Expedition Baby"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-runner",
+    "title": "Trail Running and Fresh Mountain Air",
+    "type": "image",
+    "url": "/Runner.jpeg",
+    "caption": "Getting miles under our own feet before spending long driving days in Mousse navigating northern highways.",
+    "locationName": "Alberta Foothills",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "August 27, 2026",
+    "tags": [
+      "Running",
+      "Fitness",
+      "Trail Run",
+      "Mountains"
+    ],
+    "author": "Joannie & Barton",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-barton",
+    "title": "Barton: Anesthesiologist & Expedition Co-Pilot",
+    "type": "image",
+    "url": "/Barton.jpeg",
+    "caption": "Expedition co-pilot, 280-lb tire changer, route navigator, and proud papa to Henri.",
+    "locationName": "Lethbridge, Alberta",
+    "coordinates": {
+      "lat": 49.7,
+      "lng": -112.8
+    },
+    "date": "June 19, 2026",
+    "tags": [
+      "Crew",
+      "Barton",
+      "Expedition Crew"
+    ],
+    "author": "Dr. Joannie Neveu",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
+    "id": "media-joannie",
+    "title": "Dr. Joannie Neveu: Expedition Leader",
+    "type": "image",
+    "url": "/Joannie.jpeg",
+    "caption": "Expedition navigator, story writer, proud mama, and pediatric specialist leading the 35,000 km Pan-American sabbatical.",
+    "locationName": "Canada",
+    "coordinates": {
+      "lat": 47.56,
+      "lng": -52.71
+    },
+    "date": "November 17, 2025",
+    "tags": [
+      "Crew",
+      "Joannie",
+      "Expedition Crew"
+    ],
+    "author": "Barton Thiessen",
+    "featured": false,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
   }
 ];
 
