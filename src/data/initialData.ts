@@ -110,7 +110,26 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
   }
 ];
 
-export const INITIAL_SUBSCRIBERS: Subscriber[] = [];
+export const INITIAL_SUBSCRIBERS: Subscriber[] = [
+  {
+    "id": "sub-1788714353506",
+    "email": "supporter@example.com",
+    "name": "Marc & Sophie",
+    "relationshipNote": "Website Subscriber",
+    "status": "approved",
+    "subscribedAt": "September 6, 2026",
+    "approvedAt": "September 6, 2026"
+  },
+  {
+    "id": "sub-1788706016366",
+    "email": "joannie@mun.ca",
+    "name": "Joannie Neveu",
+    "relationshipNote": "Added directly by Joannie & Barton",
+    "status": "approved",
+    "subscribedAt": "September 6, 2026",
+    "approvedAt": "September 6, 2026"
+  }
+];
 
 export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
   {
@@ -169,7 +188,7 @@ export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
       "Permafrost"
     ],
     "likesCount": 0,
-    "commentsCount": 0
+    "commentsCount": 1
   },
   {
     "id": "log-2-alberta-to-yukon",
@@ -1056,7 +1075,36 @@ export const INITIAL_MEDIA: MediaItem[] = [
   }
 ];
 
-export const INITIAL_COMMENTS: CommentItem[] = [];
+export const INITIAL_COMMENTS: CommentItem[] = [
+  {
+    "id": "comment-1788714349255-45wc",
+    "targetId": "log-1",
+    "targetType": "log",
+    "authorId": "guest-1788714349255",
+    "authorName": "Aunt Clara",
+    "authorAvatar": "https://api.dicebear.com/7.x/initials/svg?seed=Aunt%20Clara",
+    "authorRole": "friend_follower",
+    "authorRoleLabel": "Guest / Follower",
+    "content": "Wonderful to follow your journey! Safe travels!",
+    "createdAt": "Just now",
+    "likes": 0,
+    "likedByUsers": []
+  },
+  {
+    "id": "comment-1788713836689-9f4m",
+    "targetId": "log-3-arctic-ocean-tuktoyaktuk",
+    "targetType": "log",
+    "authorId": "user_joannie",
+    "authorName": "Riley & Grandma",
+    "authorAvatar": "/Joannie.jpeg",
+    "authorRole": "expedition_leader",
+    "authorRoleLabel": "Joannie (Expedition Leader & Navigator)",
+    "content": "Welcome to the Arctic! Amazing journey.",
+    "createdAt": "Just now",
+    "likes": 0,
+    "likedByUsers": []
+  }
+];
 
 export const INITIAL_RIG_PHOTOS: RigPhoto[] = [
   {

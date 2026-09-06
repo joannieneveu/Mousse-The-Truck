@@ -61,8 +61,9 @@ async function startServer() {
     'barton@mun.ca'
   ];
 
-  // Database State
-  let currentUser: UserProfile | null = ADMIN_USERS[0]; // Default Joannie (Admin)
+  // Database State - DEFAULT TO GUEST!
+  let currentUser: UserProfile | null = null; // Default to Guest: visitors cannot modify anything until an admin logs in
+  const activeAdminSessions = new Map<string, UserProfile>();
   let liveLocation: LiveLocation = { ...INITIAL_LIVE_LOCATION };
   let waypoints: Waypoint[] = [...INITIAL_WAYPOINTS];
   let travelLogs: TravelLog[] = [...INITIAL_TRAVEL_LOGS];
@@ -148,30 +149,48 @@ async function startServer() {
       if (!fs.existsSync(filePath)) return;
       let content = fs.readFileSync(filePath, 'utf-8');
 
-      // Sync INITIAL_TRAVEL_LOGS
+      // 1. Sync INITIAL_SUBSCRIBERS
+      const subStartTag = 'export const INITIAL_SUBSCRIBERS: Subscriber[] = ';
+      const subEndTag = 'export const INITIAL_TRAVEL_LOGS: TravelLog[] = [';
+      const startSubIdx = content.indexOf(subStartTag);
+      const endSubIdx = content.indexOf(subEndTag);
+      if (startSubIdx !== -1 && endSubIdx !== -1 && endSubIdx > startSubIdx) {
+        const replacementSub = `export const INITIAL_SUBSCRIBERS: Subscriber[] = ${JSON.stringify(subscribers, null, 2)};\n\n`;
+        content = content.slice(0, startSubIdx) + replacementSub + content.slice(endSubIdx);
+      }
+
+      // 2. Sync INITIAL_TRAVEL_LOGS
       const logsStartTag = 'export const INITIAL_TRAVEL_LOGS: TravelLog[] = [';
       const logsEndTag = 'export const INITIAL_LIVE_LOCATION: LiveLocation = {';
       const startLogsIdx = content.indexOf(logsStartTag);
       const endLogsIdx = content.indexOf(logsEndTag);
-
       if (startLogsIdx !== -1 && endLogsIdx !== -1 && endLogsIdx > startLogsIdx) {
         const replacementLogs = `export const INITIAL_TRAVEL_LOGS: TravelLog[] = ${JSON.stringify(travelLogs, null, 2)};\n\n`;
         content = content.slice(0, startLogsIdx) + replacementLogs + content.slice(endLogsIdx);
       }
 
-      // Sync INITIAL_MEDIA
+      // 3. Sync INITIAL_MEDIA
       const mediaStartTag = 'export const INITIAL_MEDIA: MediaItem[] = [';
-      const mediaEndTag = 'export const INITIAL_COMMENTS: CommentItem[] = [];';
+      const mediaEndTag = 'export const INITIAL_COMMENTS: CommentItem[] = ';
       const startMediaIdx = content.indexOf(mediaStartTag);
       const endMediaIdx = content.indexOf(mediaEndTag);
-
       if (startMediaIdx !== -1 && endMediaIdx !== -1 && endMediaIdx > startMediaIdx) {
         const replacementMedia = `export const INITIAL_MEDIA: MediaItem[] = ${JSON.stringify(mediaItems, null, 2)};\n\n`;
         content = content.slice(0, startMediaIdx) + replacementMedia + content.slice(endMediaIdx);
       }
 
+      // 4. Sync INITIAL_COMMENTS
+      const commentsStartTag = 'export const INITIAL_COMMENTS: CommentItem[] = ';
+      const commentsEndTag = 'export const INITIAL_RIG_PHOTOS: RigPhoto[] = [';
+      const startCommentsIdx = content.indexOf(commentsStartTag);
+      const endCommentsIdx = content.indexOf(commentsEndTag);
+      if (startCommentsIdx !== -1 && endCommentsIdx !== -1 && endCommentsIdx > startCommentsIdx) {
+        const replacementComments = `export const INITIAL_COMMENTS: CommentItem[] = ${JSON.stringify(comments, null, 2)};\n\n`;
+        content = content.slice(0, startCommentsIdx) + replacementComments + content.slice(endCommentsIdx);
+      }
+
       fs.writeFileSync(filePath, content, 'utf-8');
-      console.log('[InitialData Sync] Successfully synchronized initialData.ts with persistent store');
+      console.log('[InitialData Sync] Successfully synchronized initialData.ts with persistent store (Subscribers, Logs, Media, Comments)');
     } catch (err) {
       console.error('[InitialData Sync Error]:', err);
     }
@@ -374,20 +393,25 @@ async function startServer() {
 
   // Admin Request Verifier Helper
   function isUserAdmin(req: Request): boolean {
+    const adminToken = (req.headers['x-admin-token'] || (req.headers['authorization'] || '').replace('Bearer ', '') || '') as string;
+    if (adminToken && activeAdminSessions.has(adminToken)) return true;
+
     const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
-    const headerId = (req.headers['x-user-id'] as string || '').trim();
     const headerRole = (req.headers['x-user-role'] as string || '').trim();
 
-    if (headerRole === 'admin' || headerRole === 'expedition_leader') return true;
-    if (headerEmail && ADMIN_USERS.some(u => u.email.toLowerCase() === headerEmail)) return true;
-    if (headerEmail && ADMIN_EMAILS.some(e => e.toLowerCase() === headerEmail)) return true;
-    if (headerId && ADMIN_USERS.some(u => u.id === headerId)) return true;
+    if (headerRole === 'admin' && (ADMIN_EMAILS.includes(headerEmail) || ADMIN_USERS.some(u => u.email.toLowerCase() === headerEmail))) {
+      return true;
+    }
     if (currentUser?.isAdmin) return true;
     
     return false;
   }
 
   function getEffectiveUser(req: Request): UserProfile {
+    const adminToken = (req.headers['x-admin-token'] || (req.headers['authorization'] || '').replace('Bearer ', '') || '') as string;
+    if (adminToken && activeAdminSessions.has(adminToken)) {
+      return activeAdminSessions.get(adminToken)!;
+    }
     const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
     const headerId = (req.headers['x-user-id'] as string || '').trim();
 
@@ -417,12 +441,37 @@ async function startServer() {
   // --- AUTHENTICATION API ---
 
   // Get current active session & password configuration status
+  // STRICT RULE: Opening page is automatically GUEST unless authenticated
   app.get('/api/auth/me', (req: Request, res: Response) => {
-    res.json({ user: currentUser, isPasswordConfigured });
+    const adminToken = (req.headers['x-admin-token'] || (req.headers['authorization'] || '').replace('Bearer ', '') || '') as string;
+    if (adminToken && activeAdminSessions.has(adminToken)) {
+      const admin = activeAdminSessions.get(adminToken)!;
+      res.json({ user: admin, isPasswordConfigured, isAdmin: true, token: adminToken });
+      return;
+    }
+    const headerEmail = (req.headers['x-user-email'] as string || '').toLowerCase().trim();
+    const headerRole = (req.headers['x-user-role'] as string || '').trim();
+    if (headerRole === 'admin' && (ADMIN_EMAILS.includes(headerEmail) || ADMIN_USERS.some(u => u.email.toLowerCase() === headerEmail))) {
+      const match = ADMIN_USERS.find(u => u.email.toLowerCase() === headerEmail) || ADMIN_USERS[0];
+      res.json({ user: match, isPasswordConfigured, isAdmin: true });
+      return;
+    }
+    // GUEST BY DEFAULT!
+    res.json({ user: null, isPasswordConfigured, isAdmin: false });
   });
 
   app.get('/api/auth/status', (req: Request, res: Response) => {
-    res.json({ isPasswordConfigured, currentUser });
+    res.json({ isPasswordConfigured, isGuest: true });
+  });
+
+  // Logout (switch back to Guest)
+  app.post('/api/auth/logout', (req: Request, res: Response) => {
+    const adminToken = (req.headers['x-admin-token'] || (req.headers['authorization'] || '').replace('Bearer ', '') || '') as string;
+    if (adminToken) {
+      activeAdminSessions.delete(adminToken);
+    }
+    currentUser = null;
+    res.json({ success: true, message: 'Logged out. Now browsing as Guest.' });
   });
 
   // Get admin accounts list (Joannie & Barton)
@@ -446,11 +495,13 @@ async function startServer() {
     isPasswordConfigured = true;
 
     const targetAdmin = ADMIN_USERS.find(u => u.email.toLowerCase() === (adminEmail || '').trim().toLowerCase()) || ADMIN_USERS[0];
+    const sessionToken = 'admin_' + crypto.randomBytes(24).toString('hex');
+    activeAdminSessions.set(sessionToken, targetAdmin);
     currentUser = targetAdmin;
 
     saveDataStore();
     console.log(`[Auth] Administrator password created by ${targetAdmin.name}`);
-    res.json({ success: true, user: currentUser, isPasswordConfigured: true });
+    res.json({ success: true, user: targetAdmin, token: sessionToken, isAdmin: true, isPasswordConfigured: true });
   });
 
   // Reset/Clear password requirement
@@ -470,8 +521,12 @@ async function startServer() {
     const cleanPassword = (password || passkey || '').trim();
 
     // Check if logging in as Administrator (Joannie or Barton)
-    const adminMatch = ADMIN_USERS.find(u => u.email.toLowerCase() === cleanEmail);
+    const adminMatch = ADMIN_USERS.find(u => u.email.toLowerCase() === cleanEmail)
+      || (ADMIN_EMAILS.includes(cleanEmail) ? (cleanEmail.includes('barton') ? ADMIN_USERS[1] : ADMIN_USERS[0]) : null)
+      || (cleanEmail.includes('joannie') ? ADMIN_USERS[0] : (cleanEmail.includes('barton') ? ADMIN_USERS[1] : null));
     if (adminMatch) {
+      const sessionToken = 'admin_' + crypto.randomBytes(24).toString('hex');
+      
       // If user provided a new password during first-time login
       if (newPasswordToSet && newPasswordToSet.trim().length >= 4) {
         const salt = crypto.randomBytes(16).toString('hex');
@@ -479,26 +534,29 @@ async function startServer() {
         adminPasswordSalt = salt;
         adminPasswordHash = hash;
         isPasswordConfigured = true;
+        activeAdminSessions.set(sessionToken, adminMatch);
         currentUser = adminMatch;
         saveDataStore();
-        console.log(`[Auth] Administrator password configured and logged in: ${currentUser.name}`);
-        res.json({ success: true, user: currentUser, isAdmin: true, isPasswordConfigured: true });
+        console.log(`[Auth] Administrator password configured and logged in: ${adminMatch.name}`);
+        res.json({ success: true, user: adminMatch, token: sessionToken, isAdmin: true, isPasswordConfigured: true });
         return;
       }
 
       // If no password is configured yet, allow direct access
       if (!isPasswordConfigured) {
+        activeAdminSessions.set(sessionToken, adminMatch);
         currentUser = adminMatch;
-        console.log(`[Auth] Administrator logged in (unrestricted/first-time): ${currentUser.name}`);
-        res.json({ success: true, user: currentUser, isAdmin: true, isPasswordConfigured: false });
+        console.log(`[Auth] Administrator logged in (unrestricted/first-time): ${adminMatch.name}`);
+        res.json({ success: true, user: adminMatch, token: sessionToken, isAdmin: true, isPasswordConfigured: false });
         return;
       }
 
       // If password is configured, verify
       if (verifyPasswordHash(cleanPassword)) {
+        activeAdminSessions.set(sessionToken, adminMatch);
         currentUser = adminMatch;
-        console.log(`[Auth] Administrator logged in: ${currentUser.name}`);
-        res.json({ success: true, user: currentUser, isAdmin: true, isPasswordConfigured: true });
+        console.log(`[Auth] Administrator logged in: ${adminMatch.name}`);
+        res.json({ success: true, user: adminMatch, token: sessionToken, isAdmin: true, isPasswordConfigured: true });
         return;
       } else {
         res.status(401).json({ 
@@ -510,9 +568,12 @@ async function startServer() {
 
     // Direct password match if password configured
     if (isPasswordConfigured && cleanPassword && verifyPasswordHash(cleanPassword)) {
-      currentUser = ADMIN_USERS[0]; // Joannie
-      console.log(`[Auth] Administrator logged in via password: ${currentUser.name}`);
-      res.json({ success: true, user: currentUser, isAdmin: true });
+      const adminMatch = ADMIN_USERS[0]; // Joannie
+      const sessionToken = 'admin_' + crypto.randomBytes(24).toString('hex');
+      activeAdminSessions.set(sessionToken, adminMatch);
+      currentUser = adminMatch;
+      console.log(`[Auth] Administrator logged in via password: ${adminMatch.name}`);
+      res.json({ success: true, user: adminMatch, token: sessionToken, isAdmin: true, isPasswordConfigured: true });
       return;
     }
 

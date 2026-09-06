@@ -252,7 +252,7 @@
         "Permafrost"
       ],
       "likesCount": 0,
-      "commentsCount": 0
+      "commentsCount": 1
     },
     {
       "id": "log-2-alberta-to-yukon",
@@ -941,6 +941,15 @@
   ],
   "subscribers": [
     {
+      "id": "sub-1788714353506",
+      "email": "supporter@example.com",
+      "name": "Marc & Sophie",
+      "relationshipNote": "Website Subscriber",
+      "status": "approved",
+      "subscribedAt": "September 6, 2026",
+      "approvedAt": "September 6, 2026"
+    },
+    {
       "id": "sub-1788706016366",
       "email": "joannie@mun.ca",
       "name": "Joannie Neveu",
@@ -950,7 +959,36 @@
       "approvedAt": "September 6, 2026"
     }
   ],
-  "comments": [],
+  "comments": [
+    {
+      "id": "comment-1788714349255-45wc",
+      "targetId": "log-1",
+      "targetType": "log",
+      "authorId": "guest-1788714349255",
+      "authorName": "Aunt Clara",
+      "authorAvatar": "https://api.dicebear.com/7.x/initials/svg?seed=Aunt%20Clara",
+      "authorRole": "friend_follower",
+      "authorRoleLabel": "Guest / Follower",
+      "content": "Wonderful to follow your journey! Safe travels!",
+      "createdAt": "Just now",
+      "likes": 0,
+      "likedByUsers": []
+    },
+    {
+      "id": "comment-1788713836689-9f4m",
+      "targetId": "log-3-arctic-ocean-tuktoyaktuk",
+      "targetType": "log",
+      "authorId": "user_joannie",
+      "authorName": "Riley & Grandma",
+      "authorAvatar": "/Joannie.jpeg",
+      "authorRole": "expedition_leader",
+      "authorRoleLabel": "Joannie (Expedition Leader & Navigator)",
+      "content": "Welcome to the Arctic! Amazing journey.",
+      "createdAt": "Just now",
+      "likes": 0,
+      "likedByUsers": []
+    }
+  ],
   "rigPhotos": [
     {
       "id": "rig-photo-henris-cot",
@@ -1092,6 +1130,16 @@
   ],
   "broadcastLogs": [
     {
+      "id": "welcome-1788714353529",
+      "logTitle": "Welcome Email: Marc & Sophie",
+      "subject": "🌲 Welcome to Mousse on the Loose Expedition Updates!",
+      "sentAt": "September 6, 2026 at 05:05 PM",
+      "recipientCount": 1,
+      "senderAdmin": "Automated Dispatcher",
+      "customNote": "Confirmation delivered to supporter@example.com. Admin alert sent to joannieneveu@gmail.com, joannie@mun.ca, barton@mun.ca",
+      "status": "delivered"
+    },
+    {
       "id": "welcome-1788706016391",
       "logTitle": "Welcome Email: Joannie Neveu",
       "subject": "🌲 Welcome to Mousse on the Loose Expedition Updates!",
@@ -1122,5 +1170,5 @@
     "adminPasswordSalt": null,
     "adminPasswordHash": null
   },
-  "lastSaved": "2026-09-06T16:40:52.928Z"
+  "lastSaved": "2026-09-06T17:10:16.672Z"
 }

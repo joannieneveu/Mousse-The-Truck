@@ -477,130 +477,22 @@ export const HomePage: React.FC<HomePageProps> = ({
         </div>
       </section>
 
-      {/* THE 3 DEDICATED JOURNAL STREAMS */}
-      <section className="space-y-6">
+      {/* UNIFIED EXPEDITION FIELD JOURNAL */}
+      <section id="recent-journal-section" className="space-y-6">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
             <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900 uppercase tracking-wider mb-1">
               <BookOpen className="w-3.5 h-3.5" />
-              <span>{isFr ? 'Trois flux de récits de voyage' : 'Three Field Story Streams'}</span>
+              <span>{isFr ? 'Journal de bord de l\'expédition' : 'Expedition Field Journal'}</span>
             </div>
             <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
               {isFr ? 'Récits du congé sabbatique de 35 000 km' : 'Stories from the 35,000 km Sabbatical'}
             </h2>
-          </div>
-          <button
-            onClick={() => onNavigateTab('journal')}
-            className="text-xs font-semibold text-blue-900 hover:text-blue-950 flex items-center gap-1 self-start sm:self-auto"
-          >
-            <span>{isFr ? 'Voir tous les articles du journal' : 'View all journal entries'}</span>
-            <ChevronRight className="w-4 h-4" />
-          </button>
-        </div>
-
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-          
-          {/* Stream 1 */}
-          <div 
-            onClick={() => onNavigateTab('journal')}
-            className="bg-white border border-stone-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition cursor-pointer flex flex-col justify-between space-y-4 group"
-          >
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center font-bold">
-                <GraduationCap className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md border border-blue-200">
-                  {isFr ? 'Aventures & MBA' : 'Adventures & MBA'}
-                </span>
-                <h3 className="font-bold text-slate-900 text-lg mt-2 group-hover:text-blue-900 transition">
-                  Barton & Joannie
-                </h3>
-              </div>
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-normal">
-                {isFr
-                  ? 'Cols de montagne en 4x4, repas de camp en pleine nature, autonomie solaire et équilibre entre les cours d\'Executive MBA et les réflexions du sabbatique médical.'
-                  : '4x4 mountain passes, wilderness camp meals, off-grid solar rigs, and balancing remote Executive MBA coursework with medical sabbatical reflections.'}
-              </p>
-            </div>
-            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-blue-900">
-              <span>{isFr ? 'Lire le journal Adultes & MBA' : 'Read Adult & MBA Logs'}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </div>
-
-          {/* Stream 2 */}
-          <div 
-            onClick={() => onNavigateTab('journal')}
-            className="bg-white border border-stone-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition cursor-pointer flex flex-col justify-between space-y-4 group"
-          >
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-emerald-100 text-emerald-900 flex items-center justify-center font-bold">
-                <Baby className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-emerald-900 bg-emerald-50 px-2 py-0.5 rounded-md border border-emerald-200">
-                  {isFr ? 'Grandir sur la route' : 'Infant Milestones'}
-                </span>
-                <h3 className="font-bold text-slate-900 text-lg mt-2 group-hover:text-emerald-900 transition">
-                  {isFr ? 'Les progrès d\'Henri' : 'Henri’s Milestones'}
-                </h3>
-              </div>
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-normal">
-                {isFr
-                  ? 'Né en juin 2026. Suivez les premiers mots de bébé Henri, ses moments d\'éveil sur les plages de galets arctiques, ses siestes dans le camion et son quotidien sur la piste.'
-                  : 'Born June 2026. Following baby Henri’s first words, tummy time on Arctic pebble beaches, custom truck crib naps, and growing up on the overland trail.'}
-              </p>
-            </div>
-            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-emerald-900">
-              <span>{isFr ? 'Lire le journal d\'Henri' : 'Read Henri’s Growth Logs'}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </div>
-
-          {/* Stream 3 */}
-          <div 
-            onClick={() => onNavigateTab('journal')}
-            className="bg-white border border-stone-200 rounded-3xl p-6 shadow-xs hover:shadow-md transition cursor-pointer flex flex-col justify-between space-y-4 group"
-          >
-            <div className="space-y-3">
-              <div className="w-10 h-10 rounded-2xl bg-amber-100 text-amber-900 flex items-center justify-center font-bold">
-                <Heart className="w-5 h-5" />
-              </div>
-              <div>
-                <span className="text-[10px] font-bold uppercase tracking-wider text-amber-900 bg-amber-50 px-2 py-0.5 rounded-md border border-amber-200">
-                  {isFr ? 'Famille & Amis' : 'Family & Friends'}
-                </span>
-                <h3 className="font-bold text-slate-900 text-lg mt-2 group-hover:text-amber-900 transition">
-                  {isFr ? 'Visites au fil de la route' : 'Visits Along the Way'}
-                </h3>
-              </div>
-              <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-normal">
-                {isFr
-                  ? 'Les plus grands enfants qui nous rejoignent pour des tronçons, retrouvailles avec des collègues médecins et camarades de MBA, et rencontres inoubliables.'
-                  : 'The older children joining for legs of the trip, reunions with medical colleagues and MBA classmates, and unforgettable encounters across the continents.'}
-              </p>
-            </div>
-            <div className="pt-3 border-t border-stone-100 flex items-center justify-between text-xs font-semibold text-amber-900">
-              <span>{isFr ? 'Lire les récits de visites' : 'Read Visit Stories'}</span>
-              <ArrowRight className="w-3.5 h-3.5 group-hover:translate-x-1 transition" />
-            </div>
-          </div>
-
-        </div>
-      </section>
-
-      {/* LATEST FIELD JOURNAL ENTRIES */}
-      <section id="recent-journal-section" className="space-y-6 pt-4 border-t border-stone-200">
-        <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
-          <div>
-            <div className="inline-flex items-center gap-1.5 text-xs font-semibold text-blue-900 uppercase tracking-wider mb-1">
-              <BookOpen className="w-3.5 h-3.5" />
-              <span>{isFr ? 'Derniers récits d\'expédition' : 'Latest Field Journal Entries'}</span>
-            </div>
-            <h2 className="text-2xl sm:text-3xl font-bold text-slate-900 tracking-tight">
-              {isFr ? 'Chroniques du front de l\'aventure' : 'Chronicles from the Expedition Trail'}
-            </h2>
+            <p className="text-xs sm:text-sm text-stone-600 mt-1.5 max-w-2xl font-normal leading-relaxed">
+              {isFr
+                ? 'Notre journal de bord unifié retraçant notre voyage de 35 000 km à travers les Amériques — pistes de montagne, bivouacs sauvages, découvertes de bébé Henri et rencontres au fil de la route.'
+                : 'Our unified travel journal documenting 35,000 km across the Americas — from off-grid mountain trails and wilderness camp meals to baby Henri’s milestones and reunions with family and friends along the way.'}
+            </p>
           </div>
           <div className="flex items-center gap-3">
             {isAdmin && onCreateLog && (

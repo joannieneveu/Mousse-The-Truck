@@ -57,17 +57,20 @@ function AppContent() {
   const [mediaItems, setMediaItems] = useState<MediaItem[]>(INITIAL_MEDIA);
   const [rigPhotos, setRigPhotos] = useState<RigPhoto[]>(INITIAL_RIG_PHOTOS);
   const [subscribers, setSubscribers] = useState<Subscriber[]>(INITIAL_SUBSCRIBERS);
+  // User Authentication State: Strict requirement - opening page is AUTOMATICALLY GUEST!
+  // Only when an administrator logs in will currentUser be set to Joannie or Barton.
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     try {
-      const saved = localStorage.getItem('mousse_current_user');
-      if (saved) {
-        if (saved === 'visitor' || saved === 'null') return null;
-        return JSON.parse(saved);
+      const savedToken = localStorage.getItem('mousse_admin_token');
+      const savedUser = localStorage.getItem('mousse_admin_user');
+      if (savedToken && savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed && parsed.isAdmin) return parsed;
       }
     } catch {
       // ignore
     }
-    return PRESET_USERS[0];
+    return null; // Strict default: GUEST!
   });
   
   const [selectedLog, setSelectedLog] = useState<TravelLog | null>(null);
@@ -77,13 +80,14 @@ function AppContent() {
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
 
-  // Keep currentUser synced in localStorage
+  // Keep admin user synced in localStorage
   useEffect(() => {
     try {
-      if (currentUser) {
-        localStorage.setItem('mousse_current_user', JSON.stringify(currentUser));
+      if (currentUser?.isAdmin) {
+        localStorage.setItem('mousse_admin_user', JSON.stringify(currentUser));
       } else {
-        localStorage.setItem('mousse_current_user', 'visitor');
+        localStorage.removeItem('mousse_admin_user');
+        localStorage.removeItem('mousse_admin_token');
       }
     } catch {
       // ignore
@@ -104,6 +108,11 @@ function AppContent() {
     const headers: Record<string, string> = {
       'Content-Type': 'application/json'
     };
+    const adminToken = localStorage.getItem('mousse_admin_token');
+    if (adminToken) {
+      headers['x-admin-token'] = adminToken;
+      headers['Authorization'] = `Bearer ${adminToken}`;
+    }
     if (currentUser?.isAdmin) {
       headers['x-user-email'] = currentUser.email;
       headers['x-user-id'] = currentUser.id;
@@ -118,17 +127,25 @@ function AppContent() {
 
   // Load state from backend on mount
   useEffect(() => {
-    const savedSession = localStorage.getItem('mousse_current_user');
-    fetch('/api/auth/me')
-      .then(res => res.json())
-      .then(data => {
-        if (savedSession === 'visitor') {
-          setCurrentUser(null);
-        } else if (data.user) {
-          setCurrentUser(data.user);
-        }
+    const adminToken = localStorage.getItem('mousse_admin_token');
+    if (adminToken) {
+      fetch('/api/auth/me', {
+        headers: { 'x-admin-token': adminToken }
       })
-      .catch(() => {});
+        .then(res => res.json())
+        .then(data => {
+          if (data.user && data.isAdmin) {
+            setCurrentUser(data.user);
+          } else {
+            localStorage.removeItem('mousse_admin_token');
+            localStorage.removeItem('mousse_admin_user');
+            setCurrentUser(null);
+          }
+        })
+        .catch(() => {});
+    } else {
+      setCurrentUser(null);
+    }
 
     fetch('/api/location')
       .then(res => res.json())
@@ -632,7 +649,7 @@ function AppContent() {
   };
 
   // Update an existing log
-  const handleUpdateLog = async (logId: string, updatedFields: Partial<TravelLog>) => {
+  const handleUpdateLog = async (logId: string, updatedFields: Partial<TravelLog>): Promise<{ success: boolean; error?: string }> => {
     try {
       const res = await fetch(`/api/logs/${logId}`, {
         method: 'PUT',
@@ -640,6 +657,9 @@ function AppContent() {
         body: JSON.stringify(updatedFields)
       });
       const data = await res.json();
+      if (!res.ok) {
+        return { success: false, error: data.error || 'Failed to update journal entry.' };
+      }
       if (Array.isArray(data.mediaItems)) {
         setMediaItems(data.mediaItems);
       }
@@ -651,30 +671,20 @@ function AppContent() {
         } else if (selectedLog?.id === logId && data.log) {
           setSelectedLog(data.log);
         }
-        return;
+        return { success: true };
       }
-      if (data.success && data.log) {
+      if (data.log) {
         setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...data.log } : l));
         if (selectedLog?.id === logId) {
           setSelectedLog(prev => prev ? { ...prev, ...data.log } : data.log);
         }
-        return;
+        return { success: true };
       }
-    } catch (err) {
+      return { success: true };
+    } catch (err: any) {
       console.error('Failed to update log on server:', err);
+      return { success: false, error: err.message || 'Error updating journal entry.' };
     }
-
-    // Static fallback
-    setTravelLogs(prev => prev.map(l => {
-      if (l.id === logId) {
-        const updated = { ...l, ...updatedFields };
-        if (selectedLog?.id === logId) {
-          setSelectedLog(updated);
-        }
-        return updated;
-      }
-      return l;
-    }));
   };
 
   // Switch to map view & center on coordinate

@@ -108,11 +108,15 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const data = await res.json();
         if (res.ok && data.user) {
           loggedUser = data.user;
+          if (data.token) {
+            localStorage.setItem('mousse_admin_token', data.token);
+          }
         }
       } catch (err) {
         // fallback
       }
 
+      localStorage.setItem('mousse_admin_user', JSON.stringify(loggedUser));
       onUserChange(loggedUser);
       setSuccessMsg(`Welcome, Administrator ${loggedUser.name}!`);
       setTimeout(() => {
@@ -172,12 +176,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         const data = await res.json();
         if (res.ok && data.user) {
           loggedUser = data.user;
+          if (data.token) {
+            localStorage.setItem('mousse_admin_token', data.token);
+          }
         }
       } catch (err) {
         // static fallback
       }
 
       setHasPasswordSet(true);
+      localStorage.setItem('mousse_admin_user', JSON.stringify(loggedUser));
       onUserChange(loggedUser);
       setSuccessMsg(`Password successfully created! Welcome, Administrator ${loggedUser.name}!`);
       setTimeout(() => {
@@ -220,12 +228,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         if (res.ok && data.user) {
           serverValid = true;
           loggedUser = data.user;
+          if (data.token) {
+            localStorage.setItem('mousse_admin_token', data.token);
+          }
         }
       } catch (e) {
         // fallback
       }
 
       if (isValid || serverValid) {
+        localStorage.setItem('mousse_admin_user', JSON.stringify(loggedUser));
         onUserChange(loggedUser);
         setSuccessMsg(`Welcome back, Administrator ${loggedUser.name}!`);
         setTimeout(() => {
@@ -329,10 +341,16 @@ export const AuthModal: React.FC<AuthModalProps> = ({
 
   const handleLogout = async () => {
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      const adminToken = localStorage.getItem('mousse_admin_token');
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        headers: adminToken ? { 'x-admin-token': adminToken } : {}
+      });
     } catch (e) {
       // ignore
     }
+    localStorage.removeItem('mousse_admin_token');
+    localStorage.removeItem('mousse_admin_user');
     onUserChange(null);
     onClose();
   };

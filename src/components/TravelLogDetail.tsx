@@ -49,6 +49,7 @@ import confetti from 'canvas-confetti';
 import { RichTextRenderer } from '../utils/richTextRenderer';
 import { JournalEditorModal } from './JournalEditorModal';
 import { EmailPreviewModal } from './EmailPreviewModal';
+import { readFileAsOptimizedDataUrl } from '../utils/photoDropHelper';
 
 interface TravelLogDetailProps {
   log: TravelLog;
@@ -421,6 +422,22 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     setTimeout(() => setSuccessToast(null), 4500);
   };
 
+  const uploadPhotoToServer = async (dataUrl: string, filename?: string): Promise<string> => {
+    if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;
+    try {
+      const res = await fetch('/api/upload', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ dataUrl, filename: filename || `entry-photo-${Date.now()}` })
+      });
+      const data = await res.json();
+      if (data?.url) return data.url;
+    } catch (err) {
+      console.warn('Server upload fallback:', err);
+    }
+    return dataUrl;
+  };
+
   // Upload Photo File(s) from computer / iPhoto (via file input or drag-and-drop)
   const handleUploadFilesToEntry = async (files: FileList | File[]) => {
     if (!files || files.length === 0) return;
@@ -433,18 +450,15 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       const file = files[i];
       if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) continue;
 
-      const dataUrl = await new Promise<string>((resolve) => {
-        const reader = new FileReader();
-        reader.onload = (e) => resolve(e.target?.result as string);
-        reader.readAsDataURL(file);
-      });
+      const rawDataUrl = await readFileAsOptimizedDataUrl(file);
+      const permanentUrl = await uploadPhotoToServer(rawDataUrl, file.name);
 
       const cleanFileName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
       const caption = `Expedition photo at ${log.locationName}: ${cleanFileName}`;
       const title = `${log.title} - ${cleanFileName}`;
 
       newItems.push({
-        url: dataUrl,
+        url: permanentUrl,
         caption,
         type: file.type.startsWith('video/') ? 'video' : 'image'
       });
@@ -452,7 +466,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       mediaItemsToAdd.push({
         title,
         caption,
-        url: dataUrl,
+        url: permanentUrl,
         locationName: log.locationName,
         coordinates: log.coordinates,
         journeyLeg: log.journeyLeg || 'arctic_yukon',
@@ -494,8 +508,13 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     const caption = uploadPhotoCaption.trim() || `Expedition moment at ${log.locationName}`;
     const title = uploadPhotoTitle.trim() || `${log.title} Photo`;
 
+    let finalUrl = uploadPhotoUrl.trim();
+    if (finalUrl.startsWith('data:')) {
+      finalUrl = await uploadPhotoToServer(finalUrl, `photo-${Date.now()}`);
+    }
+
     const newPhotoItem = {
-      url: uploadPhotoUrl.trim(),
+      url: finalUrl,
       caption,
       type: 'image' as const
     };
@@ -509,12 +528,12 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       await onUploadMedia({
         title,
         caption,
-        url: uploadPhotoUrl.trim(),
+        url: finalUrl,
         locationName: log.locationName,
         coordinates: log.coordinates,
         journeyLeg: log.journeyLeg || 'arctic_yukon',
         tags: Array.from(new Set([...(log.tags || []), 'Journal', log.category])),
-        author: currentUser.name || log.author,
+        author: currentUser?.name || log.author || 'Dr. Joannie Neveu',
         date: log.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
         type: 'image'
       });
@@ -544,7 +563,12 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
       };
 
       if (onUpdateLog) {
-        await onUpdateLog(log.id, { gallery: updatedGallery });
+        const res: any = await onUpdateLog(log.id, { gallery: updatedGallery });
+        if (res && res.error) {
+          showToast(`⚠️ ${res.error}`);
+          setIsSavingCaption(false);
+          return;
+        }
       }
       showToast('Caption updated successfully.');
     }
