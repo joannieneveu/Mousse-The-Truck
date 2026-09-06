@@ -161,8 +161,8 @@ export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
     "metrics": {
       "elevationM": 15,
       "tempC": 4,
-      "kmTraveled": 3850,
-      "odometerKm": 3850,
+      "kmTraveled": 4110,
+      "odometerKm": 4110,
       "henriAge": "2.5 months",
       "activityType": "Hiking The Dome & Reaching the Arctic Coast"
     },
@@ -358,7 +358,7 @@ export const INITIAL_LIVE_LOCATION: LiveLocation = {
   accuracyM: 5.0,
   batteryPercent: 98,
   isSharing: true,
-  statusMessage: 'We reached the Arctic Ocean! Dipped our toes in the Beaufort Sea at Tuktoyaktuk after 3,820 km from Lethbridge.',
+  statusMessage: 'We reached the Arctic Ocean! Dipped our toes in the Beaufort Sea at Tuktoyaktuk after 4,110 km from Lethbridge.',
   lastCity: 'Tuktoyaktuk, Northwest Territories (Arctic Ocean)',
   nextMilestone: 'Dempster Highway Southbound & Pacific Northwest',
   trackingMode: 'manual_checkin',
@@ -469,9 +469,9 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     elevationM: 5,
     summary: 'The Arctic Ocean reached! Driving the Inuvik-Tuktoyaktuk Highway all the way to the northernmost public road in North America at 69° North on the Beaufort Sea.',
     henriNote: 'Henri’s milestone: the very first time he saw snow on September 3, 2026 along the Dempster Highway!',
-    mbaNote: 'Northern apex milestone achieved: 3,850 km completed from Lethbridge up to the Arctic Ocean coast.',
+    mbaNote: 'Northern apex milestone achieved: 4,110 km completed from Lethbridge up to the Arctic Ocean coast.',
     thumbnail: '/IMG_3785.jpeg',
-    distanceFromStartKm: 3850,
+    distanceFromStartKm: 4110,
     relatedLogId: 'log-3-arctic-ocean-tuktoyaktuk'
   },
   {
@@ -552,7 +552,7 @@ export const INITIAL_MEDIA: MediaItem[] = [
     "title": "North to the Arctic Ocean at Tuktoyaktuk",
     "type": "image",
     "url": "/IMG_3785.jpeg",
-    "caption": "Mousse parked at the iconic Arctic Ocean sign in Tuktoyaktuk, Northwest Territories (69°27′ N). 3,850 km from Lethbridge to the end of the road!",
+    "caption": "Mousse parked at the iconic Arctic Ocean sign in Tuktoyaktuk, Northwest Territories (69°27′ N). 4,110 km from Lethbridge to the end of the road!",
     "locationName": "Tuktoyaktuk, Northwest Territories",
     "coordinates": {
       "lat": 69.4454,

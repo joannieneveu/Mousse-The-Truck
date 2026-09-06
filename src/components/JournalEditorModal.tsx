@@ -1018,7 +1018,7 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
                     type="number"
                     value={kmTraveled}
                     onChange={(e) => setKmTraveled(e.target.value)}
-                    placeholder="e.g. 3820"
+                    placeholder="e.g. 4110"
                     className="w-full bg-white border border-stone-300 rounded-xl pl-3 pr-10 py-2 text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900 text-xs font-mono font-bold"
                   />
                   <span className="absolute right-3 top-1/2 -translate-y-1/2 text-stone-400 text-xs">
@@ -1028,10 +1028,10 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
                 <div className="flex items-center gap-2 mt-1.5">
                   <button
                     type="button"
-                    onClick={() => setKmTraveled('3820')}
+                    onClick={() => setKmTraveled('4110')}
                     className="text-[10px] text-blue-900 hover:text-blue-950 font-medium underline font-sans bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200"
                   >
-                    Quick: Tuktoyaktuk (3,820 km)
+                    Quick: Tuktoyaktuk (4,110 km)
                   </button>
                 </div>
               </div>

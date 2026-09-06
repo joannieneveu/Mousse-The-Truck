@@ -1992,7 +1992,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                     type="number"
                     value={odometerInput}
                     onChange={(e) => setOdometerInput(e.target.value)}
-                    placeholder="e.g. 3820"
+                    placeholder="e.g. 4110"
                     autoFocus
                     className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-base font-mono font-bold text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900 pr-12"
                   />
@@ -2010,10 +2010,10 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                 <div className="flex flex-wrap gap-1.5">
                   <button
                     type="button"
-                    onClick={() => setOdometerInput('3820')}
+                    onClick={() => setOdometerInput('4110')}
                     className="px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-semibold transition"
                   >
-                    Lethbridge → Tuktoyaktuk (3,820 km)
+                    Lethbridge → Tuktoyaktuk (4,110 km)
                   </button>
                   <button
                     type="button"

@@ -55,7 +55,16 @@ function AppContent() {
   const [waypoints, setWaypoints] = useState<Waypoint[]>(() => {
     try {
       const saved = localStorage.getItem('mousse_waypoints');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((wp: Waypoint) => 
+            wp.id === 'tuktoyaktuk' && (wp.distanceFromStartKm === 3850 || !wp.distanceFromStartKm)
+              ? { ...wp, distanceFromStartKm: 4110 }
+              : wp
+          );
+        }
+      }
     } catch {}
     return INITIAL_WAYPOINTS;
   });
@@ -69,7 +78,23 @@ function AppContent() {
   const [travelLogs, setTravelLogs] = useState<TravelLog[]>(() => {
     try {
       const saved = localStorage.getItem('mousse_travel_logs');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (Array.isArray(parsed)) {
+          return parsed.map((log: TravelLog) => 
+            log.id === 'log-3-arctic-ocean-tuktoyaktuk' && log.metrics?.kmTraveled === 3850
+              ? {
+                  ...log,
+                  metrics: {
+                    ...log.metrics,
+                    kmTraveled: 4110,
+                    odometerKm: 4110
+                  }
+                }
+              : log
+          );
+        }
+      }
     } catch {}
     return INITIAL_TRAVEL_LOGS;
   });
@@ -282,19 +307,33 @@ function AppContent() {
       .then(res => res.json())
       .then(data => {
         if (data.liveLocation) setLiveLocation(data.liveLocation);
-        if (Array.isArray(data.waypoints)) setWaypoints(data.waypoints);
+        if (Array.isArray(data.waypoints)) {
+          setWaypoints(data.waypoints.map((wp: Waypoint) =>
+            wp.id === 'tuktoyaktuk' && wp.distanceFromStartKm !== 4110
+              ? { ...wp, distanceFromStartKm: 4110 }
+              : wp
+          ));
+        }
       })
       .catch(err => console.log('Using initial location data:', err));
 
     fetch('/api/logs')
       .then(res => res.json())
       .then(data => {
-        if (Array.isArray(data)) {
-          setTravelLogs(data);
-        } else if (Array.isArray(data?.travelLogs)) {
-          setTravelLogs(data.travelLogs);
-        } else if (Array.isArray(data?.logs)) {
-          setTravelLogs(data.logs);
+        const list = Array.isArray(data) ? data : Array.isArray(data?.travelLogs) ? data.travelLogs : Array.isArray(data?.logs) ? data.logs : null;
+        if (list) {
+          setTravelLogs(list.map((log: TravelLog) =>
+            log.id === 'log-3-arctic-ocean-tuktoyaktuk' && log.metrics?.kmTraveled !== 4110
+              ? {
+                  ...log,
+                  metrics: {
+                    ...log.metrics,
+                    kmTraveled: 4110,
+                    odometerKm: 4110
+                  }
+                }
+              : log
+          ));
         }
       })
       .catch(err => console.log('Using initial travel logs:', err));

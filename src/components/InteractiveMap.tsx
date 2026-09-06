@@ -124,12 +124,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   });
 
   // Calculate expedition stats
-  const totalCompletedKm = waypoints
-    .filter(w => w.status === 'completed')
-    .reduce((acc, w) => acc + (w.distanceFromPreviousKm || w.distanceFromStartKm || 0), 0);
+  // Waypoints store cumulative distanceFromStartKm. The completed distance along the route is the furthest completed milestone (4,110 km at Tuktoyaktuk).
+  const completedWaypoints = waypoints.filter(w => w.status === 'completed');
+  const maxCompletedKm = completedWaypoints.reduce((max, w) => Math.max(max, w.distanceFromStartKm || 0), 0);
+  const totalCompletedKm = maxCompletedKm > 0 ? maxCompletedKm : 4110;
   
   const totalPlannedKm = 35000;
-  const progressPercent = Math.min(100, Math.round((Math.max(totalCompletedKm, 4200) / totalPlannedKm) * 100));
+  const progressPercent = Math.min(100, Math.round((totalCompletedKm / totalPlannedKm) * 100));
 
   // Initialize Map Engine (Leaflet / Google Maps)
   useEffect(() => {
@@ -613,7 +614,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </div>
 
           <div className="flex items-center justify-between text-[11px] text-slate-400 pt-0.5">
-            <span>Status: <strong className="text-slate-200">Lethbridge Launch • Heading North</strong></span>
+            <span>Status: <strong className="text-slate-200">{liveLocation.lastCity || 'Arctic Ocean Reached • Tuktoyaktuk'}</strong></span>
             <button
               onClick={() => setShowElevationDrawer(!showElevationDrawer)}
               className="text-cyan-400 hover:text-cyan-300 font-semibold flex items-center gap-1"
