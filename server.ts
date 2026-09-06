@@ -52,6 +52,9 @@ async function startServer() {
     console.warn('[Uploads] Could not create uploads directory:', err);
   }
 
+  // Ensure all uploaded photos in public/uploads are served statically over HTTP immediately
+  app.use('/uploads', express.static(UPLOADS_DIR));
+
   const ADMIN_EMAILS = [
     'joannieneveu@gmail.com',
     'joannie@mun.ca',
@@ -131,8 +134,46 @@ async function startServer() {
         lastSaved: new Date().toISOString()
       };
       fs.writeFileSync(DATA_FILE, JSON.stringify(data, null, 2), 'utf-8');
+      syncInitialDataFile();
     } catch (err) {
       console.error('[DataStore] Error saving persistent data store to disk:', err);
+    }
+  }
+
+  // Helper to synchronize changes directly into src/data/initialData.ts
+  // so that builds, exports, and container restarts permanently retain all edits
+  function syncInitialDataFile() {
+    try {
+      const filePath = path.join(process.cwd(), 'src', 'data', 'initialData.ts');
+      if (!fs.existsSync(filePath)) return;
+      let content = fs.readFileSync(filePath, 'utf-8');
+
+      // Sync INITIAL_TRAVEL_LOGS
+      const logsStartTag = 'export const INITIAL_TRAVEL_LOGS: TravelLog[] = [';
+      const logsEndTag = 'export const INITIAL_LIVE_LOCATION: LiveLocation = {';
+      const startLogsIdx = content.indexOf(logsStartTag);
+      const endLogsIdx = content.indexOf(logsEndTag);
+
+      if (startLogsIdx !== -1 && endLogsIdx !== -1 && endLogsIdx > startLogsIdx) {
+        const replacementLogs = `export const INITIAL_TRAVEL_LOGS: TravelLog[] = ${JSON.stringify(travelLogs, null, 2)};\n\n`;
+        content = content.slice(0, startLogsIdx) + replacementLogs + content.slice(endLogsIdx);
+      }
+
+      // Sync INITIAL_MEDIA
+      const mediaStartTag = 'export const INITIAL_MEDIA: MediaItem[] = [';
+      const mediaEndTag = 'export const INITIAL_COMMENTS: CommentItem[] = [];';
+      const startMediaIdx = content.indexOf(mediaStartTag);
+      const endMediaIdx = content.indexOf(mediaEndTag);
+
+      if (startMediaIdx !== -1 && endMediaIdx !== -1 && endMediaIdx > startMediaIdx) {
+        const replacementMedia = `export const INITIAL_MEDIA: MediaItem[] = ${JSON.stringify(mediaItems, null, 2)};\n\n`;
+        content = content.slice(0, startMediaIdx) + replacementMedia + content.slice(endMediaIdx);
+      }
+
+      fs.writeFileSync(filePath, content, 'utf-8');
+      console.log('[InitialData Sync] Successfully synchronized initialData.ts with persistent store');
+    } catch (err) {
+      console.error('[InitialData Sync Error]:', err);
     }
   }
 
@@ -343,8 +384,7 @@ async function startServer() {
     if (headerId && ADMIN_USERS.some(u => u.id === headerId)) return true;
     if (currentUser?.isAdmin) return true;
     
-    // Default to true for the active application instance
-    return true;
+    return false;
   }
 
   function getEffectiveUser(req: Request): UserProfile {
@@ -869,6 +909,16 @@ Return ONLY a valid JSON object matching this schema:
           url
         };
       });
+
+      // Synchronize updated photo captions with global media items
+      for (const item of updatedData.gallery) {
+        if (item.url && item.caption) {
+          const match = mediaItems.find(m => m.url === item.url);
+          if (match) {
+            match.caption = item.caption;
+          }
+        }
+      }
     }
 
     travelLogs[index] = {

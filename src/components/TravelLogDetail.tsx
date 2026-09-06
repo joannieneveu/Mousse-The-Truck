@@ -728,17 +728,19 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         <div className="relative group">
           <div className="flex items-center justify-between">
             <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Distance From Start</span>
-            <button 
-              onClick={() => {
-                setOdometerInput(log.metrics.kmTraveled !== undefined ? String(log.metrics.kmTraveled) : '');
-                setIsOdometerModalOpen(true);
-              }}
-              className="text-[10px] text-blue-900 hover:text-blue-950 font-semibold underline decoration-dotted inline-flex items-center gap-0.5 ml-1 transition"
-              title="Enter reading from odometer"
-            >
-              <Gauge className="w-3 h-3 text-blue-900" />
-              <span>Enter Odometer</span>
-            </button>
+            {currentUser?.isAdmin && (
+              <button 
+                onClick={() => {
+                  setOdometerInput(log.metrics.kmTraveled !== undefined ? String(log.metrics.kmTraveled) : '');
+                  setIsOdometerModalOpen(true);
+                }}
+                className="text-[10px] text-blue-900 hover:text-blue-950 font-semibold underline decoration-dotted inline-flex items-center gap-0.5 ml-1 transition"
+                title="Enter reading from odometer"
+              >
+                <Gauge className="w-3 h-3 text-blue-900" />
+                <span>Enter Odometer</span>
+              </button>
+            )}
           </div>
           <div className="font-bold text-stone-800 text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
             <span>{log.metrics.kmTraveled ? `${log.metrics.kmTraveled.toLocaleString()} km` : '0 km'}</span>
@@ -915,28 +917,32 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
               </button>
             )}
 
-            <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
-              <FolderOpen className="w-3.5 h-3.5" />
-              <span>Upload Photos to This Entry</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={(e) => {
-                  if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                }}
-                className="hidden"
-              />
-            </label>
+            {currentUser?.isAdmin && (
+              <>
+                <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Upload Photos to This Entry</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={(e) => {
+                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                    }}
+                    className="hidden"
+                  />
+                </label>
 
-            <button
-              type="button"
-              onClick={() => setIsAddPhotoModalOpen(true)}
-              className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
-            >
-              <Plus className="w-3.5 h-3.5" />
-              <span>Add Photo</span>
-            </button>
+                <button
+                  type="button"
+                  onClick={() => setIsAddPhotoModalOpen(true)}
+                  className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
+                >
+                  <Plus className="w-3.5 h-3.5" />
+                  <span>Add Photo</span>
+                </button>
+              </>
+            )}
           </div>
         </div>
 
@@ -996,28 +1002,30 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                       <span>Leave a comment</span>
                     </button>
 
-                    <div className="flex items-center gap-2">
-                      <button
-                        onClick={() => {
-                          setEditingPhotoIdx(idx);
-                          setEditingCaptionText(item.caption || '');
-                        }}
-                        className="text-stone-600 hover:text-blue-900 font-medium flex items-center gap-1"
-                        title="Edit photo description"
-                      >
-                        <Edit3 className="w-3 h-3" />
-                        <span>Edit</span>
-                      </button>
+                    {currentUser?.isAdmin && (
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setEditingPhotoIdx(idx);
+                            setEditingCaptionText(item.caption || '');
+                          }}
+                          className="text-stone-600 hover:text-blue-900 font-medium flex items-center gap-1"
+                          title="Edit photo description"
+                        >
+                          <Edit3 className="w-3 h-3" />
+                          <span>Edit</span>
+                        </button>
 
-                      <button
-                        onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
-                        className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
-                        title="Remove photo from this entry"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Remove</span>
-                      </button>
-                    </div>
+                        <button
+                          onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
+                          className="text-stone-400 hover:text-rose-600 font-medium flex items-center gap-1 transition"
+                          title="Remove photo from this entry"
+                        >
+                          <Trash2 className="w-3 h-3" />
+                          <span>Remove</span>
+                        </button>
+                      </div>
+                    )}
                   </div>
                 </div>
               </div>
@@ -1025,61 +1033,73 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           </div>
         ) : (
           /* Empty State */
-          <div 
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDraggingPhoto(true);
-            }}
-            onDragLeave={() => setIsDraggingPhoto(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDraggingPhoto(false);
-              if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
-            }}
-            className={`p-8 text-center rounded-3xl border-2 border-dashed transition space-y-3 ${
-              isDraggingPhoto 
-                ? 'border-blue-900 bg-blue-50/90' 
-                : 'border-stone-300 bg-white/70 hover:bg-white hover:border-stone-400'
-            }`}
-          >
-            <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-900 mx-auto flex items-center justify-center">
-              <Upload className="w-6 h-6" />
+          currentUser?.isAdmin ? (
+            <div 
+              onDragOver={(e) => {
+                e.preventDefault();
+                setIsDraggingPhoto(true);
+              }}
+              onDragLeave={() => setIsDraggingPhoto(false)}
+              onDrop={(e) => {
+                e.preventDefault();
+                setIsDraggingPhoto(false);
+                if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
+              }}
+              className={`p-8 text-center rounded-3xl border-2 border-dashed transition space-y-3 ${
+                isDraggingPhoto 
+                  ? 'border-blue-900 bg-blue-50/90' 
+                  : 'border-stone-300 bg-white/70 hover:bg-white hover:border-stone-400'
+              }`}
+            >
+              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-900 mx-auto flex items-center justify-center">
+                <Upload className="w-6 h-6" />
+              </div>
+              <div className="space-y-1">
+                <h4 className="font-serif font-bold text-stone-900 text-base">
+                  No photos added to this journal entry yet
+                </h4>
+                <p className="text-xs text-stone-500 max-w-md mx-auto">
+                  Drag and drop photos directly from your <strong>iPhoto / Photos library</strong> or computer files here. They will appear right at the bottom of this journal entry and automatically be published in the <strong>Photo & Video Gallery tab</strong>!
+                </p>
+              </div>
+              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
+                <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
+                  <FolderOpen className="w-3.5 h-3.5" />
+                  <span>Choose Photos from Computer</span>
+                  <input
+                    type="file"
+                    multiple
+                    accept="image/*,video/*"
+                    onChange={(e) => {
+                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
+                    }}
+                    className="hidden"
+                  />
+                </label>
+                <button
+                  type="button"
+                  onClick={() => setIsAddPhotoModalOpen(true)}
+                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
+                >
+                  Enter Photo URL / Preset
+                </button>
+              </div>
             </div>
-            <div className="space-y-1">
-              <h4 className="font-serif font-bold text-stone-900 text-base">
-                No photos added to this journal entry yet
-              </h4>
+          ) : (
+            <div className="p-8 text-center rounded-3xl border border-stone-200 bg-stone-50/70 space-y-2">
+              <Camera className="w-8 h-8 text-stone-400 mx-auto" />
+              <p className="font-serif font-bold text-stone-800 text-sm">
+                No dedicated photo collection for this entry yet
+              </p>
               <p className="text-xs text-stone-500 max-w-md mx-auto">
-                Drag and drop photos directly from your <strong>iPhoto / Photos library</strong> or computer files here. They will appear right at the bottom of this journal entry and automatically be published in the <strong>Photo & Video Gallery tab</strong>!
+                Explore our full collection of pictures and drone videos in the Photo & Video Gallery tab!
               </p>
             </div>
-            <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-              <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
-                <FolderOpen className="w-3.5 h-3.5" />
-                <span>Choose Photos from Computer</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={(e) => {
-                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                  }}
-                  className="hidden"
-                />
-              </label>
-              <button
-                type="button"
-                onClick={() => setIsAddPhotoModalOpen(true)}
-                className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
-              >
-                Enter Photo URL / Preset
-              </button>
-            </div>
-          </div>
+          )
         )}
 
-        {/* Drag & Drop Quick Dropzone Bar when photos already exist */}
-        {galleryList.length > 0 && (
+        {/* Drag & Drop Quick Dropzone Bar when photos already exist (Admin Only) */}
+        {currentUser?.isAdmin && galleryList.length > 0 && (
           <div
             onDragOver={(e) => {
               e.preventDefault();

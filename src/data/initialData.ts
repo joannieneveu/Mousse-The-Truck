@@ -113,512 +113,219 @@ export const INITIAL_FAMILY_MEMBERS: FamilyMember[] = [
 export const INITIAL_SUBSCRIBERS: Subscriber[] = [];
 
 export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
-  // Entry 3 - North to the Arctic Ocean (Tuktoyaktuk & Dempster Highway)
   {
-    id: 'log-3-arctic-ocean-tuktoyaktuk',
-    title: 'North to the Arctic Ocean',
-    slug: 'north-to-the-arctic-ocean',
-    date: 'September 4, 2026',
-    locationName: 'Tuktoyaktuk, Northwest Territories',
-    country: 'Canada',
-    coordinates: { lat: 69.4454, lng: -133.0342 },
-    author: 'Dr. Joannie Neveu',
-    readingTime: '7 min read',
-    category: 'adventures_mba',
-    journeyLeg: 'arctic_yukon',
-    status: 'published',
-    excerpt: 'Tonight, after roughly 900 kilometres of dirt, mud, mountains, tundra, one enormous flat tire, a surprise Newfoundland reunion, and a few very cold toes, we reached the Arctic Ocean.',
-    content: `### **Dawson City → Dempster Highway → Inuvik → Tuktoyaktuk**
-
-*September 4, 2026 — Tuktoyaktuk, Northwest Territories*
-
-WE MADE IT, GANG.
-
-Tonight, after roughly 900 kilometres of dirt, mud, mountains, tundra, one enormous flat tire, a surprise Newfoundland reunion, and a few very cold toes, we reached the Arctic Ocean.
-
-But first: Dawson City.
-
----
-
-### **Dawson City: Birthdays, Boardwalks & Bike Parts**
-
-We made it to Dawson City just in time for Barton’s birthday.
-
-Dawson is completely charming. Dirt streets, colourful old buildings and wooden boardwalks instead of sidewalks, it feels a little like someone preserved a Gold Rush town and then forgot to tell everyone that the 1890s ended. Straight out of a movie set!
-
-We celebrated with a lovely lunch and matcha latté at Bonton & Company before setting off on a very Dawson-style errand... finding a bike part.
-
-A woman who owns a bike shop had exactly what Barton needed. Great! Except the bike shop wasn't open because she works at the hospital during the week. No problem. She told us to meet her at the hospital reception because the bike part was in her truck.
-
-And that is how our sightseeing tour of Dawson City included the local hospital.
-
-Bike tire pumped, it was time for Barton's birthday activity... The Dome.
-
-I hiked up carrying Henri on my chest while Barton mountain biked it. Henri isn't quite ready to ride his own mountain bike yet.
-
-Yet.
-
-We met at the top, sweaty and happy, with Dawson and the Yukon River spread out below us. And wow, it was steep! After so many hours sitting in Mousse, moving our legs again felt incredible. Birthday pictures taken, we climbed back into the truck.
-
-Next stop: the Dempster Highway.
-
----
-
-### **The Dempster: Things Escalated Quickly**
-
-The Dempster Highway runs about 900km, with 740 km to Inuvik, crossing some of Canada's vastest country before the road continues another 138 km to Tuktoyaktuk and the Arctic Ocean.
-
-No services for very long stretches. A barge, a ferry. Gravel. Mountains. Tundra. Mud. Wait, did I say mud ??
-
-Basically, exactly what we bought Mousse for... and the two awesome ZealPro bike bags, otherwise they would be caked!
-
-The days are still long this far north, so we drove until our eyelids informed us that the day was officially over. About 80 km up the Dempster, we pulled over for the night just a couple of kilometres from the Angelcomb Peak trail in Tombstone Territorial Park.
-
-The plan was perfect:  
-Wake up, breakfast, Hike Angelcomb, Continue north.
-
-We woke up to an absolutely spectacular mountain view... and a flat tire.
-
-Of course. Not just a tire. One of Mousse's enormous military-rated tires. Two hundred and eighty pounds of tire. Flat.
-
-Apparently the Dempster wanted to establish the terms of our relationship early. Papa vs. The 280-lb Tire.
-
-Therefore... change of plans. Now my favourite anesthesiologist got to work. First, lower the spare. Then jack up several tonnes of Mousse. Except our jack couldn't reach high enough. Thankfully, some Newfoundlanders who were heading north to hunt caribou had given us a block of wood. There are moments in life when you suddenly understand why you've been carrying around a random piece of lumber. This was one of them.
-
-Meanwhile, Henri was becoming increasingly unimpressed with the roadside entertainment.
-
-So we bundled him into the spectacular hand-knitted Newfoundland outfit we'd been given (which makes him look like a tiny Arctic Smurf lol) strapped him into his bouncy chair and positioned him where he could supervise Papa.
-
-Eventually the gigantic tire came off, the puncture was found, the repair was done, and Mousse was roadworthy again.
-
-Several hours had disappeared, and so had our Angelcomb hike.
-
-But we had a mission still... Arctic Ocean. September 4.
-
----
-
-### **Mountains, Mud & the Arctic Circle**
-
-We still needed to move our legs, so around supper time we stopped to hike the Sapper Hill Trail. It was absolutely gorgeous. Then back into Mousse... Drive. Drive. Drive. At around kilometre 290, we finally gave up for the night and collapsed into bed. The next morning we woke surrounded by mountains, completely refreshed. We looked at the clock and it was past 8 a.m. A little miracle when you have an infant!
-
-Back on the road.
-
-And then came one of those moments we'd been waiting for, you guessed it... 66°33′ North. → The Arctic Circle !!!
-
-We crossed it. For the first time on this journey, we were officially in the Arctic. Family photo. Obviously. Only 485-ish kilometres left to the ocean. Easy.
-
-The Dempster really is extraordinary.  
-Mountains give way to enormous open landscapes, the vegetation gets shorter, trees eventually disappear, and suddenly you're driving through tundra under a sky that seems sooo big. And yes, the road is VERY muddy. We have never been happier that we didn't buy a white truck. People had warned us repeatedly about how rough the Dempster could be. Honestly? A few bumps here and there. Nothing compared with the road between Pouch Cove and Cape St. Francis in Newfoundland. 😂
-
-Eventually, we found snow. Henri's first snow! Historic moment!  
-... Except Henri was asleep. Barton ran outside, made a snowball and brought it into the truck so our son wouldn't miss this important Canadian milestone.
-
-He placed the snowball on him... Henri remained asleep. Completely unbothered by winter.
-
-We have photographic evidence, so we're counting it.
-
----
-
-### **Snow: 1. Motorcycle: 0.**
-
-Not everyone was quite as relaxed about the snow as Henri. We came across a motorcyclist from Taiwan who had apparently never encountered snow before. Unfortunately, his introduction involved wiping out. Another truck had already stopped. We pulled over and asked if they needed help. The man basically told us they had things under control: he was an RCMP officer and his wife was a nurse in Inuvik. Fair enough. That seemed like a reasonably qualified roadside rescue team. So we continued north. Little did we know we'd see them again.
-
----
-
-### **Northwest Territories**
-
-Eventually we crossed from Yukon into the Northwest Territories and kept winding our way north. And finally... Inuvik. Civilization! A campground! A SPACIOUS SHOWER. Glorious.
-
-Naturally, we also decided to visit the hospital. Apparently hospital tourism is becoming a recurring feature of this trip. We wandered into the OR to say hello and somehow, thousands of kilometres from Newfoundland, found...
-
-Newfoundlanders.
-
-Quinn, an anesthesiologist who trained in Newfoundland and was doing a locum in Inuvik. And Dena, an OR nurse from home who now lives in Inuvik because her husband is an RCMP officer. Wait. An RCMP officer?
-
-Yep.
-
-THEY WERE THE PEOPLE ON THE SIDE OF THE ROAD.
-
-Of course they were.
-
-We had managed to encounter fellow Newfoundlanders on the Dempster Highway, drive away from them, and then accidentally walk into their workplace in Inuvik.
-
-Newfoundland has approximately 500,000 people, yet somehow you can apparently never be more than six metres from one.
-
-We exchanged stories over tea, bannock and fish sticks in the hospital parking lot. Then it was time for the final push. Tuktoyaktuk.
-
----
-
-### **The Road to Tuk**
-
-The drive from Inuvik to Tuktoyaktuk is unlike anything we'd seen before. The mountains disappeared. The trees disappeared. The world flattened into tundra... low shrubs, berries, lakes and blue sky. Along the road were snowmobiles and komatiks, traditional sleds used across the North. As Barton drove, I read aloud from a chapter about communities in the Northwest Territories and the effects of coastal erosion and climate change. It was surreal reading descriptions of the landscape while literally watching that landscape pass outside our windows.
-
-And then...
-
-Tuktoyaktuk. 69°27′ North and on the shore of the Arctic Ocean.
-
----
-
-### **Dinner in Tuk**
-
-Our first stop was supper at Guatsie's Catering, which was less “restaurant” and more “welcome into someone’s home and eat what people actually eat here.” Perfect.
-
-A lovely local Elder and her niece cooked for us and patiently answered our endless questions about life in Tuk and food from the land. And this was definitely not your average dinner. We started with beluga sashimi, followed by caribou soup and Canada goose soup, then beluga and caribou steak, with what she jokingly called the “white-man side” of mashed potatoes. Dessert was bakeapple tart.
-
-But that was exactly the point. Sitting around someone’s table, eating food harvested from the land and ocean around us, and hearing stories about life in Tuk was so much more than dinner. It was one of those travel experiences that gives you a tiny window into a place you otherwise would have only driven through.
-
----
-
-### **The Arctic Ocean**
-
-We drove to the edge of the continent. There it was... yes, the Arctic Ocean. Mousse parked beside the sign. Family picture taken.
-
-And obviously, someone had to get into the water. Some people celebrate reaching the Arctic Ocean with a polar plunge. At 4°C, I decided that a few toes showed plenty of commitment to the cause.  
-Technically, I entered the Arctic Ocean. Nobody specified how much of me had to enter. It counts. We even got a certificate that authenticates it.
-
-And standing there tonight, muddy truck behind us, Arctic Ocean in front of us and Henri bundled between us, it finally sank in.
-
-This whole ridiculous idea that we've talked about and planned for so long isn't an idea anymore. We actually started and we drove Mousse north until there was literally no more northbound road.
-
-Tomorrow, after our MBA online class, we turn around and start driving south. A lot south.
-
-From the Arctic Ocean all the way toward the bottom of South America. The northern end of the road and the beginning of our Pan-American journey.
-
-Let's go.`,
-    coverImage: '/IMG_3785.jpeg',
-    gallery: [
+    "id": "log-3-arctic-ocean-tuktoyaktuk",
+    "title": "North to the Arctic Ocean",
+    "slug": "north-to-the-arctic-ocean",
+    "date": "September 4, 2026",
+    "locationName": "Tuktoyaktuk, Northwest Territories",
+    "country": "Canada",
+    "coordinates": {
+      "lat": 69.4454,
+      "lng": -133.0342
+    },
+    "author": "Dr. Joannie Neveu",
+    "readingTime": "7 min read",
+    "category": "adventures_mba",
+    "journeyLeg": "arctic_yukon",
+    "status": "published",
+    "excerpt": "Tonight, after roughly 900 kilometres of dirt, mud, mountains, tundra, one enormous flat tire, a surprise Newfoundland reunion, and a few very cold toes, we reached the Arctic Ocean.",
+    "content": "### **Dawson City → Dempster Highway → Inuvik → Tuktoyaktuk**\n\n*September 4, 2026 — Tuktoyaktuk, Northwest Territories*\n\nWE MADE IT, GANG.\n\nTonight, after roughly 900 kilometres of dirt, mud, mountains, tundra, one enormous flat tire, a surprise Newfoundland reunion, and a few very cold toes, we reached the Arctic Ocean.\n\nBut first: Dawson City.\n\n---\n\n### **Dawson City: Birthdays, Boardwalks & Bike Parts**\n\nWe made it to Dawson City just in time for Barton’s birthday.\n\nDawson is completely charming. Dirt streets, colourful old buildings and wooden boardwalks instead of sidewalks, it feels a little like someone preserved a Gold Rush town and then forgot to tell everyone that the 1890s ended. Straight out of a movie set!\n\nWe celebrated with a lovely lunch and matcha latté at Bonton & Company before setting off on a very Dawson-style errand... finding a bike part.\n\nA woman who owns a bike shop had exactly what Barton needed. Great! Except the bike shop wasn't open because she works at the hospital during the week. No problem. She told us to meet her at the hospital reception because the bike part was in her truck.\n\nAnd that is how our sightseeing tour of Dawson City included the local hospital.\n\nBike tire pumped, it was time for Barton's birthday activity... The Dome.\n\nI hiked up carrying Henri on my chest while Barton mountain biked it. Henri isn't quite ready to ride his own mountain bike yet.\n\nYet.\n\nWe met at the top, sweaty and happy, with Dawson and the Yukon River spread out below us. And wow, it was steep! After so many hours sitting in Mousse, moving our legs again felt incredible. Birthday pictures taken, we climbed back into the truck.\n\nNext stop: the Dempster Highway.\n\n---\n\n### **The Dempster: Things Escalated Quickly**\n\nThe Dempster Highway runs about 900km, with 740 km to Inuvik, crossing some of Canada's vastest country before the road continues another 138 km to Tuktoyaktuk and the Arctic Ocean.\n\nNo services for very long stretches. A barge, a ferry. Gravel. Mountains. Tundra. Mud. Wait, did I say mud ??\n\nBasically, exactly what we bought Mousse for... and the two awesome ZealPro bike bags, otherwise they would be caked!\n\nThe days are still long this far north, so we drove until our eyelids informed us that the day was officially over. About 80 km up the Dempster, we pulled over for the night just a couple of kilometres from the Angelcomb Peak trail in Tombstone Territorial Park.\n\nThe plan was perfect:  \nWake up, breakfast, Hike Angelcomb, Continue north.\n\nWe woke up to an absolutely spectacular mountain view... and a flat tire.\n\nOf course. Not just a tire. One of Mousse's enormous military-rated tires. Two hundred and eighty pounds of tire. Flat.\n\nApparently the Dempster wanted to establish the terms of our relationship early. Papa vs. The 280-lb Tire.\n\nTherefore... change of plans. Now my favourite anesthesiologist got to work. First, lower the spare. Then jack up several tonnes of Mousse. Except our jack couldn't reach high enough. Thankfully, some Newfoundlanders who were heading north to hunt caribou had given us a block of wood. There are moments in life when you suddenly understand why you've been carrying around a random piece of lumber. This was one of them.\n\nMeanwhile, Henri was becoming increasingly unimpressed with the roadside entertainment.\n\nSo we bundled him into the spectacular hand-knitted Newfoundland outfit we'd been given (which makes him look like a tiny Arctic Smurf lol) strapped him into his bouncy chair and positioned him where he could supervise Papa.\n\nEventually the gigantic tire came off, the puncture was found, the repair was done, and Mousse was roadworthy again.\n\nSeveral hours had disappeared, and so had our Angelcomb hike.\n\nBut we had a mission still... Arctic Ocean. September 4.\n\n---\n\n### **Mountains, Mud & the Arctic Circle**\n\nWe still needed to move our legs, so around supper time we stopped to hike the Sapper Hill Trail. It was absolutely gorgeous. Then back into Mousse... Drive. Drive. Drive. At around kilometre 290, we finally gave up for the night and collapsed into bed. The next morning we woke surrounded by mountains, completely refreshed. We looked at the clock and it was past 8 a.m. A little miracle when you have an infant!\n\nBack on the road.\n\nAnd then came one of those moments we'd been waiting for, you guessed it... 66°33′ North. → The Arctic Circle !!!\n\nWe crossed it. For the first time on this journey, we were officially in the Arctic. Family photo. Obviously. Only 485-ish kilometres left to the ocean. Easy.\n\nThe Dempster really is extraordinary.  \nMountains give way to enormous open landscapes, the vegetation gets shorter, trees eventually disappear, and suddenly you're driving through tundra under a sky that seems sooo big. And yes, the road is VERY muddy. We have never been happier that we didn't buy a white truck. People had warned us repeatedly about how rough the Dempster could be. Honestly? A few bumps here and there. Nothing compared with the road between Pouch Cove and Cape St. Francis in Newfoundland. 😂\n\nEventually, we found snow. Henri's first snow! Historic moment!  \n... Except Henri was asleep. Barton ran outside, made a snowball and brought it into the truck so our son wouldn't miss this important Canadian milestone.\n\nHe placed the snowball on him... Henri remained asleep. Completely unbothered by winter.\n\nWe have photographic evidence, so we're counting it.\n\n---\n\n### **Snow: 1. Motorcycle: 0.**\n\nNot everyone was quite as relaxed about the snow as Henri. We came across a motorcyclist from Taiwan who had apparently never encountered snow before. Unfortunately, his introduction involved wiping out. Another truck had already stopped. We pulled over and asked if they needed help. The man basically told us they had things under control: he was an RCMP officer and his wife was a nurse in Inuvik. Fair enough. That seemed like a reasonably qualified roadside rescue team. So we continued north. Little did we know we'd see them again.\n\n---\n\n### **Northwest Territories**\n\nEventually we crossed from Yukon into the Northwest Territories and kept winding our way north. And finally... Inuvik. Civilization! A campground! A SPACIOUS SHOWER. Glorious.\n\nNaturally, we also decided to visit the hospital. Apparently hospital tourism is becoming a recurring feature of this trip. We wandered into the OR to say hello and somehow, thousands of kilometres from Newfoundland, found...\n\nNewfoundlanders.\n\nQuinn, an anesthesiologist who trained in Newfoundland and was doing a locum in Inuvik. And Dena, an OR nurse from home who now lives in Inuvik because her husband is an RCMP officer. Wait. An RCMP officer?\n\nYep.\n\nTHEY WERE THE PEOPLE ON THE SIDE OF THE ROAD.\n\nOf course they were.\n\nWe had managed to encounter fellow Newfoundlanders on the Dempster Highway, drive away from them, and then accidentally walk into their workplace in Inuvik.\n\nNewfoundland has approximately 500,000 people, yet somehow you can apparently never be more than six metres from one.\n\nWe exchanged stories over tea, bannock and fish sticks in the hospital parking lot. Then it was time for the final push. Tuktoyaktuk.\n\n---\n\n### **The Road to Tuk**\n\nThe drive from Inuvik to Tuktoyaktuk is unlike anything we'd seen before. The mountains disappeared. The trees disappeared. The world flattened into tundra... low shrubs, berries, lakes and blue sky. Along the road were snowmobiles and komatiks, traditional sleds used across the North. As Barton drove, I read aloud from a chapter about communities in the Northwest Territories and the effects of coastal erosion and climate change. It was surreal reading descriptions of the landscape while literally watching that landscape pass outside our windows.\n\nAnd then...\n\nTuktoyaktuk. 69°27′ North and on the shore of the Arctic Ocean.\n\n---\n\n### **Dinner in Tuk**\n\nOur first stop was supper at Guatsie's Catering, which was less “restaurant” and more “welcome into someone’s home and eat what people actually eat here.” Perfect.\n\nA lovely local Elder and her niece cooked for us and patiently answered our endless questions about life in Tuk and food from the land. And this was definitely not your average dinner. We started with beluga sashimi, followed by caribou soup and Canada goose soup, then beluga and caribou steak, with what she jokingly called the “white-man side” of mashed potatoes. Dessert was bakeapple tart.\n\nBut that was exactly the point. Sitting around someone’s table, eating food harvested from the land and ocean around us, and hearing stories about life in Tuk was so much more than dinner. It was one of those travel experiences that gives you a tiny window into a place you otherwise would have only driven through.\n\n---\n\n### **The Arctic Ocean**\n\nWe drove to the edge of the continent. There it was... yes, the Arctic Ocean. Mousse parked beside the sign. Family picture taken.\n\nAnd obviously, someone had to get into the water. Some people celebrate reaching the Arctic Ocean with a polar plunge. At 4°C, I decided that a few toes showed plenty of commitment to the cause.  \nTechnically, I entered the Arctic Ocean. Nobody specified how much of me had to enter. It counts. We even got a certificate that authenticates it.\n\nAnd standing there tonight, muddy truck behind us, Arctic Ocean in front of us and Henri bundled between us, it finally sank in.\n\nThis whole ridiculous idea that we've talked about and planned for so long isn't an idea anymore. We actually started and we drove Mousse north until there was literally no more northbound road.\n\nTomorrow, after our MBA online class, we turn around and start driving south. A lot south.\n\nFrom the Arctic Ocean all the way toward the bottom of South America. The northern end of the road and the beginning of our Pan-American journey.\n\nLet's go.",
+    "coverImage": "/IMG_3785.jpeg",
+    "gallery": [
       {
-        url: '/IMG_3785.jpeg',
-        caption: 'Mousse reaching the Arctic Ocean in Tuktoyaktuk, Northwest Territories (69°27′ N) — the northern terminus of our Pan-American journey!',
-        type: 'image'
+        "url": "/IMG_3785.jpeg",
+        "caption": "Mousse reaching the Arctic Ocean in Tuktoyaktuk, Northwest Territories (69°27′ N) — the northern terminus of our Pan-American journey!",
+        "type": "image"
       }
     ],
-    metrics: {
-      elevationM: 15,
-      tempC: 4,
-      kmTraveled: 3850,
-      odometerKm: 3850,
-      henriAge: '2.5 months',
-      activityType: 'Hiking The Dome & Reaching the Arctic Coast'
+    "metrics": {
+      "elevationM": 15,
+      "tempC": 4,
+      "kmTraveled": 3850,
+      "odometerKm": 3850,
+      "henriAge": "2.5 months",
+      "activityType": "Hiking The Dome & Reaching the Arctic Coast"
     },
-    locationInsights: {
-      population: '937 (Tuktoyaktuk, NWT)',
-      culturalContext: 'Traditional territory of the Inuvialuit (69°27′ N, 133°02′ W)',
-      interestingFacts: [
-        'Tuk has pingos! A pingo is basically a hill with a giant chunk of ice hidden inside it. It forms when water trapped underground freezes, expands, and slowly pushes the ground upward. It has the second largest in the world.',
-        'The Inuvik–Tuktoyaktuk Highway, opened in 2017, made Tuk the first community on Canada\'s Arctic Ocean coast connected to the rest of Canada\'s road network year-round.',
-        'The ground is permanently frozen. 🧊 Tuk is built on permafrost, which means the ground below the surface stays frozen for at least two years, and in the Arctic, it can have been frozen for thousands of years. When permafrost thaws, the ground can sink or shift. Combined with powerful waves and less protective sea ice, this is one reason coastal erosion is such a big issue in Tuktoyaktuk.'
+    "locationInsights": {
+      "population": "937 (Tuktoyaktuk, NWT)",
+      "culturalContext": "Traditional territory of the Inuvialuit (69°27′ N, 133°02′ W)",
+      "interestingFacts": [
+        "Tuk has pingos! A pingo is basically a hill with a giant chunk of ice hidden inside it. It forms when water trapped underground freezes, expands, and slowly pushes the ground upward. It has the second largest in the world.",
+        "The Inuvik–Tuktoyaktuk Highway, opened in 2017, made Tuk the first community on Canada's Arctic Ocean coast connected to the rest of Canada's road network year-round.",
+        "The ground is permanently frozen. 🧊 Tuk is built on permafrost, which means the ground below the surface stays frozen for at least two years, and in the Arctic, it can have been frozen for thousands of years. When permafrost thaws, the ground can sink or shift. Combined with powerful waves and less protective sea ice, this is one reason coastal erosion is such a big issue in Tuktoyaktuk."
       ],
-      activityTips: 'Beluga sashimi & traditional caribou supper at Guatsie\'s Catering, taking the Arctic Ocean polar toe dip, and visiting the Pingo Canadian Landmark.'
+      "activityTips": "Beluga sashimi & traditional caribou supper at Guatsie's Catering, taking the Arctic Ocean polar toe dip, and visiting the Pingo Canadian Landmark."
     },
-    henriHighlight: 'The first time he saw snow (September 3, 2026)',
-    tags: ['Tuktoyaktuk', 'Arctic Ocean', 'Dempster Highway', 'Dawson City', 'Inuvik', 'Henri First Snow', 'Pingos', 'Permafrost'],
-    likesCount: 0,
-    commentsCount: 0
+    "henriHighlight": "The first time he saw snow (September 3, 2026)",
+    "tags": [
+      "Tuktoyaktuk",
+      "Arctic Ocean",
+      "Dempster Highway",
+      "Dawson City",
+      "Inuvik",
+      "Henri First Snow",
+      "Pingos",
+      "Permafrost"
+    ],
+    "likesCount": 0,
+    "commentsCount": 0
   },
-
-  // Entry 2 - Alberta to Yukon & Whitehorse Adventures
   {
-    id: 'log-2-alberta-to-yukon',
-    title: 'From Family Roots to Laundromat Fiascos: Alberta, Hot Springs & Rolling into the Yukon!',
-    slug: 'alberta-to-yukon-family-roots-hot-springs-laundromat',
-    date: 'August 31, 2026',
-    locationName: 'Whitehorse & En Route to Pelly Crossing, Yukon',
-    country: 'Canada',
-    coordinates: { lat: 60.7212, lng: -135.0568 },
-    author: 'Joannie & Barton',
-    readingTime: '6 min read',
-    category: 'adventures_mba',
-    journeyLeg: 'arctic_yukon',
-    status: 'published',
-    excerpt: 'And just like that… Mousse is officially on the loose. From visiting the old Thiessen family farm in DeBolt and Henri’s first swim at Liard Hot Springs to the infamous Whitehorse Laundromat Incident.',
-    content: `And just like that… Mousse is officially on the loose.
-
-After a year and a half of planning, designing, changing our minds, changing them back, getting pregnant, needing a cot, waiting, dreaming, and wondering whether this enormous moss-green contraption would ever actually become ours, we finally picked up Mousse in Lethbridge.
-
-And somehow, it is even better than we imagined.
-
-There is something slightly surreal about spending 18 months planning a vehicle and then suddenly being handed the keys and thinking: Well… I guess we live in this now.
-
-Our first night with Mousse was spent in the Calgary area at the home of Brian Thiessen, Barton’s first cousin once removed... a family relationship that I can confidently explain if consulting a diagram lol.
-
-From there, we pointed Mousse north.
-
----
-
-### **A Mini Thiessen Family Tour**
-
-Our first stop was Red Deer, where we visited Barton’s Uncle Eddy and his wife, Anne.
-
-It felt fitting that the beginning of a 35,000-km journey from Canada toward the bottom of South America would start with a little tour through Barton’s family history.
-
-And things got even more nostalgic when we reached DeBolt, the tiny northern Alberta community where Barton’s dad grew up.
-
-We followed gravel roads out to the old Thiessen family farm, which Barton’s grandparents sold in 1994. Amazingly, the same family still owns it today, and they very kindly welcomed a couple of strangers who showed up with a giant green expedition truck, a baby and a Thiessen family history lesson.
-
-Then came the best surprise. Inside the garage was Nikolai (Nicholas) Thiessen’s old GMC truck.
-
-Still there. Decades later.
-
-Standing beside Barton, looking at his grandfather’s old GMC parked on the farm where his dad grew up, with Mousse sitting outside waiting to carry the next generation of Thiessens across the Americas, was pretty special.
-
-Two trucks. A few generations. Very different suspension systems.
-
----
-
-### **Edmonton: Pizza, Friends & Northern Intelligence**
-
-Next stop: Edmonton, where we visited our friends Nadia and Mark and their kids, Ellie, Simon and Jacob.
-
-Nadia and Mark lived in Inuvik for seven years, which means that compared with us, they are essentially northern expedition professionals. We arrived filled with questions. Over pizza, they downloaded as much northern wisdom into our brains as possible. They generously offered us a place to stay for the night, but apparently we had already developed a serious case of new-truck expedition fever.
-
-We wanted NORTH. More kilometres. More wilderness. And, most importantly, we had a deadline: Dawson City for Barton’s birthday.
-
-So we hugged everyone goodbye, climbed back into Mousse and kept driving.
-
----
-
-### **Our First Proper Side-of-the-Road Sleep**
-
-Eventually, enthusiasm lost its battle against our eyelids.
-
-There were no towns nearby and this was precisely why we had spent 18 months building a house on wheels. So we opened iOverlander, found a quiet, flat gravel pullout in the middle of nowhere, parked Mousse, closed the blinds and went to sleep.
-
-No reservation. No check-in. No checkout time. No fee. Five stars.
-
----
-
-### **Henri’s First Swim**
-
-The next day, we continued north through British Columbia toward the Yukon. But there was one mandatory stop along the way: Liard River Hot Springs. The weather could not have been less inviting.
-
-Cold. Pouring rain.
-
-And between us and the glorious steaming hot springs was a long wooden boardwalk through the boreal forest. Henri had opinions. Strong ones. We bundled him up and marched through the rain while he screamed with the conviction of a baby whose parents had clearly lost all ability to make rational decisions.
-
-Then we reached the hot springs. We slipped into the warm water.
-
-And…
-
-Silence. Instantly. His eyes went huge. He relaxed. He floated. And just like that, in a natural hot spring in the middle of northern British Columbia, surrounded by forest, steam and pouring rain, Henri had his very first swim. He absolutely loved it.
-
----
-
-### **Whitehorse & The Laundromat Incident**
-
-On August 31, we crossed into the Yukon and rolled into Whitehorse. A glamorous milestone in any great overland expedition. Naturally, we celebrated by…
-
-doing laundry ! (We didn't get the washing machine Joannie wanted... so we will spend a couple hours every week at a laundromat)
-
-Overlanding, as it turns out, is approximately 30% breathtaking landscapes, 20% driving, 10% adventure and 40% trying to figure out where to wash your underwear ! haha Okay, Joannie's exaggerating.
-
-We decided to divide and conquer. Barton took Mousse to run errands around Whitehorse while Joannie stayed at the laundromat with Henri.
-
-This was a mistake.
-
-Because the moment Barton disappeared with the truck... and, importantly, the diaper bag... Henri decided it was time.
-
-Not for a normal poop. Not even for a respectable blowout. This was an event. The pee escaped the diaper, it conquered the pyjamas. And somehow, in the chaos that followed, our beautiful little son managed to leave a puddle of pee across the laundromat folding counter.
-
-Meanwhile, Joannie was trying to manage multiple washing machines, deal with a half-naked baby, no clean PJ (obviously in the washing machine!) and find her cellphone (which, as anyone who travels with her knows, she loses approximately ten times per day in a 10 meter square area).
-
-She needed to call Barton. No phone. She needed diapers. No diaper bag. She needed paper towels. Where were the paper towels?!
-
-She turned back toward the counter.
-
-And then… she saw her.
-
-A lovely, completely innocent woman had arrived with an enormous pile of freshly washed, beautifully warm, perfectly clean laundry. Before Joannie could fully process what was happening, the woman placed the entire pile…
-
-directly into Henri’s puddle of pee.
-
-Joannie froze.
-
-The lady started folding. Shirt. Fold. Pants. Fold. Another shirt. Fold.
-
-Joannie’s brain, meanwhile, was frantically trying to determine whether there was any socially acceptable way to begin the sentence, *“Excuse me, but your clean laundry is currently sitting in my baby’s urine.”*
-
-There was not.
-
-Then the woman reached the bottom of the pile. She paused.
-
-*“Oh… it’s a bit wet here. That’s too bad!”*
-
-Joannie opened her mouth.
-
-This was the moment. Just say it. Explain what happened. Apologize profusely. Offer to rewash everything. Perhaps move to another territory afterward.
-
-Instead, some combination of embarrassment, sleep deprivation, and pure social paralysis took over.
-
-She smiled sympathetically.
-
-*“Oh no!”*
-
-And just like that, Joannie became an accomplice to the Great Whitehorse Laundromat Mystery of 2026.
-
-She then cleaned every remaining square centimetre of that counter with the intensity of someone attempting to erase both a biohazard and her own shame.
-
-To the lovely woman at the Whitehorse laundromat: if by some extraordinary twist of fate you ever read this, Joannie is very, very sorry.
-
-And for the record, the mysterious wet spot was not the washing machine.
-
----
-
-### **Yukon Hospitality & Yet Another Idea**
-
-After surviving what will henceforth be known as The Whitehorse Laundromat Incident, we visited an acquaintance in town, a wonderful family physician/ER doctor, and his family.
-
-They welcomed us into their home for a delicious supper, and we spent part of the evening talking and swapping expedition stories.
-
-We also learned about wilderness river trips in the Yukon. Which naturally led us to think: you know what would be fun?
-
-A 10-day wilderness canoe or kayak expedition down a Yukon river with the family.
-
-Because apparently embarking on a 35,000-km overland expedition with a newborn has not provided us with quite enough logistical complexity.
-
-So that idea has now been safely filed under: *Future Adventures That Sound Completely Reasonable After Dinner and the dopamine high of the start of a new adventure.*
-
----
-
-### **Next Stop: Dawson City**
-
-With full bellies, mostly clean laundry, one slightly guilty mother and one blissfully unaware baby, we climbed back into Mousse and headed north toward Pelly Crossing.
-
-Tomorrow is Barton’s birthday.
-
-And if everything goes according to plan, we will celebrate it in Dawson City, in the heart of the Klondike.
-
-Mousse is finally on the loose.
-
-And somehow, we’re only a few days in.`,
-    coverImage: '/hot spring.jpeg',
-    gallery: [
+    "id": "log-2-alberta-to-yukon",
+    "title": "From Family Roots to Laundromat Fiascos: Alberta, Hot Springs & Rolling into the Yukon!",
+    "slug": "alberta-to-yukon-family-roots-hot-springs-laundromat",
+    "date": "August 31, 2026",
+    "locationName": "Whitehorse & En Route to Pelly Crossing, Yukon",
+    "country": "Canada",
+    "coordinates": {
+      "lat": 60.7212,
+      "lng": -135.0568
+    },
+    "author": "Joannie & Barton",
+    "readingTime": "6 min read",
+    "category": "adventures_mba",
+    "journeyLeg": "arctic_yukon",
+    "status": "published",
+    "excerpt": "And just like that… Mousse is officially on the loose. From visiting the old Thiessen family farm in DeBolt and Henri’s first swim at Liard Hot Springs to the infamous Whitehorse Laundromat Incident.",
+    "content": "And just like that… Mousse is officially on the loose.\n\nAfter a year and a half of planning, designing, changing our minds, changing them back, getting pregnant, needing a cot, waiting, dreaming, and wondering whether this enormous moss-green contraption would ever actually become ours, we finally picked up Mousse in Lethbridge.\n\nAnd somehow, it is even better than we imagined.\n\nThere is something slightly surreal about spending 18 months planning a vehicle and then suddenly being handed the keys and thinking: Well… I guess we live in this now.\n\nOur first night with Mousse was spent in the Calgary area at the home of Brian Thiessen, Barton’s first cousin once removed... a family relationship that I can confidently explain if consulting a diagram lol.\n\nFrom there, we pointed Mousse north.\n\n---\n\n### **A Mini Thiessen Family Tour**\n\nOur first stop was Red Deer, where we visited Barton’s Uncle Eddy and his wife, Anne.\n\nIt felt fitting that the beginning of a 35,000-km journey from Canada toward the bottom of South America would start with a little tour through Barton’s family history.\n\nAnd things got even more nostalgic when we reached DeBolt, the tiny northern Alberta community where Barton’s dad grew up.\n\nWe followed gravel roads out to the old Thiessen family farm, which Barton’s grandparents sold in 1994. Amazingly, the same family still owns it today, and they very kindly welcomed a couple of strangers who showed up with a giant green expedition truck, a baby and a Thiessen family history lesson.\n\nThen came the best surprise. Inside the garage was Nikolai (Nicholas) Thiessen’s old GMC truck.\n\nStill there. Decades later.\n\nStanding beside Barton, looking at his grandfather’s old GMC parked on the farm where his dad grew up, with Mousse sitting outside waiting to carry the next generation of Thiessens across the Americas, was pretty special.\n\nTwo trucks. A few generations. Very different suspension systems.\n\n---\n\n### **Edmonton: Pizza, Friends & Northern Intelligence**\n\nNext stop: Edmonton, where we visited our friends Nadia and Mark and their kids, Ellie, Simon and Jacob.\n\nNadia and Mark lived in Inuvik for seven years, which means that compared with us, they are essentially northern expedition professionals. We arrived filled with questions. Over pizza, they downloaded as much northern wisdom into our brains as possible. They generously offered us a place to stay for the night, but apparently we had already developed a serious case of new-truck expedition fever.\n\nWe wanted NORTH. More kilometres. More wilderness. And, most importantly, we had a deadline: Dawson City for Barton’s birthday.\n\nSo we hugged everyone goodbye, climbed back into Mousse and kept driving.\n\n---\n\n### **Our First Proper Side-of-the-Road Sleep**\n\nEventually, enthusiasm lost its battle against our eyelids.\n\nThere were no towns nearby and this was precisely why we had spent 18 months building a house on wheels. So we opened iOverlander, found a quiet, flat gravel pullout in the middle of nowhere, parked Mousse, closed the blinds and went to sleep.\n\nNo reservation. No check-in. No checkout time. No fee. Five stars.\n\n---\n\n### **Henri’s First Swim**\n\nThe next day, we continued north through British Columbia toward the Yukon. But there was one mandatory stop along the way: Liard River Hot Springs. The weather could not have been less inviting.\n\nCold. Pouring rain.\n\nAnd between us and the glorious steaming hot springs was a long wooden boardwalk through the boreal forest. Henri had opinions. Strong ones. We bundled him up and marched through the rain while he screamed with the conviction of a baby whose parents had clearly lost all ability to make rational decisions.\n\nThen we reached the hot springs. We slipped into the warm water.\n\nAnd…\n\nSilence. Instantly. His eyes went huge. He relaxed. He floated. And just like that, in a natural hot spring in the middle of northern British Columbia, surrounded by forest, steam and pouring rain, Henri had his very first swim. He absolutely loved it.\n\n---\n\n### **Whitehorse & The Laundromat Incident**\n\nOn August 31, we crossed into the Yukon and rolled into Whitehorse. A glamorous milestone in any great overland expedition. Naturally, we celebrated by…\n\ndoing laundry ! (We didn't get the washing machine Joannie wanted... so we will spend a couple hours every week at a laundromat)\n\nOverlanding, as it turns out, is approximately 30% breathtaking landscapes, 20% driving, 10% adventure and 40% trying to figure out where to wash your underwear ! haha Okay, Joannie's exaggerating.\n\nWe decided to divide and conquer. Barton took Mousse to run errands around Whitehorse while Joannie stayed at the laundromat with Henri.\n\nThis was a mistake.\n\nBecause the moment Barton disappeared with the truck... and, importantly, the diaper bag... Henri decided it was time.\n\nNot for a normal poop. Not even for a respectable blowout. This was an event. The pee escaped the diaper, it conquered the pyjamas. And somehow, in the chaos that followed, our beautiful little son managed to leave a puddle of pee across the laundromat folding counter.\n\nMeanwhile, Joannie was trying to manage multiple washing machines, deal with a half-naked baby, no clean PJ (obviously in the washing machine!) and find her cellphone (which, as anyone who travels with her knows, she loses approximately ten times per day in a 10 meter square area).\n\nShe needed to call Barton. No phone. She needed diapers. No diaper bag. She needed paper towels. Where were the paper towels?!\n\nShe turned back toward the counter.\n\nAnd then… she saw her.\n\nA lovely, completely innocent woman had arrived with an enormous pile of freshly washed, beautifully warm, perfectly clean laundry. Before Joannie could fully process what was happening, the woman placed the entire pile…\n\ndirectly into Henri’s puddle of pee.\n\nJoannie froze.\n\nThe lady started folding. Shirt. Fold. Pants. Fold. Another shirt. Fold.\n\nJoannie’s brain, meanwhile, was frantically trying to determine whether there was any socially acceptable way to begin the sentence, *“Excuse me, but your clean laundry is currently sitting in my baby’s urine.”*\n\nThere was not.\n\nThen the woman reached the bottom of the pile. She paused.\n\n*“Oh… it’s a bit wet here. That’s too bad!”*\n\nJoannie opened her mouth.\n\nThis was the moment. Just say it. Explain what happened. Apologize profusely. Offer to rewash everything. Perhaps move to another territory afterward.\n\nInstead, some combination of embarrassment, sleep deprivation, and pure social paralysis took over.\n\nShe smiled sympathetically.\n\n*“Oh no!”*\n\nAnd just like that, Joannie became an accomplice to the Great Whitehorse Laundromat Mystery of 2026.\n\nShe then cleaned every remaining square centimetre of that counter with the intensity of someone attempting to erase both a biohazard and her own shame.\n\nTo the lovely woman at the Whitehorse laundromat: if by some extraordinary twist of fate you ever read this, Joannie is very, very sorry.\n\nAnd for the record, the mysterious wet spot was not the washing machine.\n\n---\n\n### **Yukon Hospitality & Yet Another Idea**\n\nAfter surviving what will henceforth be known as The Whitehorse Laundromat Incident, we visited an acquaintance in town, a wonderful family physician/ER doctor, and his family.\n\nThey welcomed us into their home for a delicious supper, and we spent part of the evening talking and swapping expedition stories.\n\nWe also learned about wilderness river trips in the Yukon. Which naturally led us to think: you know what would be fun?\n\nA 10-day wilderness canoe or kayak expedition down a Yukon river with the family.\n\nBecause apparently embarking on a 35,000-km overland expedition with a newborn has not provided us with quite enough logistical complexity.\n\nSo that idea has now been safely filed under: *Future Adventures That Sound Completely Reasonable After Dinner and the dopamine high of the start of a new adventure.*\n\n---\n\n### **Next Stop: Dawson City**\n\nWith full bellies, mostly clean laundry, one slightly guilty mother and one blissfully unaware baby, we climbed back into Mousse and headed north toward Pelly Crossing.\n\nTomorrow is Barton’s birthday.\n\nAnd if everything goes according to plan, we will celebrate it in Dawson City, in the heart of the Klondike.\n\nMousse is finally on the loose.\n\nAnd somehow, we’re only a few days in.",
+    "coverImage": "/hot spring.jpeg",
+    "gallery": [
       {
-        url: '/Henri is driving this expedition.jpeg',
-        caption: 'Chief Sunrise Supervisor Henri taking the steering wheel of Mousse and directing navigation for our 35,000 km expedition!',
-        type: 'image'
+        "url": "/Henri and Brian Thiessen.jpeg",
+        "caption": "Our first night in Calgary: baby Henri meeting Brian Thiessen (Barton’s first cousin once removed!).",
+        "type": "image"
       },
       {
-        url: '/hot spring.jpeg',
-        caption: 'Henri’s very first swim at Liard River Hot Springs in the warm mineral waters surrounded by northern wilderness.',
-        type: 'image'
+        "url": "/Eddy and Anne.jpeg",
+        "caption": "Visiting Barton’s Uncle Eddy and his wife Anne in Red Deer at the start of our journey.",
+        "type": "image"
       },
       {
-        url: '/Henri and Brian Thiessen.jpeg',
-        caption: 'Our first night in Calgary: baby Henri meeting Brian Thiessen (Barton’s first cousin once removed!).',
-        type: 'image'
+        "url": "/gravel lane to grandma's house.jpeg",
+        "caption": "Dusty gravel roads leading out to the old Thiessen family farm in DeBolt, northern Alberta.",
+        "type": "image"
       },
       {
-        url: '/Eddy and Anne.jpeg',
-        caption: 'Visiting Barton’s Uncle Eddy and his wife Anne in Red Deer at the start of our journey.',
-        type: 'image'
+        "url": "/old family truck.jpeg",
+        "caption": "Grandfather Nikolai Thiessen’s vintage GMC truck, still preserved inside the farm garage decades later.",
+        "type": "image"
       },
       {
-        url: "/gravel lane to grandma's house.jpeg",
-        caption: 'Dusty gravel roads leading out to the old Thiessen family farm in DeBolt, northern Alberta.',
-        type: 'image'
+        "url": "/Thiessen's truck.jpeg",
+        "caption": "Generations of trucks and family history on the farm in DeBolt. Nicholas (Nikolai) Thiessen’s heritage truck and Mousse bridging decades of adventure.",
+        "type": "image"
       },
       {
-        url: "/Thiessen's truck.jpeg",
-        caption: 'Generations of trucks and family history on the farm in DeBolt.',
-        type: 'image'
+        "url": "/Henri is driving this expedition.jpeg",
+        "caption": "Chief Sunrise Supervisor Henri taking the steering wheel of Mousse and directing navigation for our 35,000 km expedition!",
+        "type": "image"
       },
       {
-        url: '/old family truck.jpeg',
-        caption: 'Grandfather Nikolai Thiessen’s vintage GMC truck, still preserved inside the farm garage decades later.',
-        type: 'image'
+        "url": "/Henri's spot.jpeg",
+        "caption": "Henri cozied up in his custom truck cot inside Mousse for our first roadside sleep in the wilderness.",
+        "type": "image"
       },
       {
-        url: "/Henri's spot.jpeg",
-        caption: 'Henri cozied up in his custom truck cot inside Mousse.',
-        type: 'image'
+        "url": "/hot spring.jpeg",
+        "caption": "Henri’s very first swim at Liard River Hot Springs in the warm mineral waters surrounded by northern wilderness.",
+        "type": "image"
       }
     ],
-    metrics: {
-      elevationM: 670,
-      tempC: 14,
-      kmTraveled: 3820,
-      odometerKm: 3820,
-      henriAge: '2.5 months',
-      mbaModule: 'Operations & Remote Logistics'
+    "metrics": {
+      "elevationM": 670,
+      "tempC": 14,
+      "kmTraveled": 3820,
+      "odometerKm": 3820,
+      "henriAge": "2.5 months",
+      "mbaModule": "Operations & Remote Logistics"
     },
-    locationInsights: {
-      population: '28,201 (Whitehorse, Yukon)',
-      interestingFacts: [
-        'Named after the White Horse Rapids on the Yukon River, which resembled the mane of a white horse before the dam was constructed.',
-        'Home to the iconic S.S. Klondike sternwheeler and the gateway to the Klondike Gold Rush Trail.'
+    "locationInsights": {
+      "population": "28,201 (Whitehorse, Yukon)",
+      "interestingFacts": [
+        "Named after the White Horse Rapids on the Yukon River, which resembled the mane of a white horse before the dam was constructed.",
+        "Home to the iconic S.S. Klondike sternwheeler and the gateway to the Klondike Gold Rush Trail."
       ],
-      culturalContext: 'Located on the traditional territories of the Kwanlin Dün First Nation and Ta\'an Kwäch\'än Council.',
-      activityTips: 'Stocking up on fresh supplies, dipping in Liard Hot Springs, and prepping for the Dempster Highway.'
+      "culturalContext": "Located on the traditional territories of the Kwanlin Dün First Nation and Ta'an Kwäch'än Council.",
+      "activityTips": "Stocking up on fresh supplies, dipping in Liard Hot Springs, and prepping for the Dempster Highway."
     },
-    mbaHighlight: 'Testing real-time crisis management: juggling laundromat blowouts, lost phones, and supply runs while coordinating next leg logistics!',
-    henriHighlight: 'Henri’s very first swim at Liard River Hot Springs in pouring rain, and an infamous laundromat milestone in Whitehorse!',
-    tags: ['Yukon', 'Whitehorse', 'Liard Hot Springs', 'Family Farm', 'DeBolt', 'Overland Journey', 'Henri First Swim'],
-    likesCount: 0,
-    commentsCount: 0
+    "mbaHighlight": "Testing real-time crisis management: juggling laundromat blowouts, lost phones, and supply runs while coordinating next leg logistics!",
+    "henriHighlight": "Henri’s very first swim at Liard River Hot Springs in pouring rain, and an infamous laundromat milestone in Whitehorse!",
+    "tags": [
+      "Yukon",
+      "Whitehorse",
+      "Liard Hot Springs",
+      "Family Farm",
+      "DeBolt",
+      "Overland Journey",
+      "Henri First Swim"
+    ],
+    "likesCount": 0,
+    "commentsCount": 0
   },
-
-  // Entry 1 - Departure
   {
-    id: 'log-departure-mousse',
-    title: 'The Grand Departure in Mousse: Embarking on 35,000 km from Newfoundland to the Americas',
-    slug: 'grand-departure-in-mousse',
-    date: 'August 28, 2026',
-    locationName: 'Lethbridge & Heading North to Arctic Tundra',
-    country: 'Canada',
-    coordinates: { lat: 49.6956, lng: -112.8451 },
-    author: 'Joannie & Barton',
-    readingTime: '4 min read',
-    category: 'adventures_mba',
-    journeyLeg: 'arctic_yukon',
-    status: 'published',
-    excerpt: 'After months of planning, packing baby Henri’s gear, and picking up our custom moss-green rig, Mousse, our 35,000 km sabbatical expedition from the Arctic to Antarctica is officially underway!',
-    content: `After months of preparation, route mapping, and building out our overland truck, we picked up Mousse in Lethbridge, Alberta on August 27th and officially set off on our grand adventure on August 28th, 2026!
-
-Travelling with our newest addition, baby Henri (born June 2026), our expedition will span 35,000 km from the Arctic Ocean all the way south to Ushuaia, Argentina and Antarctica. Alongside driving and wilderness camp routines, Barton and I are balancing remote Executive MBA coursework via Starlink satellite.
-
-Henri is settling into his custom truck crib with wide eyes, and Mousse’s off-grid solar power and heated living quarters feel like the perfect mobile family home.
-
-From here, our compass points north up the Alaska Highway and Dempster Highway toward the Arctic Ocean at Tuktoyaktuk. Follow along with us on our route map!`,
-    coverImage: '/departure.jpeg',
-    gallery: [
+    "id": "log-departure-mousse",
+    "title": "The Grand Departure in Mousse: Embarking on 35,000 km from Newfoundland to the Americas",
+    "slug": "grand-departure-in-mousse",
+    "date": "August 28, 2026",
+    "locationName": "Lethbridge & Heading North to Arctic Tundra",
+    "country": "Canada",
+    "coordinates": {
+      "lat": 49.6956,
+      "lng": -112.8451
+    },
+    "author": "Joannie & Barton",
+    "readingTime": "4 min read",
+    "category": "adventures_mba",
+    "journeyLeg": "arctic_yukon",
+    "status": "published",
+    "excerpt": "After months of planning, packing baby Henri’s gear, and picking up our custom moss-green rig, Mousse, our 35,000 km sabbatical expedition from the Arctic to Antarctica is officially underway!",
+    "content": "After months of preparation, route mapping, and building out our overland truck, we picked up Mousse in Lethbridge, Alberta on August 27th and officially set off on our grand adventure on August 28th, 2026!\n\nTravelling with our newest addition, baby Henri (born June 2026), our expedition will span 35,000 km from the Arctic Ocean all the way south to Ushuaia, Argentina and Antarctica. Alongside driving and wilderness camp routines, Barton and I are balancing remote Executive MBA coursework via Starlink satellite.\n\nHenri is settling into his custom truck crib with wide eyes, and Mousse’s off-grid solar power and heated living quarters feel like the perfect mobile family home.\n\nFrom here, our compass points north up the Alaska Highway and Dempster Highway toward the Arctic Ocean at Tuktoyaktuk. Follow along with us on our route map!",
+    "coverImage": "/departure.jpeg",
+    "gallery": [
       {
-        url: '/departure.jpeg',
-        caption: 'The Family Departure: Joannie, Barton, and baby Henri (born June 2026) setting off from Lethbridge on the 35,000 km journey.',
-        type: 'image'
+        "url": "/departure.jpeg",
+        "caption": "The Family Departure: Joannie, Barton, and baby Henri (born June 2026) setting off from Lethbridge on the 35,000 km journey.",
+        "type": "image"
       },
       {
-        url: '/moussesunset.jpeg',
-        caption: 'Mousse at golden hour sunset on the Alberta foothills as our 35,000 km expedition begins.',
-        type: 'image'
+        "url": "/Mousse1.jpeg",
+        "caption": "Mousse in the garage waiting for pickup at Wilderness Van in Alberta.",
+        "type": "image"
       },
       {
-        url: '/Mousse1.jpeg',
-        caption: 'Mousse in the garage waiting for pickup at Wilderness Van in Alberta.',
-        type: 'image'
+        "url": "/moussesunset.jpeg",
+        "caption": "Mousse at golden hour sunset on the Alberta foothills as our 35,000 km expedition begins.",
+        "type": "image"
       }
     ],
-    metrics: {
-      elevationM: 910,
-      tempC: 22,
-      kmTraveled: 0,
-      henriAge: '2.5 months',
-      mbaModule: 'Foundational Strategy & Road Studies'
+    "metrics": {
+      "elevationM": 910,
+      "tempC": 22,
+      "kmTraveled": 0,
+      "henriAge": "2.5 months",
+      "mbaModule": "Foundational Strategy & Road Studies"
     },
-    locationInsights: {
-      population: '101,482 (Lethbridge)',
-      interestingFacts: [
-        'Home to the High Level Bridge, the longest and highest viable trestle bridge in the world (built in 1909).',
-        'Known for its warm chinook winds and proximity to the Canadian Rocky Mountain front.'
+    "locationInsights": {
+      "population": "101,482 (Lethbridge)",
+      "interestingFacts": [
+        "Home to the High Level Bridge, the longest and highest viable trestle bridge in the world (built in 1909).",
+        "Known for its warm chinook winds and proximity to the Canadian Rocky Mountain front."
       ],
-      culturalContext: 'Located on traditional Siksikaitsitapi (Blackfoot Confederacy) territory.',
-      activityTips: 'Equipping and organizing expedition gear, testing Starlink 12V conversion, and heading north along Highway 2.'
+      "culturalContext": "Located on traditional Siksikaitsitapi (Blackfoot Confederacy) territory.",
+      "activityTips": "Equipping and organizing expedition gear, testing Starlink 12V conversion, and heading north along Highway 2."
     },
-    mbaHighlight: 'Configured Starlink mobile satellite system and kicked off initial road-term MBA readings.',
-    henriHighlight: 'Henri testing out his custom truck crib for the very first night on the road!',
-    tags: ['Departure', 'Mousse On The Loose', 'Lethbridge', 'Expedition Launch', 'Newfoundland Family'],
-    likesCount: 0,
-    commentsCount: 0
+    "mbaHighlight": "Configured Starlink mobile satellite system and kicked off initial road-term MBA readings.",
+    "henriHighlight": "Henri testing out his custom truck crib for the very first night on the road!",
+    "tags": [
+      "Departure",
+      "Mousse On The Loose",
+      "Lethbridge",
+      "Expedition Launch",
+      "Newfoundland Family"
+    ],
+    "likesCount": 0,
+    "commentsCount": 0
   }
 ];
 

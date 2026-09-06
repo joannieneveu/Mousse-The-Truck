@@ -60,7 +60,10 @@ function AppContent() {
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
     try {
       const saved = localStorage.getItem('mousse_current_user');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        if (saved === 'visitor' || saved === 'null') return null;
+        return JSON.parse(saved);
+      }
     } catch {
       // ignore
     }
@@ -80,7 +83,7 @@ function AppContent() {
       if (currentUser) {
         localStorage.setItem('mousse_current_user', JSON.stringify(currentUser));
       } else {
-        localStorage.removeItem('mousse_current_user');
+        localStorage.setItem('mousse_current_user', 'visitor');
       }
     } catch {
       // ignore
@@ -97,19 +100,33 @@ function AppContent() {
   };
 
   // Auth headers helper
-  const getAuthHeaders = () => ({
-    'Content-Type': 'application/json',
-    'x-user-email': currentUser?.email || 'joannieneveu@gmail.com',
-    'x-user-id': currentUser?.id || 'user_joannie',
-    'x-user-role': currentUser?.isAdmin ? 'admin' : (currentUser?.role || 'admin')
-  });
+  const getAuthHeaders = (): Record<string, string> => {
+    const headers: Record<string, string> = {
+      'Content-Type': 'application/json'
+    };
+    if (currentUser?.isAdmin) {
+      headers['x-user-email'] = currentUser.email;
+      headers['x-user-id'] = currentUser.id;
+      headers['x-user-role'] = 'admin';
+    } else if (currentUser) {
+      headers['x-user-email'] = currentUser.email;
+      headers['x-user-id'] = currentUser.id;
+      headers['x-user-role'] = currentUser.role || 'guest';
+    }
+    return headers;
+  };
 
   // Load state from backend on mount
   useEffect(() => {
+    const savedSession = localStorage.getItem('mousse_current_user');
     fetch('/api/auth/me')
       .then(res => res.json())
       .then(data => {
-        if (data.user) setCurrentUser(data.user);
+        if (savedSession === 'visitor') {
+          setCurrentUser(null);
+        } else if (data.user) {
+          setCurrentUser(data.user);
+        }
       })
       .catch(() => {});
 

@@ -421,6 +421,19 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                 </button>
               )}
               <button
+                type="button"
+                id="browse-as-visitor-btn"
+                onClick={() => {
+                  handleLogout();
+                }}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-amber-50 hover:bg-amber-100 text-amber-900 text-xs font-semibold border border-amber-300 transition shadow-xs"
+                title="Browse website as a public visitor without admin controls"
+              >
+                <Eye className="w-3.5 h-3.5 text-amber-800" />
+                <span>Visit as Visitor</span>
+              </button>
+
+              <button
                 id="logout-btn"
                 onClick={handleLogout}
                 className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-white hover:bg-rose-50 text-stone-700 hover:text-rose-700 text-xs font-semibold border border-stone-200 transition shadow-xs"
@@ -642,13 +655,26 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   </div>
 
                   <div className="flex items-center justify-between pt-2">
-                    <button
-                      type="button"
-                      onClick={onClose}
-                      className="px-4 py-2 rounded-xl text-stone-600 hover:bg-stone-200 font-medium text-xs"
-                    >
-                      Cancel
-                    </button>
+                    <div className="flex items-center gap-3">
+                      <button
+                        type="button"
+                        onClick={onClose}
+                        className="px-3 py-1.5 rounded-xl text-stone-600 hover:bg-stone-200 font-medium text-xs"
+                      >
+                        Cancel
+                      </button>
+                      <button
+                        type="button"
+                        onClick={() => {
+                          handleLogout();
+                        }}
+                        className="text-stone-500 hover:text-stone-800 text-xs font-medium underline decoration-dotted flex items-center gap-1"
+                        title="Browse website as a public visitor"
+                      >
+                        <Eye className="w-3.5 h-3.5 text-stone-500" />
+                        <span>Browse as Visitor</span>
+                      </button>
+                    </div>
                     <div className="flex items-center gap-2">
                       <button
                         type="button"
