@@ -547,7 +547,10 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
           }}
           onSave={async (logData) => {
             if (editingLog && onUpdateLog) {
-              await onUpdateLog(editingLog.id, logData);
+              const res = await onUpdateLog(editingLog.id, logData);
+              if (res && res.success === false) {
+                throw new Error(res.error || 'Failed to update journal entry');
+              }
             } else {
               await onCreateLog(logData);
             }

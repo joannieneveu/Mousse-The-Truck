@@ -158,6 +158,7 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const [notifySubscribersOnPublish, setNotifySubscribersOnPublish] = useState<boolean>(true);
 
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [saveError, setSaveError] = useState<string>('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
 
   // Load subscribers if not passed as prop
@@ -437,8 +438,14 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
       region: country
     };
 
+    setSaveError('');
     try {
-      await onSave(logPayload);
+      const result: any = await onSave(logPayload);
+      if (result && result.success === false) {
+        setSaveError(result.error || 'Failed to save modifications to the journal entry.');
+        setIsSubmitting(false);
+        return;
+      }
 
       // If publishing live and notify subscribers is enabled, trigger broadcast dispatch
       if (status === 'published' && notifySubscribersOnPublish) {
@@ -458,8 +465,9 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
       }
 
       onClose();
-    } catch (err) {
+    } catch (err: any) {
       console.error(err);
+      setSaveError(err.message || 'Error saving modifications. Please check your connection.');
     } finally {
       setIsSubmitting(false);
     }
@@ -1452,6 +1460,12 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
             ) : (
               <div className="text-[11px] text-stone-500 italic">
                 Draft mode: No subscriber email will be broadcast until published live.
+              </div>
+            )}
+
+            {saveError && (
+              <div className="w-full text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-xl">
+                ⚠️ {saveError}
               </div>
             )}
 

@@ -69,7 +69,7 @@ interface TravelLogDetailProps {
 }
 
 export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
-  log,
+  log: initialLogProp,
   currentUser,
   onBack,
   onOpenAuthModal,
@@ -84,6 +84,12 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   liveLocation,
   subscribers
 }) => {
+  const [log, setLog] = useState<TravelLog>(initialLogProp);
+
+  useEffect(() => {
+    setLog(initialLogProp);
+  }, [initialLogProp]);
+
   const [likes, setLikes] = useState<number>(typeof log.likesCount === 'number' ? log.likesCount : 0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
@@ -182,6 +188,14 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     }
     setIsSavingOdometer(true);
     try {
+      setLog(prev => ({
+        ...prev,
+        metrics: {
+          ...prev.metrics,
+          kmTraveled: val,
+          odometerKm: val
+        }
+      }));
       if (onUpdateLog) {
         await onUpdateLog(log.id, {
           metrics: {
@@ -493,6 +507,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
     if (newItems.length > 0) {
       const updatedGallery = [...(log.gallery || []), ...newItems];
+      setLog(prev => ({ ...prev, gallery: updatedGallery }));
       if (onUpdateLog) {
         await onUpdateLog(log.id, { gallery: updatedGallery });
       }
@@ -534,6 +549,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     };
 
     const updatedGallery = [...(log.gallery || []), newPhotoItem];
+    setLog(prev => ({ ...prev, gallery: updatedGallery }));
     if (onUpdateLog) {
       await onUpdateLog(log.id, { gallery: updatedGallery });
     }
@@ -575,16 +591,18 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         ...updatedGallery[editingPhotoIdx],
         caption: editingCaptionText.trim()
       };
+      setLog(prev => ({ ...prev, gallery: updatedGallery }));
 
       if (onUpdateLog) {
         const res: any = await onUpdateLog(log.id, { gallery: updatedGallery });
-        if (res && res.error) {
-          showToast(`⚠️ ${res.error}`);
+        if (res && res.success === false) {
+          showToast(`⚠️ ${res.error || 'Failed to save caption'}`);
+          setLog(initialLogProp);
           setIsSavingCaption(false);
           return;
         }
       }
-      showToast('Caption updated successfully.');
+      showToast('Caption updated and saved to website.');
     }
 
     setIsSavingCaption(false);
@@ -598,8 +616,14 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     if (!currentUser?.isAdmin) return;
     if (window.confirm('Remove this photo from this journal entry?')) {
       const updatedGallery = (log.gallery || []).filter((_, i) => i !== idx);
+      setLog(prev => ({ ...prev, gallery: updatedGallery }));
       if (onUpdateLog) {
-        await onUpdateLog(log.id, { gallery: updatedGallery });
+        const res: any = await onUpdateLog(log.id, { gallery: updatedGallery });
+        if (res && res.success === false) {
+          showToast(`⚠️ ${res.error || 'Failed to remove photo'}`);
+          setLog(initialLogProp);
+          return;
+        }
       }
       showToast('Photo removed from this entry.');
       if (activeLightboxIdx !== null) setActiveLightboxIdx(null);
@@ -1515,9 +1539,18 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           isOpen={isEditorOpen}
           onClose={() => setIsEditorOpen(false)}
           onSave={async (data) => {
+            setLog(prev => ({ ...prev, ...data }));
             if (onUpdateLog) {
-              await onUpdateLog(log.id, data);
+              const res = await onUpdateLog(log.id, data);
+              if (res && res.success === false) {
+                setLog(initialLogProp);
+                throw new Error(res.error || 'Failed to save modifications to the journal entry.');
+              }
+              if (res && res.log) {
+                setLog(res.log);
+              }
             }
+            showToast('✨ Journal entry modifications saved and updated on website.');
             setIsEditorOpen(false);
           }}
           authorName={currentUser?.name || log.author}

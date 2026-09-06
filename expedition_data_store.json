@@ -252,7 +252,8 @@
         "Permafrost"
       ],
       "likesCount": 0,
-      "commentsCount": 1
+      "commentsCount": 1,
+      "visitorHighlight": "Warm reunion in Whitehorse with colleagues and friends before pushing north past the Arctic Circle."
     },
     {
       "id": "log-2-alberta-to-yukon",
@@ -1170,5 +1171,5 @@
     "adminPasswordSalt": null,
     "adminPasswordHash": null
   },
-  "lastSaved": "2026-09-06T17:13:23.190Z"
+  "lastSaved": "2026-09-06T17:49:00.805Z"
 }

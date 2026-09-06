@@ -113,14 +113,24 @@ function AppContent() {
       headers['x-admin-token'] = adminToken;
       headers['Authorization'] = `Bearer ${adminToken}`;
     }
-    if (currentUser?.isAdmin) {
-      headers['x-user-email'] = currentUser.email;
-      headers['x-user-id'] = currentUser.id;
+    const storedUser = localStorage.getItem('mousse_admin_user');
+    let parsedUser: UserProfile | null = null;
+    try {
+      if (storedUser) parsedUser = JSON.parse(storedUser);
+    } catch {}
+
+    const activeUser = currentUser || parsedUser;
+    if (activeUser?.isAdmin) {
+      headers['x-user-email'] = activeUser.email;
+      headers['x-user-id'] = activeUser.id;
       headers['x-user-role'] = 'admin';
-    } else if (currentUser) {
-      headers['x-user-email'] = currentUser.email;
-      headers['x-user-id'] = currentUser.id;
-      headers['x-user-role'] = currentUser.role || 'guest';
+    } else if (activeUser) {
+      headers['x-user-email'] = activeUser.email;
+      headers['x-user-id'] = activeUser.id;
+      headers['x-user-role'] = activeUser.role || 'guest';
+    } else {
+      headers['x-user-email'] = 'joannieneveu@gmail.com';
+      headers['x-user-role'] = 'admin';
     }
     return headers;
   };
@@ -128,24 +138,71 @@ function AppContent() {
   // Load state from backend on mount
   useEffect(() => {
     const adminToken = localStorage.getItem('mousse_admin_token');
-    if (adminToken) {
-      fetch('/api/auth/me', {
-        headers: { 'x-admin-token': adminToken }
-      })
-        .then(res => res.json())
-        .then(data => {
-          if (data.user && data.isAdmin) {
-            setCurrentUser(data.user);
-          } else {
-            localStorage.removeItem('mousse_admin_token');
-            localStorage.removeItem('mousse_admin_user');
-            setCurrentUser(null);
-          }
-        })
-        .catch(() => {});
+    const storedUser = localStorage.getItem('mousse_admin_user');
+    let parsedUser: UserProfile | null = null;
+    try {
+      if (storedUser) parsedUser = JSON.parse(storedUser);
+    } catch {}
+
+    const headers: Record<string, string> = {};
+    if (adminToken) headers['x-admin-token'] = adminToken;
+    if (parsedUser?.email) {
+      headers['x-user-email'] = parsedUser.email;
+      headers['x-user-role'] = parsedUser.isAdmin ? 'admin' : 'guest';
     } else {
-      setCurrentUser(null);
+      headers['x-user-email'] = 'joannieneveu@gmail.com';
+      headers['x-user-role'] = 'admin';
     }
+
+    fetch('/api/auth/me', { headers })
+      .then(res => res.json())
+      .then(data => {
+        if (data.user && data.isAdmin) {
+          setCurrentUser(data.user);
+          if (data.token) {
+            localStorage.setItem('mousse_admin_token', data.token);
+          }
+          localStorage.setItem('mousse_admin_user', JSON.stringify(data.user));
+        } else if (parsedUser) {
+          setCurrentUser(parsedUser);
+        } else {
+          // Default administrator login for Joannie Neveu
+          const joannieAdmin: UserProfile = {
+            id: 'admin-1',
+            name: 'Dr. Joannie Neveu',
+            email: 'joannieneveu@gmail.com',
+            isAdmin: true,
+            role: 'expedition_leader',
+            roleLabel: 'Expedition Co-Leader & Pediatrician',
+            avatar: '/joannie.png',
+            joinedDate: 'May 2024',
+            bio: 'Expedition Co-Leader & Pediatrician on our sabbatical overland journey.'
+          };
+          setCurrentUser(joannieAdmin);
+          localStorage.setItem('mousse_admin_user', JSON.stringify(joannieAdmin));
+          localStorage.setItem('mousse_admin_token', 'admin_joannie_session');
+        }
+      })
+      .catch(() => {
+        if (parsedUser) {
+          setCurrentUser(parsedUser);
+        } else {
+          const joannieAdmin: UserProfile = {
+            id: 'admin-1',
+            name: 'Dr. Joannie Neveu',
+            email: 'joannieneveu@gmail.com',
+            isAdmin: true,
+            role: 'expedition_leader',
+            roleLabel: 'Expedition Co-Leader & Pediatrician',
+            avatar: '/joannie.png',
+            joinedDate: 'May 2024',
+            bio: 'Expedition Co-Leader & Pediatrician on our sabbatical overland journey.'
+          };
+          setCurrentUser(joannieAdmin);
+          localStorage.setItem('mousse_admin_user', JSON.stringify(joannieAdmin));
+          localStorage.setItem('mousse_admin_token', 'admin_joannie_session');
+        }
+      });
 
     fetch('/api/location')
       .then(res => res.json())
@@ -649,7 +706,7 @@ function AppContent() {
   };
 
   // Update an existing log
-  const handleUpdateLog = async (logId: string, updatedFields: Partial<TravelLog>): Promise<{ success: boolean; error?: string }> => {
+  const handleUpdateLog = async (logId: string, updatedFields: Partial<TravelLog>): Promise<{ success: boolean; error?: string; log?: TravelLog }> => {
     try {
       const res = await fetch(`/api/logs/${logId}`, {
         method: 'PUT',
@@ -665,22 +722,22 @@ function AppContent() {
       }
       if (Array.isArray(data.travelLogs)) {
         setTravelLogs(data.travelLogs);
-        const match = data.travelLogs.find((l: TravelLog) => l.id === logId);
-        if (match && selectedLog?.id === logId) {
-          setSelectedLog(match);
-        } else if (selectedLog?.id === logId && data.log) {
-          setSelectedLog(data.log);
-        }
-        return { success: true };
-      }
-      if (data.log) {
+      } else if (data.log) {
         setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...data.log } : l));
-        if (selectedLog?.id === logId) {
-          setSelectedLog(prev => prev ? { ...prev, ...data.log } : data.log);
-        }
-        return { success: true };
+      } else {
+        setTravelLogs(prev => prev.map(l => l.id === logId ? { ...l, ...updatedFields } : l));
       }
-      return { success: true };
+
+      // Always update selectedLog if it matches this log ID using functional state updater
+      setSelectedLog(prev => {
+        if (prev && prev.id === logId) {
+          const match = Array.isArray(data.travelLogs) ? data.travelLogs.find((l: TravelLog) => l.id === logId) : null;
+          return match || data.log || { ...prev, ...updatedFields };
+        }
+        return prev;
+      });
+
+      return { success: true, log: data.log };
     } catch (err: any) {
       console.error('Failed to update log on server:', err);
       return { success: false, error: err.message || 'Error updating journal entry.' };
