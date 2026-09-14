@@ -15,7 +15,6 @@ import {
   LiveLocation, 
   TravelLog, 
   MediaItem, 
-  Subscriber, 
   UserProfile, 
   CommentItem, 
   RigPhoto,
@@ -28,7 +27,6 @@ import {
   INITIAL_LIVE_LOCATION, 
   INITIAL_TRAVEL_LOGS, 
   INITIAL_MEDIA, 
-  INITIAL_SUBSCRIBERS, 
   INITIAL_COMMENTS, 
   INITIAL_RIG_PHOTOS,
   INITIAL_FAMILY_MEMBERS
@@ -81,7 +79,6 @@ async function startServer() {
   let waypoints: Waypoint[] = [...INITIAL_WAYPOINTS];
   let travelLogs: TravelLog[] = [...INITIAL_TRAVEL_LOGS];
   let mediaItems: MediaItem[] = [...INITIAL_MEDIA];
-  let subscribers: Subscriber[] = [...INITIAL_SUBSCRIBERS];
   let comments: CommentItem[] = [...INITIAL_COMMENTS];
   let rigPhotos: RigPhoto[] = [...INITIAL_RIG_PHOTOS];
   let familyMembers: FamilyMember[] = [...INITIAL_FAMILY_MEMBERS];
@@ -106,7 +103,6 @@ async function startServer() {
         if (Array.isArray(data.waypoints)) waypoints = data.waypoints;
         if (Array.isArray(data.travelLogs)) travelLogs = data.travelLogs;
         if (Array.isArray(data.mediaItems)) mediaItems = data.mediaItems;
-        if (Array.isArray(data.subscribers)) subscribers = data.subscribers;
         if (Array.isArray(data.comments)) comments = data.comments;
         if (Array.isArray(data.rigPhotos)) rigPhotos = data.rigPhotos;
         if (Array.isArray(data.familyMembers)) familyMembers = data.familyMembers;
@@ -134,7 +130,6 @@ async function startServer() {
         waypoints,
         travelLogs,
         mediaItems,
-        subscribers,
         comments,
         rigPhotos,
         familyMembers,
@@ -161,16 +156,6 @@ async function startServer() {
       const filePath = path.join(process.cwd(), 'src', 'data', 'initialData.ts');
       if (!fs.existsSync(filePath)) return;
       let content = fs.readFileSync(filePath, 'utf-8');
-
-      // 1. Sync INITIAL_SUBSCRIBERS
-      const subStartTag = 'export const INITIAL_SUBSCRIBERS: Subscriber[] = ';
-      const subEndTag = 'export const INITIAL_TRAVEL_LOGS: TravelLog[] = [';
-      const startSubIdx = content.indexOf(subStartTag);
-      const endSubIdx = content.indexOf(subEndTag);
-      if (startSubIdx !== -1 && endSubIdx !== -1 && endSubIdx > startSubIdx) {
-        const replacementSub = `export const INITIAL_SUBSCRIBERS: Subscriber[] = ${JSON.stringify(subscribers, null, 2)};\n\n`;
-        content = content.slice(0, startSubIdx) + replacementSub + content.slice(endSubIdx);
-      }
 
       // 2. Sync INITIAL_TRAVEL_LOGS
       const logsStartTag = 'export const INITIAL_TRAVEL_LOGS: TravelLog[] = [';
@@ -354,50 +339,6 @@ async function startServer() {
 
     console.log(`  ✨ [Dispatched] Email logged & queued for ${recipients.length} recipient(s).`);
     return { success: true, mode: 'logged_delivery' };
-  }
-
-  // Auto-notify all active subscribers when a new journal entry is published
-  async function notifySubscribersOfNewEntry(log: TravelLog, senderName: string = 'Dr. Joannie Neveu'): Promise<{ success: boolean; recipientCount: number; mode?: string }> {
-    const activeSubscribers = subscribers.filter(s => s.status === 'approved');
-    if (activeSubscribers.length === 0) {
-      console.log(`[Auto-Broadcast 📬] No registered subscribers yet to notify for "${log.title}". When visitors subscribe with their email on the site, they will automatically receive new journal updates.`);
-      return { success: true, recipientCount: 0 };
-    }
-
-    const emailSubject = `🌲 New Overland Chapter: ${log.title}`;
-    const generated = generateJournalEmailHtml({
-      log,
-      liveLocation,
-      customSubject: emailSubject,
-      senderName
-    });
-
-    const recipientEmails = activeSubscribers.map(s => s.email);
-    console.log(`[Auto-Broadcast 📬] Disagreeing nobody! Sending new journal entry "${log.title}" to ${recipientEmails.length} registered subscriber(s): ${recipientEmails.join(', ')}`);
-
-    const dispatchResult = await dispatchEmail({
-      to: recipientEmails,
-      subject: emailSubject,
-      html: generated.html,
-      text: generated.plainText
-    });
-
-    const broadcastLog: EmailBroadcastLog = {
-      id: `auto-broadcast-${Date.now()}`,
-      logId: log.id,
-      logTitle: log.title,
-      subject: emailSubject,
-      sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      recipientCount: activeSubscribers.length,
-      senderAdmin: senderName,
-      customNote: `Automated notification dispatched to all registered subscribers upon publishing.`,
-      status: 'delivered'
-    };
-
-    broadcastLogs.unshift(broadcastLog);
-    saveDataStore();
-    console.log(`[Auto-Broadcast 📬] Successfully dispatched to ${activeSubscribers.length} subscriber(s). Delivery mode: ${dispatchResult.mode}`);
-    return { success: true, recipientCount: activeSubscribers.length, mode: dispatchResult.mode };
   }
 
   function verifyPasswordHash(password: string): boolean {
@@ -584,7 +525,7 @@ async function startServer() {
 
   // Login (by Email or Admin Select)
   app.post('/api/auth/login', (req: Request, res: Response) => {
-    const { email, name, password, passkey, newPasswordToSet, subscribeToEmails } = req.body;
+    const { email, name, password, passkey, newPasswordToSet } = req.body;
     const cleanEmail = (email || '').trim().toLowerCase();
     const cleanPassword = (password || passkey || '').trim();
 
@@ -660,25 +601,8 @@ async function startServer() {
 
     currentUser = guestUser;
 
-    // Handle email subscription if checked during sign-in
-    if (subscribeToEmails && cleanEmail && cleanEmail.includes('@')) {
-      const existing = subscribers.find(s => s.email.toLowerCase() === cleanEmail);
-      if (!existing) {
-        subscribers.unshift({
-          id: `sub-${Date.now()}`,
-          email: cleanEmail,
-          name: guestUser.name,
-          relationshipNote: 'Subscribed on sign in',
-          status: 'approved',
-          subscribedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-        });
-        saveDataStore();
-        console.log(`[Subscription Auto-Added] ${guestUser.name} (${cleanEmail}) subscribed for email alerts`);
-      }
-    }
-
     console.log(`[Auth] Guest logged in: ${guestUser.name} (${guestUser.email})`);
-    res.json({ success: true, user: guestUser, isAdmin: false, subscribed: Boolean(subscribeToEmails) });
+    res.json({ success: true, user: guestUser, isAdmin: false });
   });
 
   // Change Admin Password (cryptographic salt & hash update)
@@ -806,8 +730,8 @@ Return ONLY a valid JSON object matching this schema:
       liveLocation,
       waypoints,
       totalDistanceKm: 35000,
-      completedDistanceKm: 0,
-      daysOnRoad: 1,
+      completedDistanceKm: 5500,
+      daysOnRoad: 12,
       totalDays: 365,
       currentCountry: 'Canada',
       currentCity: liveLocation.lastCity
@@ -816,7 +740,7 @@ Return ONLY a valid JSON object matching this schema:
 
   // Update location pin (Expedition Administrators Joannie & Barton only)
   app.post('/api/location', (req: Request, res: Response) => {
-    if (!currentUser?.isAdmin) {
+    if (!isUserAdmin(req) && !currentUser?.isAdmin) {
       res.status(403).json({ error: 'Only expedition administrators (Joannie & Barton) can update the expedition location pin.' });
       return;
     }
@@ -999,13 +923,6 @@ Return ONLY a valid JSON object matching this schema:
       saveDataStore();
       console.log(`[Journal Created] "${newLog.title}" by ${effectiveUser.name} (Status: ${newLog.status})`);
 
-      // Auto-broadcast notification to all registered subscribers if published
-      if (newLog.status === 'published' && req.body.notifySubscribers !== false) {
-        notifySubscribersOfNewEntry(newLog, effectiveUser.name).catch(err => {
-          console.error('[Auto-Broadcast Error on Create]', err);
-        });
-      }
-
       res.json({ success: true, log: newLog, waypoint: newWaypoint, waypoints, liveLocation, travelLogs, mediaItems });
     } catch (err: any) {
       console.error('[POST /api/logs Error]:', err);
@@ -1069,13 +986,6 @@ Return ONLY a valid JSON object matching this schema:
       const effectiveUser = getEffectiveUser(req);
       console.log(`[Journal Updated] "${travelLogs[index].title}" modified by ${effectiveUser.name}`);
 
-      // If transitioned from draft to published, auto-notify subscribers
-      if (wasDraft && travelLogs[index].status === 'published' && req.body.notifySubscribers !== false) {
-        notifySubscribersOfNewEntry(travelLogs[index], effectiveUser.name).catch(err => {
-          console.error('[Auto-Broadcast Error on Update]', err);
-        });
-      }
-
       res.json({ success: true, log: travelLogs[index], travelLogs, mediaItems });
     } catch (err: any) {
       console.error('[PUT /api/logs/:id Error]:', err);
@@ -1101,14 +1011,6 @@ Return ONLY a valid JSON object matching this schema:
     log.status = log.status === 'published' ? 'draft' : 'published';
     saveDataStore();
     console.log(`[Journal Publish Toggle] "${log.title}" is now ${log.status}`);
-
-    // If transitioned from draft to published, auto-broadcast email notification to all subscribers
-    if (wasDraft && log.status === 'published') {
-      const effectiveUser = getEffectiveUser(req);
-      notifySubscribersOfNewEntry(log, effectiveUser.name).catch(err => {
-        console.error('[Auto-Broadcast Error on Toggle]', err);
-      });
-    }
 
     res.json({ success: true, log, status: log.status, travelLogs });
   };
@@ -1520,256 +1422,6 @@ Return ONLY a valid JSON object matching this schema:
     res.json({ success: true, rigPhotos });
   });
 
-  // --- SUBSCRIBERS & ADMIN APPROVAL API ---
-
-  app.get('/api/subscribers', (req: Request, res: Response) => {
-    res.json({ 
-      success: true,
-      subscribers, 
-      count: subscribers.length, 
-      pendingCount: subscribers.filter(s => s.status === 'pending').length 
-    });
-  });
-
-  const handleSubscribeRequest = async (req: Request, res: Response) => {
-    const { email, name, relationshipNote } = req.body;
-    if (!email || typeof email !== 'string' || !email.includes('@')) {
-      res.status(400).json({ error: 'A valid email address is required.' });
-      return;
-    }
-
-    const cleanEmail = email.trim().toLowerCase();
-    const subscriberName = name?.trim() || cleanEmail.split('@')[0];
-    const note = relationshipNote?.trim() || 'Website Subscriber';
-
-    const existing = subscribers.find(s => s.email.toLowerCase() === cleanEmail);
-    if (existing) {
-      existing.status = 'approved';
-      // Re-send welcome email to confirm their active status
-      const welcome = generateWelcomeEmailHtml({
-        subscriberName: existing.name,
-        subscriberEmail: existing.email
-      });
-
-      await dispatchEmail({
-        to: existing.email,
-        subject: welcome.defaultSubject,
-        html: welcome.html,
-        text: welcome.plainText
-      });
-
-      saveDataStore();
-      res.json({ 
-        success: true, 
-        message: `Welcome back, ${existing.name}! You are an active subscriber. You will receive an email whenever a new journal entry is published.`,
-        subscriber: existing,
-        subscribers
-      });
-      return;
-    }
-
-    const newSub: Subscriber = {
-      id: `sub-${Date.now()}`,
-      email: cleanEmail,
-      name: subscriberName,
-      relationshipNote: note,
-      status: 'approved', // Active subscriber immediately
-      subscribedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-      approvedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-    };
-
-    subscribers.unshift(newSub);
-
-    // 1. Dispatch Welcome Email to Subscriber
-    const welcome = generateWelcomeEmailHtml({
-      subscriberName: newSub.name,
-      subscriberEmail: newSub.email
-    });
-
-    const welcomeResult = await dispatchEmail({
-      to: newSub.email,
-      subject: welcome.defaultSubject,
-      html: welcome.html,
-      text: welcome.plainText
-    });
-
-    // 2. Dispatch Admin Notification to Joannie & Barton
-    const adminAlert = generateAdminNotificationEmailHtml({
-      subscriberName: newSub.name,
-      subscriberEmail: newSub.email,
-      relationshipNote: newSub.relationshipNote,
-      totalSubscribersCount: subscribers.length
-    });
-
-    const adminAlertResult = await dispatchEmail({
-      to: ADMIN_EMAILS,
-      subject: adminAlert.defaultSubject,
-      html: adminAlert.html,
-      text: adminAlert.plainText
-    });
-
-    // 3. Log into Broadcast History for admin inspection
-    broadcastLogs.unshift({
-      id: `welcome-${Date.now()}`,
-      logTitle: `Welcome Email: ${newSub.name}`,
-      subject: welcome.defaultSubject,
-      sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      recipientCount: 1,
-      senderAdmin: 'Automated Dispatcher',
-      customNote: `Confirmation delivered to ${newSub.email}. Admin alert sent to ${ADMIN_EMAILS.join(', ')}`,
-      status: 'delivered'
-    });
-
-    saveDataStore();
-    console.log(`[Subscription Complete] Registered ${newSub.name} (${newSub.email}). Delivery: Welcome=${welcomeResult.mode}, AdminAlert=${adminAlertResult.mode}`);
-
-    res.json({ 
-      success: true, 
-      message: `Thank you, ${newSub.name}! You are now subscribed. You will receive an email notification whenever Joannie & Barton publish a new journal entry.`,
-      subscriber: newSub,
-      subscribers
-    });
-  };
-
-  app.post('/api/subscribe', handleSubscribeRequest);
-  app.post('/api/subscribers', handleSubscribeRequest);
-
-  // Unsubscribe endpoint
-  app.post('/api/unsubscribe', (req: Request, res: Response) => {
-    const { email } = req.body;
-    if (!email || typeof email !== 'string') {
-      res.status(400).json({ error: 'Email is required to unsubscribe.' });
-      return;
-    }
-    const cleanEmail = email.trim().toLowerCase();
-    subscribers = subscribers.filter(s => s.email.toLowerCase() !== cleanEmail);
-    saveDataStore();
-    console.log(`[Unsubscribed] Removed ${cleanEmail} from subscriber list.`);
-    res.json({ success: true, message: 'You have been successfully unsubscribed.' });
-  });
-
-  app.get('/api/unsubscribe', (req: Request, res: Response) => {
-    const email = (req.query.email as string || '').trim().toLowerCase();
-    if (email) {
-      subscribers = subscribers.filter(s => s.email.toLowerCase() !== email);
-      saveDataStore();
-      console.log(`[Unsubscribed via GET link] Removed ${email}`);
-    }
-    res.send(`<!DOCTYPE html><html><head><meta charset="utf-8"><title>Unsubscribed</title></head><body style="font-family: -apple-system, sans-serif; text-align: center; padding: 60px 20px; background: #faf8f5; color: #1c1917;"><h2>You have been unsubscribed</h2><p>You will no longer receive journal notifications from Mousse on the Loose.</p><br><a href="/" style="display:inline-block; padding: 10px 20px; background: #1e3a8a; color: #fff; text-decoration: none; border-radius: 8px;">Return to Expedition Site</a></body></html>`);
-  });
-
-  // Re-send Welcome Email to specific subscriber
-  app.post('/api/subscribers/:id/send-welcome', async (req: Request, res: Response) => {
-    try {
-      if (!isUserAdmin(req)) {
-        res.status(403).json({ success: false, error: 'Administrator authorization required.' });
-        return;
-      }
-
-      const { id } = req.params;
-      const { email: bodyEmail, name: bodyName } = req.body || {};
-      let sub = subscribers.find(s => s.id === id);
-      if (!sub && bodyEmail) {
-        sub = subscribers.find(s => s.email.toLowerCase() === String(bodyEmail).toLowerCase().trim());
-      }
-
-      // If subscriber not found in memory but email is provided, construct subscriber record on the fly
-      if (!sub) {
-        if (bodyEmail) {
-          sub = {
-            id: id || `sub-${Date.now()}`,
-            email: String(bodyEmail).toLowerCase().trim(),
-            name: bodyName || String(bodyEmail).split('@')[0],
-            relationshipNote: 'Subscriber',
-            status: 'approved',
-            subscribedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-            approvedAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' })
-          };
-          subscribers.push(sub);
-          saveDataStore();
-        } else {
-          res.status(404).json({ success: false, error: 'Subscriber not found.' });
-          return;
-        }
-      }
-
-      const welcome = generateWelcomeEmailHtml({
-        subscriberName: sub.name,
-        subscriberEmail: sub.email
-      });
-
-      const result = await dispatchEmail({
-        to: sub.email,
-        subject: welcome.defaultSubject,
-        html: welcome.html,
-        text: welcome.plainText
-      });
-
-      res.json({ 
-        success: true, 
-        message: `Welcome email dispatched to ${sub.name} (${sub.email}). Mode: ${result.mode}`,
-        emailDetails: {
-          to: sub.email,
-          subject: welcome.defaultSubject,
-          text: welcome.plainText
-        }
-      });
-    } catch (err: any) {
-      console.error('[Send Welcome Endpoint Error]:', err);
-      res.status(500).json({ success: false, error: err.message || 'Failed to dispatch welcome email' });
-    }
-  });
-
-  // Admin Approve Subscriber (Joannie or Barton)
-  app.post('/api/subscribers/:id/approve', async (req: Request, res: Response) => {
-    if (!isUserAdmin(req)) {
-      res.status(403).json({ error: 'Administrator authorization required (Joannie or Barton).' });
-      return;
-    }
-
-    const { id } = req.params;
-    const sub = subscribers.find(s => s.id === id);
-    if (!sub) {
-      res.status(404).json({ error: 'Subscriber not found.' });
-      return;
-    }
-
-    sub.status = 'approved';
-    sub.approvedAt = new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' });
-
-    // Send confirmation welcome email
-    const welcome = generateWelcomeEmailHtml({
-      subscriberName: sub.name,
-      subscriberEmail: sub.email
-    });
-    await dispatchEmail({
-      to: sub.email,
-      subject: welcome.defaultSubject,
-      html: welcome.html,
-      text: welcome.plainText
-    });
-
-    saveDataStore();
-    const effectiveUser = getEffectiveUser(req);
-    console.log(`[Admin Approved] ${sub.name} (${sub.email}) approved by ${effectiveUser.name}`);
-    res.json({ success: true, subscriber: sub, subscribers, count: subscribers.length });
-  });
-
-  // Admin Delete / Reject Subscriber
-  app.delete('/api/subscribers/:id', (req: Request, res: Response) => {
-    if (!isUserAdmin(req)) {
-      res.status(403).json({ error: 'Administrator authorization required (Joannie or Barton).' });
-      return;
-    }
-
-    const { id } = req.params;
-    const initialCount = subscribers.length;
-    subscribers = subscribers.filter(s => s.id !== id);
-    saveDataStore();
-    console.log(`[Subscriber Deleted] Removed subscriber ${id} (Before: ${initialCount}, Now: ${subscribers.length})`);
-    res.json({ success: true, message: 'Subscriber removed.', subscribers, count: subscribers.length });
-  });
-
   // --- FAMILY & PROFILE MANAGEMENT API (Strictly Administrator Only to Edit) ---
   app.get('/api/family', (req: Request, res: Response) => {
     res.json(familyMembers);
@@ -1886,129 +1538,6 @@ Return ONLY a valid JSON object matching this schema:
       message: `Test email successfully dispatched to ${toEmail}. Mode: ${result.mode}`,
       toEmail,
       subject: testSubject
-    });
-  });
-
-  // Broadcast Email to All Approved Subscribers
-  app.post('/api/email/broadcast', async (req: Request, res: Response) => {
-    if (!isUserAdmin(req)) {
-      res.status(403).json({ error: 'Administrator authorization required to broadcast to subscribers.' });
-      return;
-    }
-
-    const effectiveUser = getEffectiveUser(req);
-    const { logId, logTitle, subject, customNote } = req.body;
-    const approved = subscribers.filter(s => s.status === 'approved');
-
-    if (approved.length === 0) {
-      res.json({
-        success: true,
-        broadcastLog: null,
-        recipientCount: 0,
-        message: 'No registered subscribers yet. When readers subscribe with their email on the website, they will automatically receive journal notifications.'
-      });
-      return;
-    }
-
-    const targetLog = travelLogs.find(l => l.id === logId) || travelLogs[0];
-    const emailSubject = subject || `🌲 New Overland Chapter: ${logTitle || targetLog?.title || 'Expedition Dispatch'}`;
-
-    const generated = generateJournalEmailHtml({
-      log: targetLog || {},
-      liveLocation,
-      customSubject: emailSubject,
-      customNote,
-      senderName: effectiveUser.name
-    });
-
-    const recipientEmails = approved.map(s => s.email);
-
-    // Dispatch to all subscribers
-    const dispatchResult = await dispatchEmail({
-      to: recipientEmails,
-      subject: emailSubject,
-      html: generated.html,
-      text: generated.plainText
-    });
-
-    const broadcastLog: EmailBroadcastLog = {
-      id: `broadcast-${Date.now()}`,
-      logId,
-      logTitle: logTitle || targetLog?.title || 'Overland Expedition Update',
-      subject: emailSubject,
-      sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      recipientCount: approved.length,
-      senderAdmin: effectiveUser.name,
-      customNote: customNote || undefined,
-      status: 'delivered'
-    };
-
-    broadcastLogs.unshift(broadcastLog);
-    saveDataStore();
-
-    console.log(`[Email Broadcast Completed] Subject: "${broadcastLog.subject}" to ${approved.length} subscribers. Mode: ${dispatchResult.mode}`);
-
-    res.json({
-      success: true,
-      broadcastLog,
-      recipientCount: approved.length,
-      message: `Notification successfully broadcast to ${approved.length} approved subscribers.`
-    });
-  });
-
-  // --- TEST EMAIL ENDPOINT (Admin verification) ---
-  app.post('/api/test-email', async (req: Request, res: Response) => {
-    const toEmail = req.body?.toEmail || 'joannieneveu@gmail.com';
-    const approved = subscribers.filter(s => s.status === 'approved');
-
-    console.log(`[Test Email Triggered] Dispatching test notification to ${toEmail}`);
-
-    const subject = `[Mousse on the Loose Test] Expedition Broadcast Verification`;
-    const plainText = `Bonjour Joannie,\n\nThis is a test notification from Mousse on the Loose (35,000 km Americas Sabbatical Expedition).\n\nSubscribers currently registered: ${subscribers.length}\nApproved subscribers: ${approved.length}\nLatest location: ${liveLocation.lastCity || 'En route'}\n\nYour subscriber broadcast system is connected and functioning!`;
-    const html = `
-      <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 24px; background: #FAF8F5; border-radius: 16px; border: 1px solid #E5E0D8;">
-        <h2 style="color: #0F172A; margin-bottom: 8px;">Mousse on the Loose • Expedition Test Email</h2>
-        <p style="color: #047857; font-weight: bold; margin-top: 0;">Expedition Subscriber Notification System Verification</p>
-        <p style="color: #44403C; line-height: 1.6;">Bonjour Dr. Joannie Neveu,</p>
-        <p style="color: #44403C; line-height: 1.6;">Your subscriber broadcast system is live and verified! Here is the current status of your expedition subscriber community:</p>
-        <ul style="color: #44403C; line-height: 1.8;">
-          <li><strong>Total Subscribers:</strong> ${subscribers.length}</li>
-          <li><strong>Approved Active Followers:</strong> ${approved.length}</li>
-          <li><strong>Current Rig Location:</strong> ${liveLocation.lastCity || 'Lethbridge, AB'}</li>
-          <li><strong>Odometer Reading:</strong> 3,820 km</li>
-        </ul>
-        <p style="color: #78716C; font-size: 13px; margin-top: 24px; border-top: 1px solid #E5E0D8; padding-top: 16px;">
-          Sent via Mousse on the Loose Admin Suite for Joannie Neveu & Barton
-        </p>
-      </div>
-    `;
-
-    const dispatchResult = await dispatchEmail({
-      to: [toEmail],
-      subject,
-      html,
-      text: plainText
-    });
-
-    const broadcastLog: EmailBroadcastLog = {
-      id: `test-email-${Date.now()}`,
-      logId: 'test-ping',
-      logTitle: 'Expedition Broadcast Test to Joannie',
-      subject,
-      recipientCount: 1,
-      sentAt: new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric', hour: '2-digit', minute: '2-digit' }),
-      senderAdmin: 'Dr. Joannie Neveu',
-      customNote: 'Direct verification ping sent to administrator email',
-      status: 'delivered'
-    };
-
-    broadcastLogs.unshift(broadcastLog);
-    saveDataStore();
-
-    res.json({
-      success: true,
-      mode: dispatchResult.mode,
-      message: `Test email dispatched to ${toEmail} (Mode: ${dispatchResult.mode})! ${subscribers.length} total subscribers currently registered.`
     });
   });
 

@@ -4,7 +4,6 @@ import {
   LiveLocation, 
   TravelLog, 
   MediaItem, 
-  Subscriber,
   UserProfile,
   RigPhoto
 } from './types';
@@ -13,7 +12,6 @@ import {
   INITIAL_LIVE_LOCATION, 
   INITIAL_TRAVEL_LOGS, 
   INITIAL_MEDIA, 
-  INITIAL_SUBSCRIBERS,
   PRESET_USERS,
   INITIAL_RIG_PHOTOS
 } from './data/initialData';
@@ -25,8 +23,6 @@ import { TravelLogDetail } from './components/TravelLogDetail';
 import { MediaGallery } from './components/MediaGallery';
 import { RigSpecs } from './components/RigSpecs';
 import { LocationPinModal } from './components/LocationPinModal';
-import { SubscribeModal } from './components/SubscribeModal';
-import { SubscriberAdminModal } from './components/SubscriberAdminModal';
 import { AuthModal } from './components/AuthModal';
 import { ChangePasswordModal } from './components/ChangePasswordModal';
 import { GlobalDropzoneOverlay } from './components/GlobalDropzoneOverlay';
@@ -56,13 +52,28 @@ function AppContent() {
     try {
       const saved = localStorage.getItem('mousse_waypoints');
       if (saved) {
-        const parsed = JSON.parse(saved);
+        let parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.map((wp: Waypoint) => 
+          parsed = parsed.map((wp: Waypoint) => 
             wp.id === 'tuktoyaktuk' && (wp.distanceFromStartKm === 3850 || !wp.distanceFromStartKm)
               ? { ...wp, distanceFromStartKm: 4110 }
               : wp
           );
+          // Ensure Vancouver & London flight waypoints exist
+          const hasVancouver = parsed.some((w: Waypoint) => w.id === 'vancouver_flight');
+          if (!hasVancouver) {
+            const vWp = INITIAL_WAYPOINTS.find(w => w.id === 'vancouver_flight');
+            const lWp = INITIAL_WAYPOINTS.find(w => w.id === 'london_flight');
+            if (vWp && lWp) {
+              const whitehorseIdx = parsed.findIndex((w: Waypoint) => w.id === 'whitehorse');
+              if (whitehorseIdx !== -1) {
+                parsed.splice(whitehorseIdx + 1, 0, vWp, lWp);
+              } else {
+                parsed.push(vWp, lWp);
+              }
+            }
+          }
+          return parsed;
         }
       }
     } catch {}
@@ -71,7 +82,12 @@ function AppContent() {
   const [liveLocation, setLiveLocation] = useState<LiveLocation>(() => {
     try {
       const saved = localStorage.getItem('mousse_live_location');
-      if (saved) return JSON.parse(saved);
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed && typeof parsed.lat === 'number') {
+          return parsed;
+        }
+      }
     } catch {}
     return INITIAL_LIVE_LOCATION;
   });
@@ -101,6 +117,11 @@ function AppContent() {
               return {
                 ...log,
                 coverImage: '/5 Fingers.jpg',
+                metrics: {
+                  ...log.metrics,
+                  kmTraveled: 5500,
+                  odometerKm: 5500
+                },
                 gallery: Array.isArray(log.gallery) && log.gallery.some(g => g.url === '/5 Fingers.jpg')
                   ? log.gallery
                   : [{ url: '/5 Fingers.jpg', caption: 'Five Finger Rapids (5 Fingers) on the Yukon River', type: 'image' }, ...(log.gallery || [])]
@@ -142,13 +163,6 @@ function AppContent() {
     } catch {}
     return INITIAL_RIG_PHOTOS;
   });
-  const [subscribers, setSubscribers] = useState<Subscriber[]>(() => {
-    try {
-      const saved = localStorage.getItem('mousse_subscribers');
-      if (saved) return JSON.parse(saved);
-    } catch {}
-    return INITIAL_SUBSCRIBERS;
-  });
   // User Authentication State: Strict requirement - opening page is AUTOMATICALLY GUEST!
   // Only when an administrator logs in will currentUser be set to Joannie or Barton.
   const [currentUser, setCurrentUser] = useState<UserProfile | null>(() => {
@@ -166,8 +180,6 @@ function AppContent() {
   });
   
   const [selectedLog, setSelectedLog] = useState<TravelLog | null>(null);
-  const [isSubscribeModalOpen, setIsSubscribeModalOpen] = useState<boolean>(false);
-  const [isAdminSubscribersOpen, setIsAdminSubscribersOpen] = useState<boolean>(false);
   const [isAuthModalOpen, setIsAuthModalOpen] = useState<boolean>(false);
   const [isChangePasswordOpen, setIsChangePasswordOpen] = useState<boolean>(false);
   const [isPinModalOpen, setIsPinModalOpen] = useState<boolean>(false);
@@ -178,12 +190,6 @@ function AppContent() {
       localStorage.setItem('mousse_travel_logs', JSON.stringify(travelLogs));
     } catch {}
   }, [travelLogs]);
-
-  useEffect(() => {
-    try {
-      localStorage.setItem('mousse_subscribers', JSON.stringify(subscribers));
-    } catch {}
-  }, [subscribers]);
 
   useEffect(() => {
     try {
@@ -338,11 +344,24 @@ function AppContent() {
       .then(data => {
         if (data.liveLocation) setLiveLocation(data.liveLocation);
         if (Array.isArray(data.waypoints)) {
-          setWaypoints(data.waypoints.map((wp: Waypoint) =>
+          let loadedWps = data.waypoints.map((wp: Waypoint) =>
             wp.id === 'tuktoyaktuk' && wp.distanceFromStartKm !== 4110
               ? { ...wp, distanceFromStartKm: 4110 }
               : wp
-          ));
+          );
+          if (!loadedWps.some((w: Waypoint) => w.id === 'vancouver_flight')) {
+            const vWp = INITIAL_WAYPOINTS.find(w => w.id === 'vancouver_flight');
+            const lWp = INITIAL_WAYPOINTS.find(w => w.id === 'london_flight');
+            if (vWp && lWp) {
+              const whitehorseIdx = loadedWps.findIndex((w: Waypoint) => w.id === 'whitehorse');
+              if (whitehorseIdx !== -1) {
+                loadedWps.splice(whitehorseIdx + 1, 0, vWp, lWp);
+              } else {
+                loadedWps.push(vWp, lWp);
+              }
+            }
+          }
+          setWaypoints(loadedWps);
         }
       })
       .catch(err => console.log('Using initial location data:', err));
@@ -370,7 +389,15 @@ function AppContent() {
             ) {
               return {
                 ...log,
+                locationName: 'Whitehorse, Yukon',
+                coordinates: { lat: 60.7212, lng: -135.0568 },
                 coverImage: '/5 Fingers.jpg',
+                metrics: {
+                  ...log.metrics,
+                  elevationM: 670,
+                  kmTraveled: 5500,
+                  odometerKm: 5500
+                },
                 gallery: Array.isArray(log.gallery) && log.gallery.some(g => g.url === '/5 Fingers.jpg')
                   ? log.gallery
                   : [{ url: '/5 Fingers.jpg', caption: 'Five Finger Rapids (5 Fingers) on the Yukon River', type: 'image' }, ...(log.gallery || [])]
@@ -384,7 +411,15 @@ function AppContent() {
             if (prev.id === 'log-4-small-european-detour' || prev.title?.toLowerCase().includes('european') || prev.slug?.toLowerCase().includes('european')) {
               return {
                 ...prev,
+                locationName: 'Whitehorse, Yukon',
+                coordinates: { lat: 60.7212, lng: -135.0568 },
                 coverImage: '/5 Fingers.jpg',
+                metrics: {
+                  ...prev.metrics,
+                  elevationM: 670,
+                  kmTraveled: 5500,
+                  odometerKm: 5500
+                },
                 gallery: Array.isArray(prev.gallery) && prev.gallery.some(g => g.url === '/5 Fingers.jpg')
                   ? prev.gallery
                   : [{ url: '/5 Fingers.jpg', caption: 'Five Finger Rapids (5 Fingers) on the Yukon River', type: 'image' }, ...(prev.gallery || [])]
@@ -421,17 +456,6 @@ function AppContent() {
         }
       })
       .catch(err => console.log('Using initial rig photos:', err));
-
-    fetch('/api/subscribers')
-      .then(res => res.json())
-      .then(data => {
-        if (Array.isArray(data)) {
-          setSubscribers(data);
-        } else if (Array.isArray(data?.subscribers)) {
-          setSubscribers(data.subscribers);
-        }
-      })
-      .catch(err => console.log('Using initial subscribers:', err));
   }, []);
 
   // Update live location
@@ -743,81 +767,6 @@ function AppContent() {
     setMediaItems(prev => prev.filter(m => m.id !== mediaId));
   };
 
-  // Subscribe to updates (submits pending request)
-  const handleSubscribe = async (sub: { email: string; name: string; relationshipNote?: string }) => {
-    try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(sub)
-      });
-      const data = await res.json();
-      if (Array.isArray(data.subscribers)) {
-        setSubscribers(data.subscribers);
-      } else if (data.subscriber) {
-        setSubscribers(prev => [data.subscriber, ...prev]);
-      }
-      return { 
-        success: true, 
-        message: data.message || 'You are subscribed! You will receive an email notification whenever Joannie & Barton publish a new journal entry.' 
-      };
-    } catch (err) {
-      const localSub = {
-        id: `sub-${Date.now()}`,
-        email: sub.email,
-        name: sub.name,
-        relationshipNote: sub.relationshipNote,
-        subscribedAt: new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        status: 'approved' as const
-      };
-      setSubscribers(prev => [localSub, ...prev]);
-      return { 
-        success: true, 
-        message: 'You are subscribed! You will receive an email notification whenever Joannie & Barton publish a new journal entry.' 
-      };
-    }
-  };
-
-  // Admin: Approve subscriber
-  const handleApproveSubscriber = async (id: string) => {
-    try {
-      const res = await fetch(`/api/subscribers/${id}/approve`, {
-        method: 'POST',
-        headers: getAuthHeaders()
-      });
-      const data = await res.json();
-      if (Array.isArray(data.subscribers)) {
-        setSubscribers(data.subscribers);
-        return;
-      }
-      if (data.success && data.subscriber) {
-        setSubscribers(prev => prev.map(s => s.id === id ? data.subscriber : s));
-        return;
-      }
-    } catch (err) {
-      console.error('Failed to approve subscriber on server:', err);
-    }
-    setSubscribers(prev => prev.map(s => s.id === id ? { ...s, status: 'approved' } : s));
-  };
-
-  // Admin: Delete subscriber
-  const handleDeleteSubscriber = async (id: string) => {
-    try {
-      const res = await fetch(`/api/subscribers/${id}`, {
-        method: 'DELETE',
-        headers: getAuthHeaders()
-      });
-      const data = await res.json();
-      if (Array.isArray(data.subscribers)) {
-        setSubscribers(data.subscribers);
-        return;
-      }
-    } catch (err) {
-      console.error('Failed to delete subscriber on server:', err);
-    }
-    setSubscribers(prev => prev.filter(s => s.id !== id));
-  };
-
   // Toggle Publish / Draft status of a log
   const handleTogglePublishLog = async (logId: string) => {
     try {
@@ -951,8 +900,6 @@ function AppContent() {
     }
   };
 
-  const pendingSubscribersCount = subscribers.filter(s => s.status === 'pending').length;
-
   return (
     <div className="min-h-screen bg-[#F4F1EA] text-stone-800 flex flex-col selection:bg-blue-900 selection:text-white font-serif antialiased">
       
@@ -965,12 +912,8 @@ function AppContent() {
         }}
         liveLocation={liveLocation}
         currentUser={currentUser}
-        pendingSubscribersCount={pendingSubscribersCount}
-        totalSubscribersCount={subscribers.length}
         onOpenAuthModal={() => setIsAuthModalOpen(true)}
         onOpenPinModal={() => setIsPinModalOpen(true)}
-        onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
-        onOpenAdminSubscribersModal={() => setIsAdminSubscribersOpen(true)}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
       />
 
@@ -991,10 +934,7 @@ function AppContent() {
             liveLocation={liveLocation}
             recentLogs={travelLogs}
             waypoints={waypoints}
-            onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
             isAdmin={Boolean(currentUser?.isAdmin)}
-            onOpenAdminSubscribersModal={() => setIsAdminSubscribersOpen(true)}
-            subscribersCount={subscribers.length}
             onCreateLog={() => {
               setActiveTab('journal');
               setSelectedLog(null);
@@ -1032,6 +972,13 @@ function AppContent() {
                 });
               }
             }}
+            onOpenLog={(logId) => {
+              const log = travelLogs.find(l => l.id === logId || l.slug === logId || l.waypointId === logId);
+              if (log) {
+                setSelectedLog(log);
+                setActiveTab('journal');
+              }
+            }}
           />
         )}
 
@@ -1043,7 +990,6 @@ function AppContent() {
               currentUser={currentUser}
               onBack={() => setSelectedLog(null)}
               onOpenAuthModal={() => setIsAuthModalOpen(true)}
-              onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
               onViewLocationOnMap={handleViewLocationOnMap}
               onTogglePublish={handleTogglePublishLog}
               onDeleteLog={handleDeleteLog}
@@ -1051,7 +997,6 @@ function AppContent() {
               onUploadMedia={handleUploadMedia}
               onUploadBatchMedia={handleUploadBatchMedia}
               liveLocation={liveLocation}
-              subscribers={subscribers}
               onOpenMediaGallery={() => {
                 setActiveTab('gallery');
                 window.scrollTo({ top: 0, behavior: 'smooth' });
@@ -1069,7 +1014,6 @@ function AppContent() {
               currentUser={currentUser}
               liveLocation={liveLocation}
               isAdmin={currentUser?.isAdmin}
-              onOpenSubscribeModal={() => setIsSubscribeModalOpen(true)}
             />
           )
         )}
@@ -1181,14 +1125,6 @@ function AppContent() {
                 <Instagram className="w-3.5 h-3.5" />
                 <span>@moussethetruck</span>
               </a>
-
-              <button
-                onClick={() => setIsSubscribeModalOpen(true)}
-                className="bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 font-medium px-3.5 py-2 rounded-xl text-xs flex items-center gap-1.5 transition"
-              >
-                <Mail className="w-3.5 h-3.5 text-blue-400" />
-                <span>{language === 'fr' ? 'Recevoir le journal' : 'Email Journal'}</span>
-              </button>
             </div>
           </div>
 
@@ -1202,37 +1138,16 @@ function AppContent() {
 
       {/* --- MODALS --- */}
       
-      {/* 1. Email Subscription Modal */}
-      <SubscribeModal
-        isOpen={isSubscribeModalOpen}
-        onClose={() => setIsSubscribeModalOpen(false)}
-        onSubscribe={handleSubscribe}
-        approvedSubscribersCount={subscribers.filter(s => s.status === 'approved').length}
-      />
-
-      {/* 2. Admin: Manage Subscribers Modal */}
-      <SubscriberAdminModal
-        isOpen={isAdminSubscribersOpen}
-        onClose={() => setIsAdminSubscribersOpen(false)}
-        subscribers={subscribers}
-        onApproveSubscriber={handleApproveSubscriber}
-        onDeleteSubscriber={handleDeleteSubscriber}
-        onAddSubscriber={(newSub) => setSubscribers(prev => [newSub, ...prev])}
-        adminName={currentUser?.name || 'Joannie & Barton'}
-      />
-
-      {/* 3. Auth Persona Switcher Modal */}
+      {/* 1. Auth Persona Switcher Modal */}
       <AuthModal
         isOpen={isAuthModalOpen}
         onClose={() => setIsAuthModalOpen(false)}
         currentUser={currentUser}
         onUserChange={(user) => setCurrentUser(user)}
         onOpenChangePassword={() => setIsChangePasswordOpen(true)}
-        onOpenAdminSubscribersModal={() => setIsAdminSubscribersOpen(true)}
-        subscribersCount={subscribers.length}
       />
 
-      {/* 3b. Admin Change Password Modal */}
+      {/* 2. Admin Change Password Modal */}
       <ChangePasswordModal
         isOpen={isChangePasswordOpen}
         onClose={() => setIsChangePasswordOpen(false)}

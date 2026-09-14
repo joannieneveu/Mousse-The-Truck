@@ -41,9 +41,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   onClose,
   currentUser,
   onUserChange,
-  onOpenChangePassword,
-  onOpenAdminSubscribersModal,
-  subscribersCount = 0
+  onOpenChangePassword
 }) => {
   const [activeTab, setActiveTab] = useState<'admin' | 'guest'>('admin');
   const [selectedAdmin, setSelectedAdmin] = useState<UserProfile>(ADMIN_USERS[0]);
@@ -58,7 +56,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
   // Guest login state
   const [email, setEmail] = useState('');
   const [name, setName] = useState('');
-  const [subscribeToUpdates, setSubscribeToUpdates] = useState<boolean>(true);
   
   // Status states
   const [isLoading, setIsLoading] = useState(false);
@@ -281,8 +278,7 @@ export const AuthModal: React.FC<AuthModalProps> = ({
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ 
             email: email.trim(), 
-            name: name.trim(), 
-            subscribeToEmails: subscribeToUpdates 
+            name: name.trim()
           })
         });
         const data = await res.json();
@@ -306,29 +302,8 @@ export const AuthModal: React.FC<AuthModalProps> = ({
         };
       }
 
-      // Also ensure subscription is registered if checked
-      if (subscribeToUpdates && email.trim()) {
-        try {
-          await fetch('/api/subscribe', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              email: email.trim(),
-              name: name.trim(),
-              relationshipNote: 'Account setup subscriber'
-            })
-          });
-        } catch (e) {
-          // ignore
-        }
-      }
-
       onUserChange(loggedInUser);
-      setSuccessMsg(
-        subscribeToUpdates 
-          ? `Welcome, ${loggedInUser.name}! You are logged in and subscribed for email alerts.`
-          : `Welcome, ${loggedInUser.name}! You are now logged in to leave comments.`
-      );
+      setSuccessMsg(`Welcome, ${loggedInUser.name}! You are now logged in.`);
       setTimeout(() => {
         onClose();
       }, 700);
@@ -408,21 +383,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2">
-              {currentUser.isAdmin && onOpenAdminSubscribersModal && (
-                <button
-                  type="button"
-                  id="admin-subscribers-modal-btn"
-                  onClick={() => {
-                    onClose();
-                    onOpenAdminSubscribersModal();
-                  }}
-                  className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-slate-900 hover:bg-slate-800 text-white text-xs font-semibold shadow-xs transition"
-                  title="Manage Subscribers & Review List"
-                >
-                  <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                  <span>Subscribers ({subscribersCount || 0})</span>
-                </button>
-              )}
               {currentUser.isAdmin && onOpenChangePassword && (
                 <button
                   type="button"
@@ -750,20 +710,6 @@ export const AuthModal: React.FC<AuthModalProps> = ({
                   placeholder="name@example.com"
                   className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
                 />
-              </div>
-
-              <div className="pt-1">
-                <label className="flex items-center gap-2.5 cursor-pointer select-none">
-                  <input
-                    type="checkbox"
-                    checked={subscribeToUpdates}
-                    onChange={(e) => setSubscribeToUpdates(e.target.checked)}
-                    className="w-4 h-4 rounded border-stone-300 text-blue-900 focus:ring-blue-900"
-                  />
-                  <span className="text-stone-700">
-                    Notify me by email whenever Joannie & Barton post a new journal entry
-                  </span>
-                </label>
               </div>
 
               <div className="flex items-center justify-between pt-2 border-t border-stone-200">

@@ -24,8 +24,8 @@ interface NavbarProps {
   totalSubscribersCount?: number;
   onOpenAuthModal: () => void;
   onOpenPinModal: () => void;
-  onOpenSubscribeModal: () => void;
-  onOpenAdminSubscribersModal: () => void;
+  onOpenSubscribeModal?: () => void;
+  onOpenAdminSubscribersModal?: () => void;
   onOpenChangePassword?: () => void;
 }
 
@@ -34,12 +34,8 @@ export const Navbar: React.FC<NavbarProps> = ({
   setActiveTab,
   liveLocation,
   currentUser,
-  pendingSubscribersCount = 0,
-  totalSubscribersCount = 0,
   onOpenAuthModal,
   onOpenPinModal,
-  onOpenSubscribeModal,
-  onOpenAdminSubscribersModal,
   onOpenChangePassword,
 }) => {
   const isAdmin = currentUser?.isAdmin;
@@ -193,22 +189,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               </button>
             </div>
 
-            {/* Admin: Manage Subscribers */}
-            {isAdmin && (
-              <button
-                id="admin-subscribers-btn"
-                onClick={onOpenAdminSubscribersModal}
-                className="bg-slate-900 hover:bg-slate-800 text-white px-2.5 py-1.5 sm:px-3.5 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
-                title="Manage Subscribers & Review List"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-blue-400" />
-                <span className="inline">{t('nav.subscribers') || 'Subscribers'}</span>
-                <span className="bg-blue-600 text-white text-[10px] font-bold px-1.5 py-0.2 rounded-full">
-                  {totalSubscribersCount > 0 ? totalSubscribersCount : (pendingSubscribersCount > 0 ? pendingSubscribersCount : 0)}
-                </span>
-              </button>
-            )}
-
             {/* Instagram Follow Button */}
             <a
               href="https://www.instagram.com/moussethetruck/"
@@ -220,16 +200,6 @@ export const Navbar: React.FC<NavbarProps> = ({
               <Instagram className="w-3.5 h-3.5 text-orange-700" />
               <span className="hidden md:inline">Instagram</span>
             </a>
-
-            {/* Subscribe Button */}
-            <button
-              id="subscribe-nav-btn"
-              onClick={onOpenSubscribeModal}
-              className="bg-blue-900 hover:bg-blue-950 text-white px-3 py-1.5 sm:px-4 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
-            >
-              <Mail className="w-3.5 h-3.5" />
-              <span>{t('nav.subscribe')}</span>
-            </button>
 
             {/* Log In / User Button */}
             {!currentUser?.isAdmin && (

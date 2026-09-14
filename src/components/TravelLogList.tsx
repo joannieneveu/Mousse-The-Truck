@@ -48,8 +48,7 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
   onDeleteLog,
   currentUser,
   liveLocation,
-  isAdmin: propAdmin,
-  onOpenSubscribeModal
+  isAdmin: propAdmin
 }) => {
   const isUserAdmin = Boolean(currentUser?.isAdmin);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
@@ -57,43 +56,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
   const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
   const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
   const [editingLog, setEditingLog] = useState<TravelLog | null>(null);
-
-  // Inline subscription state
-  const [inlineEmail, setInlineEmail] = useState<string>('');
-  const [isSubmittingSub, setIsSubmittingSub] = useState<boolean>(false);
-  const [subFeedback, setSubFeedback] = useState<{ type: 'success' | 'error'; text: string } | null>(null);
-
-  const handleInlineSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inlineEmail.trim() || !inlineEmail.includes('@')) {
-      setSubFeedback({ type: 'error', text: 'Please enter a valid email address.' });
-      return;
-    }
-
-    setIsSubmittingSub(true);
-    setSubFeedback(null);
-    try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inlineEmail.trim() })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setSubFeedback({ 
-          type: 'success', 
-          text: data.message || 'You are subscribed! You will receive an email whenever a new journal entry is published.' 
-        });
-        setInlineEmail('');
-      } else {
-        setSubFeedback({ type: 'error', text: data.error || 'Subscription failed. Please try again.' });
-      }
-    } catch {
-      setSubFeedback({ type: 'error', text: 'Network connection error. Please try again.' });
-    } finally {
-      setIsSubmittingSub(false);
-    }
-  };
 
   // Filter logs: public users only see published entries, admin sees all
   const visibleLogs = logs.filter(log => {
@@ -144,17 +106,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
         </div>
 
         <div className="flex items-center gap-3">
-          {onOpenSubscribeModal && (
-            <button
-              id="subscribe-updates-btn"
-              onClick={onOpenSubscribeModal}
-              className="bg-white hover:bg-stone-50 text-stone-800 font-medium px-4 py-2.5 rounded-2xl text-xs flex items-center gap-2 border border-stone-300 shadow-xs transition font-sans cursor-pointer"
-            >
-              <Mail className="w-4 h-4 text-blue-900" />
-              <span>Subscribe for Updates</span>
-            </button>
-          )}
-
           {isUserAdmin && (
             <button
               id="write-new-log-btn"
@@ -486,54 +437,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
             })}
           </div>
         )}
-      </div>
-
-      {/* Inline Email Subscription Section */}
-      <div id="journal-list-subscribe-banner" className="bg-[#FAF8F5] border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs font-sans">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-1.5 max-w-xl">
-            <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 uppercase tracking-wider">
-              <Mail className="w-4 h-4 text-blue-900" />
-              <span>Direct Expedition Dispatches</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
-              Get notified whenever a new journal entry is posted
-            </h3>
-            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-serif">
-              Enter your email address to receive immediate notifications as Joannie & Barton travel 35,000 km across the Americas with baby Henri in Mousse.
-            </p>
-          </div>
-
-          <div className="lg:shrink-0 w-full lg:w-auto">
-            {subFeedback?.type === 'success' ? (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-5 py-3 text-xs flex items-center gap-2 max-w-md">
-                <Check className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>{subFeedback.text}</span>
-              </div>
-            ) : (
-              <form onSubmit={handleInlineSubscribe} className="flex flex-col sm:flex-row gap-2 max-w-md w-full">
-                <input
-                  type="email"
-                  required
-                  value={inlineEmail}
-                  onChange={(e) => setInlineEmail(e.target.value)}
-                  placeholder="Enter your email address..."
-                  className="px-4 py-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 min-w-[240px]"
-                />
-                <button
-                  type="submit"
-                  disabled={isSubmittingSub}
-                  className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-60"
-                >
-                  {isSubmittingSub ? 'Subscribing...' : 'Subscribe'}
-                </button>
-              </form>
-            )}
-            {subFeedback?.type === 'error' && (
-              <p className="text-[11px] text-rose-600 mt-1.5 font-medium">{subFeedback.text}</p>
-            )}
-          </div>
-        </div>
       </div>
 
       {/* --- WRITE / EDIT JOURNAL ENTRY MODAL --- */}

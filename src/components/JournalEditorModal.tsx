@@ -42,8 +42,6 @@ import {
 } from 'lucide-react';
 import { RichTextRenderer } from '../utils/richTextRenderer';
 import { extractPhotosFromDropEvent, extractPhotosFromFileInput, ProcessedPhoto } from '../utils/photoDropHelper';
-import { EmailPreviewModal } from './EmailPreviewModal';
-import { Subscriber } from '../types';
 
 interface JournalEditorModalProps {
   initialLog?: TravelLog | null; // If provided, we are editing; if null, creating
@@ -52,7 +50,6 @@ interface JournalEditorModalProps {
   onSave: (logData: Partial<TravelLog> & { addLocationPing?: boolean; updateLiveCity?: boolean; region?: string }) => Promise<void>;
   liveLocation?: LiveLocation;
   authorName?: string;
-  subscribers?: Subscriber[];
 }
 
 const COLOR_PALETTE = [
@@ -80,8 +77,7 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   onClose,
   onSave,
   liveLocation,
-  authorName = 'Joannie & Barton',
-  subscribers
+  authorName = 'Joannie & Barton'
 }) => {
   const isEditing = Boolean(initialLog);
   const textareaRef = useRef<HTMLTextAreaElement>(null);
@@ -155,30 +151,9 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const [showHighlightPicker, setShowHighlightPicker] = useState<boolean>(false);
   const [customColor, setCustomColor] = useState<string>('#1E3A8A');
 
-  // Subscriber Email Notification States
-  const [subscribersList, setSubscribersList] = useState<Subscriber[]>(subscribers || []);
-  const [showEmailPreview, setShowEmailPreview] = useState<boolean>(false);
-  const [notifySubscribersOnPublish, setNotifySubscribersOnPublish] = useState<boolean>(true);
-
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [saveError, setSaveError] = useState<string>('');
   const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
-
-  // Load subscribers if not passed as prop
-  React.useEffect(() => {
-    if (subscribers && subscribers.length > 0) {
-      setSubscribersList(subscribers);
-    } else {
-      fetch('/api/subscribers')
-        .then(res => res.json())
-        .then(data => {
-          if (Array.isArray(data.subscribers)) {
-            setSubscribersList(data.subscribers);
-          }
-        })
-        .catch(() => {});
-    }
-  }, [subscribers]);
 
   if (!isOpen) return null;
 
@@ -490,29 +465,6 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
         return;
       }
 
-      // If publishing live and notify subscribers is enabled, trigger broadcast dispatch
-      if (status === 'published' && notifySubscribersOnPublish) {
-        try {
-          const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-          const adminToken = localStorage.getItem('mousse_admin_token');
-          if (adminToken) {
-            headers['x-admin-token'] = adminToken;
-            headers['Authorization'] = `Bearer ${adminToken}`;
-          }
-          await fetch('/api/email/broadcast', {
-            method: 'POST',
-            headers,
-            body: JSON.stringify({
-              logId: initialLog?.id || `log-${Date.now()}`,
-              logTitle: title.trim(),
-              subject: `🌲 New Overland Chapter: ${title.trim()}`
-            })
-          });
-        } catch (err) {
-          console.error('Failed to trigger email broadcast:', err);
-        }
-      }
-
       onClose();
     } catch (err: any) {
       console.error(err);
@@ -586,16 +538,6 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
             </div>
 
             <div className="flex flex-wrap items-center gap-2 shrink-0">
-              <button
-                type="button"
-                onClick={() => setShowEmailPreview(true)}
-                className="px-3 py-1.5 rounded-xl text-xs font-bold bg-amber-200/80 hover:bg-amber-300 text-amber-950 border border-amber-300 flex items-center gap-1.5 shadow-xs transition"
-                title="Preview what approved subscribers will receive in their inbox"
-              >
-                <Mail className="w-3.5 h-3.5 text-amber-900" />
-                <span>Preview Subscriber Email</span>
-              </button>
-
               <div className="flex items-center gap-1 bg-white border border-amber-200 p-1 rounded-xl">
                 <button
                   type="button"
@@ -1028,13 +970,20 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
                     km
                   </span>
                 </div>
-                <div className="flex items-center gap-2 mt-1.5">
+                <div className="flex flex-wrap items-center gap-1.5 mt-1.5">
                   <button
                     type="button"
                     onClick={() => setKmTraveled('4110')}
                     className="text-[10px] text-blue-900 hover:text-blue-950 font-medium underline font-sans bg-blue-50 px-1.5 py-0.5 rounded border border-blue-200"
                   >
                     Quick: Tuktoyaktuk (4,110 km)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setKmTraveled('5500')}
+                    className="text-[10px] text-emerald-900 hover:text-emerald-950 font-medium underline font-sans bg-emerald-50 px-1.5 py-0.5 rounded border border-emerald-200"
+                  >
+                    Quick: Whitehorse (5,500 km)
                   </button>
                 </div>
               </div>
@@ -1548,27 +1497,8 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons & Notification Setting */}
-          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 pt-4 border-t border-stone-200 shrink-0">
-            {status === 'published' ? (
-              <label className="flex items-center gap-2 cursor-pointer text-stone-700 select-none">
-                <input
-                  type="checkbox"
-                  checked={notifySubscribersOnPublish}
-                  onChange={(e) => setNotifySubscribersOnPublish(e.target.checked)}
-                  className="rounded border-stone-300 text-blue-900 focus:ring-blue-900 w-4 h-4"
-                />
-                <span className="text-xs font-semibold flex items-center gap-1 text-stone-800">
-                  <Mail className="w-3.5 h-3.5 text-blue-900" />
-                  <span>Notify {subscribersList.filter(s => s.status === 'approved').length} approved subscribers by email</span>
-                </span>
-              </label>
-            ) : (
-              <div className="text-[11px] text-stone-500 italic">
-                Draft mode: No subscriber email will be broadcast until published live.
-              </div>
-            )}
-
+          {/* Action Buttons */}
+          <div className="flex flex-col sm:flex-row items-center justify-end gap-3 pt-4 border-t border-stone-200 shrink-0">
             {saveError && (
               <div className="w-full text-xs font-semibold text-rose-700 bg-rose-50 border border-rose-200 px-3.5 py-2 rounded-xl">
                 ⚠️ {saveError}
@@ -1606,30 +1536,6 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
         </form>
 
       </div>
-
-      {/* --- LIVE SUBSCRIBER EMAIL PREVIEW MODAL --- */}
-      {showEmailPreview && (
-        <EmailPreviewModal
-          isOpen={showEmailPreview}
-          onClose={() => setShowEmailPreview(false)}
-          logData={{
-            title: title || 'Untitled Expedition Dispatch',
-            date: date || new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric', year: 'numeric' }),
-            locationName: locationName || 'Overland Route',
-            country: country || 'North America',
-            category,
-            content: content || 'Draft journal entry content...',
-            coverImage: coverImage || '/hot spring.jpeg',
-            gallery,
-            henriHighlight: henriHighlight || undefined,
-            mbaHighlight: mbaHighlight || undefined,
-            visitorHighlight: visitorHighlight || undefined,
-            readingTime: `${Math.max(2, Math.ceil(content.split(/\s+/).length / 180))} min read`
-          }}
-          subscribers={subscribersList}
-          authorName={authorName}
-        />
-      )}
     </div>
   );
 };

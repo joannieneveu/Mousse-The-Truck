@@ -48,7 +48,6 @@ import {
 import confetti from 'canvas-confetti';
 import { RichTextRenderer } from '../utils/richTextRenderer';
 import { JournalEditorModal } from './JournalEditorModal';
-import { EmailPreviewModal } from './EmailPreviewModal';
 import { readFileAsOptimizedDataUrl } from '../utils/photoDropHelper';
 
 interface TravelLogDetailProps {
@@ -56,7 +55,6 @@ interface TravelLogDetailProps {
   currentUser: UserProfile | null;
   onBack: () => void;
   onOpenAuthModal: () => void;
-  onOpenSubscribeModal?: () => void;
   onViewLocationOnMap?: (lat: number, lng: number) => void;
   onTogglePublish?: (logId: string) => Promise<void>;
   onDeleteLog?: (logId: string) => Promise<void>;
@@ -65,7 +63,6 @@ interface TravelLogDetailProps {
   onUploadBatchMedia?: (items: Partial<MediaItem>[]) => Promise<void>;
   onOpenMediaGallery?: () => void;
   liveLocation?: any;
-  subscribers?: any[];
 }
 
 export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
@@ -73,7 +70,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   currentUser,
   onBack,
   onOpenAuthModal,
-  onOpenSubscribeModal,
   onViewLocationOnMap,
   onTogglePublish,
   onDeleteLog,
@@ -101,46 +97,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
 
-  // Inline subscription state
-  const [inlineEmail, setInlineEmail] = useState<string>('');
-  const [isSubscribing, setIsSubscribing] = useState<boolean>(false);
-  const [subscribeMessage, setSubscribeMessage] = useState<string | null>(null);
-  const [subscribeStatus, setSubscribeStatus] = useState<'idle' | 'success' | 'error'>('idle');
-
-  const handleInlineSubscribe = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!inlineEmail.trim() || !inlineEmail.includes('@')) {
-      setSubscribeStatus('error');
-      setSubscribeMessage('Please enter a valid email address.');
-      return;
-    }
-
-    setIsSubscribing(true);
-    setSubscribeStatus('idle');
-    setSubscribeMessage(null);
-    try {
-      const res = await fetch('/api/subscribe', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ email: inlineEmail.trim() })
-      });
-      const data = await res.json();
-      if (res.ok && data.success) {
-        setSubscribeStatus('success');
-        setSubscribeMessage(data.message || 'You are subscribed! You will receive an email whenever a new journal entry is published.');
-        setInlineEmail('');
-      } else {
-        setSubscribeStatus('error');
-        setSubscribeMessage(data.error || 'Failed to subscribe. Please try again.');
-      }
-    } catch {
-      setSubscribeStatus('error');
-      setSubscribeMessage('Network error. Please try again.');
-    } finally {
-      setIsSubscribing(false);
-    }
-  };
-
   // Bottom Journal Photos State
   const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState<boolean>(false);
   const [uploadPhotoUrl, setUploadPhotoUrl] = useState<string>('');
@@ -155,7 +111,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [editingPhotoIdx, setEditingPhotoIdx] = useState<number | null>(null);
   const [editingCaptionText, setEditingCaptionText] = useState<string>('');
   const [isSavingCaption, setIsSavingCaption] = useState<boolean>(false);
-  const [isEmailModalOpen, setIsEmailModalOpen] = useState<boolean>(false);
 
   // Photo comments in lightbox
   const [photoComments, setPhotoComments] = useState<CommentItem[]>([]);
@@ -678,15 +633,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                   className="hidden"
                 />
               </label>
-
-              <button
-                onClick={() => setIsEmailModalOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3 py-1.5 rounded-xl bg-amber-100 hover:bg-amber-200 text-amber-950 border border-amber-300 shadow-xs transition"
-                title="Preview and dispatch email notification to approved subscribers"
-              >
-                <Mail className="w-3.5 h-3.5 text-amber-900" />
-                <span className="hidden sm:inline">Email Subscribers</span>
-              </button>
 
               <button
                 onClick={handleStatusToggle}
@@ -1357,54 +1303,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </div>
       </div>
 
-      {/* Inline Email Subscription Section */}
-      <div id="journal-detail-subscribe-banner" className="bg-[#FAF8F5] border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-xs font-sans">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-1.5 max-w-xl">
-            <div className="flex items-center gap-2 text-xs font-semibold text-blue-900 uppercase tracking-wider">
-              <Mail className="w-4 h-4 text-blue-900" />
-              <span>Never Miss a Chapter</span>
-            </div>
-            <h3 className="text-xl sm:text-2xl font-serif font-bold text-stone-900">
-              Get notified when we post a new journal entry
-            </h3>
-            <p className="text-xs sm:text-sm text-stone-600 leading-relaxed font-serif">
-              Enter your email address to receive direct notifications as Joannie, Barton, and baby Henri journey 35,000 km across the Americas.
-            </p>
-          </div>
-
-          <div className="lg:shrink-0 w-full lg:w-auto">
-            {subscribeStatus === 'success' ? (
-              <div className="bg-emerald-50 border border-emerald-200 text-emerald-900 rounded-2xl px-5 py-3 text-xs flex items-center gap-2 max-w-md">
-                <Check className="w-4 h-4 text-emerald-700 shrink-0" />
-                <span>{subscribeMessage || "You are subscribed! You'll receive future journal entries."}</span>
-              </div>
-            ) : (
-              <form onSubmit={handleInlineSubscribe} className="flex flex-col sm:flex-row gap-2 max-w-md w-full">
-                <input
-                  type="email"
-                  required
-                  value={inlineEmail}
-                  onChange={(e) => setInlineEmail(e.target.value)}
-                  placeholder="Enter your email address..."
-                  className="px-4 py-2.5 bg-white border border-stone-300 rounded-xl text-xs text-stone-900 focus:outline-none focus:ring-2 focus:ring-blue-900/20 focus:border-blue-900 min-w-[240px]"
-                />
-                <button
-                  type="submit"
-                  disabled={isSubscribing}
-                  className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-xl text-xs shadow-xs transition flex items-center justify-center gap-2 shrink-0 cursor-pointer disabled:opacity-60"
-                >
-                  {isSubscribing ? 'Subscribing...' : 'Subscribe'}
-                </button>
-              </form>
-            )}
-            {subscribeStatus === 'error' && (
-              <p className="text-[11px] text-rose-600 mt-1.5 font-medium">{subscribeMessage}</p>
-            )}
-          </div>
-        </div>
-      </div>
-
       {/* Comments Section */}
       <section className="space-y-6 pt-6 border-t border-stone-200 font-sans">
         <div className="flex items-center justify-between">
@@ -1935,16 +1833,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
             </form>
           </div>
         </div>
-      )}
-
-      {/* --- LIVE EMAIL PREVIEW & DISPATCH MODAL --- */}
-      {isEmailModalOpen && (
-        <EmailPreviewModal
-          isOpen={isEmailModalOpen}
-          onClose={() => setIsEmailModalOpen(false)}
-          logData={log}
-          authorName={currentUser?.name || log.author}
-        />
       )}
 
       {/* --- ODOMETER / KM FROM START MODAL --- */}

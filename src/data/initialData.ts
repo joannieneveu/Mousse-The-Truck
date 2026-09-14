@@ -137,19 +137,19 @@ export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
     "title": "A small European Detour",
     "slug": "a-small-european-detour",
     "date": "September 8, 2026",
-    "locationName": "Five Finger Rapids, Yukon",
+    "locationName": "Whitehorse, Yukon",
     "country": "Canada",
     "coordinates": {
-      "lat": 62.2694,
-      "lng": -136.3508
+      "lat": 60.7212,
+      "lng": -135.0568
     },
     "author": "Dr. Joannie Neveu & Barton Thiessen",
     "readingTime": "4 min read",
     "category": "adventures_mba",
     "journeyLeg": "arctic_yukon",
     "status": "published",
-    "excerpt": "A small European detour along our journey southbound from the Arctic — taking in the spectacular panoramic bluffs at Five Finger Rapids on the Yukon River.",
-    "content": "### **Five Finger Rapids & Southbound Along the Klondike**\n\n*September 8, 2026 — Five Finger Rapids, Yukon*\n\nAfter turning south from Tuktoyaktuk and the Arctic Ocean, our journey continues down the Dempster and Klondike Highways.\n\nTaking in the panoramic views at **Five Finger Rapids** (*Tthe Zhendlät*) on the Yukon River — where four massive rocky basalt islands split the river into five distinct channels, once one of the most perilous navigation points during the Klondike Gold Rush.\n\nBaby Henri is taking in the crisp Yukon breeze and fresh mountain air, while we balance remote MBA coursework and map out our route.\n\n*(Chapter notes and full journal story in progress — stay tuned!)*",
+    "excerpt": "Arrived back in Whitehorse after reaching the Arctic Ocean — marking 5,500 km traveled on Mousse's odometer before boarding our sabbatical flight detour to London via Vancouver.",
+    "content": "### **Back in Whitehorse & Embarking on a European Detour**\n\n*September 8, 2026 — Whitehorse, Yukon*\n\nAfter driving all the way north to Tuktoyaktuk and touching the Arctic Ocean at 69° North, we turned Mousse southbound along the Dempster and Klondike Highways.\n\nAlong the way, we paused to admire the majestic views at **Five Finger Rapids** (*Tthe Zhendlät*) on the Yukon River, where four basalt pillars split the surging waters into five channels.\n\nNow safely back in **Whitehorse**, our odometer proudly reads **5,500 km** traveled! We are parked up and preparing for an extraordinary sabbatical chapter: boarding a transatlantic flight detour connecting through Vancouver and heading to London, UK for medical conferences, academic exploration, and cultural travel with baby Henri.\n\n*(Chapter notes and full journal story in progress — stay tuned!)*",
     "coverImage": "/5 Fingers.jpg",
     "gallery": [
       {
@@ -159,12 +159,12 @@ export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
       }
     ],
     "metrics": {
-      "elevationM": 540,
+      "elevationM": 670,
       "tempC": 12,
-      "kmTraveled": 4650,
-      "odometerKm": 4650,
+      "kmTraveled": 5500,
+      "odometerKm": 5500,
       "henriAge": "2.5 months",
-      "activityType": "Five Finger Rapids Scenic Bluffs & Yukon River Viewpoint"
+      "activityType": "Whitehorse Expedition Hub & European Flight Departure"
     },
     "locationInsights": {
       "population": "Five Finger Rapids Recreation Site (Klondike Highway)",
@@ -406,23 +406,23 @@ export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
 ];
 
 export const INITIAL_LIVE_LOCATION: LiveLocation = {
-  lat: 69.4454,
-  lng: -133.0342,
-  altitudeM: 5,
+  lat: 60.7212,
+  lng: -135.0568,
+  altitudeM: 670,
   speedKmh: 0,
   heading: 180,
   timestamp: new Date().toISOString(),
   accuracyM: 5.0,
   batteryPercent: 98,
   isSharing: true,
-  statusMessage: 'We reached the Arctic Ocean! Dipped our toes in the Beaufort Sea at Tuktoyaktuk after 4,110 km from Lethbridge.',
-  lastCity: 'Tuktoyaktuk, Northwest Territories (Arctic Ocean)',
-  nextMilestone: 'Dempster Highway Southbound & Pacific Northwest',
+  statusMessage: 'Back in Whitehorse after reaching the Arctic Ocean! 5,500 km milestone reached. Boarding our flight detour to London via Vancouver.',
+  lastCity: 'Whitehorse, Yukon',
+  nextMilestone: 'Flight: Whitehorse ➔ Vancouver ➔ London, UK',
   trackingMode: 'manual_checkin',
   weather: {
-    tempC: 4,
-    condition: 'Arctic Coastline Breeze & Midnight Glow',
-    icon: 'cloud'
+    tempC: 12,
+    condition: 'Crisp Yukon Breeze & Clear Skies',
+    icon: 'sun'
   }
 };
 
@@ -530,6 +530,44 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
     thumbnail: '/IMG_3785.jpeg',
     distanceFromStartKm: 4110,
     relatedLogId: 'log-3-arctic-ocean-tuktoyaktuk'
+  },
+  {
+    id: 'vancouver_flight',
+    name: 'Vancouver (Flight Connection)',
+    region: 'British Columbia',
+    country: 'Canada',
+    leg: 'arctic_yukon',
+    lat: 49.2827,
+    lng: -123.1207,
+    date: 'September 2026',
+    status: 'in_progress',
+    elevationM: 4,
+    category: 'flight_detour',
+    summary: 'European Sabbatical Detour: Connecting flight through Vancouver International Airport (YVR) en route to London, UK.',
+    henriNote: 'Henri’s first major flight connection through Vancouver!',
+    mbaNote: 'Transatlantic flight operations and remote MBA readings.',
+    thumbnail: '/5 Fingers.jpg',
+    distanceFromStartKm: 5500,
+    relatedLogId: 'log-4-small-european-detour'
+  },
+  {
+    id: 'london_flight',
+    name: 'London, United Kingdom',
+    region: 'England',
+    country: 'United Kingdom',
+    leg: 'arctic_yukon',
+    lat: 51.5074,
+    lng: -0.1278,
+    date: 'September 2026',
+    status: 'in_progress',
+    elevationM: 35,
+    category: 'flight_detour',
+    summary: 'European Sabbatical Detour: Transatlantic arrival in London for sabbatical travel, medical conferences, and cultural exploration with baby Henri.',
+    henriNote: 'Henri crossing the Prime Meridian into London!',
+    mbaNote: 'European academic exploration and London sabbatical milestones.',
+    thumbnail: '/5 Fingers.jpg',
+    distanceFromStartKm: 5500,
+    relatedLogId: 'log-4-small-european-detour'
   },
   {
     id: 'olympic_peninsula',

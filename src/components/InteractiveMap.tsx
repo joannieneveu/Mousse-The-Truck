@@ -36,7 +36,8 @@ import {
   ChevronRight,
   SlidersHorizontal,
   Info,
-  Calendar
+  Calendar,
+  Plane
 } from 'lucide-react';
 import { Loader } from '@googlemaps/js-api-loader';
 import L from 'leaflet';
@@ -49,6 +50,7 @@ interface InteractiveMapProps {
   onOpenPinModal?: () => void;
   onOpenNewLog: (coordinates?: { lat: number; lng: number }, locationName?: string) => void;
   onSimulateLeg?: (leg: string) => void;
+  onOpenLog?: (logId: string) => void;
 }
 
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
@@ -59,6 +61,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   onOpenPinModal,
   onOpenNewLog,
   onSimulateLeg,
+  onOpenLog,
 }) => {
   const mapContainerRef = useRef<HTMLDivElement>(null);
   
@@ -66,6 +69,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   const googleMapRef = useRef<any>(null);
   const googleMarkersRef = useRef<any[]>([]);
   const googlePolylineRef = useRef<any>(null);
+  const googleFlightPolylineRef = useRef<any>(null);
 
   // Leaflet instances (active default or fallback)
   const leafletMapRef = useRef<L.Map | null>(null);
@@ -123,11 +127,37 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     return matchLeg && matchCategory && matchSearch;
   });
 
+  // Great-circle arc generator for true flight routing
+  const getGreatCircleArc = (p1: [number, number], p2: [number, number], numPoints = 25): [number, number][] => {
+    const toRad = (d: number) => (d * Math.PI) / 180;
+    const toDeg = (r: number) => (r * 180) / Math.PI;
+    const lat1 = toRad(p1[0]), lon1 = toRad(p1[1]);
+    const lat2 = toRad(p2[0]), lon2 = toRad(p2[1]);
+    const d = Math.acos(
+      Math.min(1, Math.max(-1, Math.sin(lat1) * Math.sin(lat2) + Math.cos(lat1) * Math.cos(lat2) * Math.cos(lon2 - lon1)))
+    );
+    if (d < 1e-6) return [p1, p2];
+    const sinD = Math.sin(d);
+    const points: [number, number][] = [];
+    for (let i = 0; i <= numPoints; i++) {
+      const f = i / numPoints;
+      const A = Math.sin((1 - f) * d) / sinD;
+      const B = Math.sin(f * d) / sinD;
+      const x = A * Math.cos(lat1) * Math.cos(lon1) + B * Math.cos(lat2) * Math.cos(lon2);
+      const y = A * Math.cos(lat1) * Math.sin(lon1) + B * Math.cos(lat2) * Math.sin(lon2);
+      const z = A * Math.sin(lat1) + B * Math.sin(lat2);
+      const lat = toDeg(Math.atan2(z, Math.sqrt(x * x + y * y)));
+      const lon = toDeg(Math.atan2(y, x));
+      points.push([lat, lon]);
+    }
+    return points;
+  };
+
   // Calculate expedition stats
-  // Waypoints store cumulative distanceFromStartKm. The completed distance along the route is the furthest completed milestone (4,110 km at Tuktoyaktuk).
+  // Waypoints store cumulative distanceFromStartKm. Returned south to Whitehorse from Tuktoyaktuk at 5,500 km.
   const completedWaypoints = waypoints.filter(w => w.status === 'completed');
   const maxCompletedKm = completedWaypoints.reduce((max, w) => Math.max(max, w.distanceFromStartKm || 0), 0);
-  const totalCompletedKm = maxCompletedKm > 0 ? maxCompletedKm : 4110;
+  const totalCompletedKm = Math.max(maxCompletedKm, 5500);
   
   const totalPlannedKm = 35000;
   const progressPercent = Math.min(100, Math.round((totalCompletedKm / totalPlannedKm) * 100));
@@ -255,10 +285,13 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     googleMarkersRef.current.forEach(m => m.setMap?.(null));
     googleMarkersRef.current = [];
 
-    // Route coordinates
-    const pathCoordinates = waypoints.map(w => ({ lat: w.lat, lng: w.lng }));
+    // Filter overland waypoints so overland highway route does not cross the Atlantic ocean
+    const overlandWaypoints = waypoints.filter(
+      w => w.category !== 'flight_detour' && w.id !== 'vancouver_flight' && w.id !== 'london_flight'
+    );
+    const pathCoordinates = overlandWaypoints.map(w => ({ lat: w.lat, lng: w.lng }));
 
-    // Polyline
+    // Overland Polyline
     if (googlePolylineRef.current) googlePolylineRef.current.setMap(null);
     if ((window as any).google?.maps?.Polyline) {
       googlePolylineRef.current = new (window as any).google.maps.Polyline({
@@ -271,13 +304,45 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       });
     }
 
+    // Flight Polyline: Whitehorse -> Vancouver -> London (pointed line with different vibrant fuchsia/rose color)
+    if (googleFlightPolylineRef.current) googleFlightPolylineRef.current.setMap(null);
+    if ((window as any).google?.maps?.Polyline) {
+      const lineSymbol = {
+        path: (window as any).google?.maps?.SymbolPath?.CIRCLE || 'M 0,-1 0,1',
+        fillOpacity: 1,
+        strokeOpacity: 1,
+        scale: 3.5,
+        fillColor: '#D946EF',
+        strokeColor: '#D946EF',
+        strokeWeight: 1,
+      };
+
+      googleFlightPolylineRef.current = new (window as any).google.maps.Polyline({
+        path: [
+          { lat: 60.7212, lng: -135.0568 },
+          { lat: 49.2827, lng: -123.1207 },
+          { lat: 51.5074, lng: -0.1278 }
+        ],
+        geodesic: true,
+        strokeOpacity: 0,
+        icons: [{
+          icon: lineSymbol,
+          offset: '0',
+          repeat: '14px',
+        }],
+        map,
+      });
+    }
+
     // Waypoints
     filteredWaypoints.forEach(wp => {
+      const isFlight = wp.category === 'flight_detour' || wp.id === 'vancouver_flight' || wp.id === 'london_flight';
       const pin = new PinElement({
-        background: wp.status === 'completed' ? '#10B981' : wp.status === 'in_progress' ? '#F59E0B' : '#06B6D4',
+        background: isFlight ? '#C026D3' : wp.status === 'completed' ? '#10B981' : wp.status === 'in_progress' ? '#F59E0B' : '#06B6D4',
         borderColor: '#0F172A',
         glyphColor: '#FFFFFF',
-        scale: selectedWaypoint?.id === wp.id ? 1.3 : 1.0,
+        glyph: isFlight ? '✈️' : undefined,
+        scale: selectedWaypoint?.id === wp.id ? 1.3 : isFlight ? 1.15 : 1.0,
       });
 
       const marker = new AdvancedMarkerElement({
@@ -328,19 +393,24 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     leafletMarkersGroupRef.current.clearLayers();
     leafletPolylineGroupRef.current.clearLayers();
 
-    // Draw route polyline
-    const allCoords: [number, number][] = waypoints.map(w => [w.lat, w.lng]);
-    const completedCoords: [number, number][] = waypoints
+    // 1. Overland Route (exclude flight detour pins so Pan-American highway doesn't cross the ocean)
+    const overlandWaypoints = waypoints.filter(
+      w => w.category !== 'flight_detour' && w.id !== 'vancouver_flight' && w.id !== 'london_flight'
+    );
+    const allCoords: [number, number][] = overlandWaypoints.map(w => [w.lat, w.lng]);
+    const completedCoords: [number, number][] = overlandWaypoints
       .filter(w => w.status === 'completed')
       .map(w => [w.lat, w.lng]);
 
     // Planned Route (dashed cyan/amber)
-    L.polyline(allCoords, {
-      color: '#38BDF8',
-      weight: 3,
-      opacity: 0.6,
-      dashArray: '6, 8',
-    }).addTo(leafletPolylineGroupRef.current);
+    if (allCoords.length > 1) {
+      L.polyline(allCoords, {
+        color: '#38BDF8',
+        weight: 3,
+        opacity: 0.6,
+        dashArray: '6, 8',
+      }).addTo(leafletPolylineGroupRef.current);
+    }
 
     // Completed Route (solid vibrant amber)
     if (completedCoords.length > 1) {
@@ -349,6 +419,64 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         weight: 4,
         opacity: 0.9,
       }).addTo(leafletPolylineGroupRef.current);
+    }
+
+    // 2. Flight Path: Whitehorse -> Vancouver -> London
+    // Computed with great-circle arcs for realistic transatlantic flight curvature
+    const whitehorseCoord: [number, number] = [60.7212, -135.0568];
+    const vancouverCoord: [number, number] = [49.2827, -123.1207];
+    const londonCoord: [number, number] = [51.5074, -0.1278];
+
+    const flightArcYxyToYvr = getGreatCircleArc(whitehorseCoord, vancouverCoord, 12);
+    const flightArcYvrToLhr = getGreatCircleArc(vancouverCoord, londonCoord, 36);
+    const fullFlightCoords = [...flightArcYxyToYvr, ...flightArcYvrToLhr.slice(1)];
+
+    // Underlay subtle glow for flight path
+    L.polyline(fullFlightCoords, {
+      color: '#F472B6',
+      weight: 8,
+      opacity: 0.25,
+      lineCap: 'round',
+    }).addTo(leafletPolylineGroupRef.current);
+
+    // Flight polyline: pointed line (distinct circular dots/points) with different fuchsia color
+    const flightPolyline = L.polyline(fullFlightCoords, {
+      color: '#D946EF', // Vibrant fuchsia/rose
+      weight: 4.5,
+      opacity: 1,
+      dashArray: '1, 13', // True pointed/dotted line: 1px segment + round cap creates circular points
+      lineCap: 'round',
+      lineJoin: 'round',
+    }).addTo(leafletPolylineGroupRef.current);
+
+    flightPolyline.bindTooltip('✈️ Sabbatical Flight: Whitehorse ➔ Vancouver ➔ London', {
+      sticky: true,
+      className: 'bg-slate-900 text-fuchsia-300 text-xs font-bold px-2.5 py-1 rounded-xl border border-fuchsia-500/50 shadow-xl'
+    });
+
+    // Transatlantic flight midway badge marker
+    if (flightArcYvrToLhr.length > 15) {
+      const midPoint = flightArcYvrToLhr[Math.floor(flightArcYvrToLhr.length / 2)];
+      const flightBadgeIcon = L.divIcon({
+        className: 'custom-flight-badge',
+        html: `
+          <div class="cursor-pointer group flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-slate-950/90 border border-fuchsia-400 text-fuchsia-300 font-extrabold text-[10px] shadow-2xl backdrop-blur-md hover:scale-110 transition -translate-x-1/2 -translate-y-1/2">
+            <span>✈️</span>
+            <span>YVR ➔ LHR Flight Detour</span>
+          </div>
+        `,
+        iconSize: [160, 24],
+        iconAnchor: [80, 12],
+      });
+      const flightBadge = L.marker(midPoint, { icon: flightBadgeIcon, zIndexOffset: 750 })
+        .addTo(leafletMarkersGroupRef.current);
+      flightBadge.on('click', () => {
+        const ldn = waypoints.find(w => w.id === 'london_flight') || waypoints.find(w => w.id === 'vancouver_flight');
+        if (ldn) {
+          setSelectedWaypoint(ldn);
+          onSelectWaypoint(ldn);
+        }
+      });
     }
 
     // Add Current Expedition Location Pin
@@ -380,9 +508,12 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     // Render Waypoint Markers
     filteredWaypoints.forEach((wp) => {
       const isSelected = selectedWaypoint?.id === wp.id;
+      const isFlight = wp.category === 'flight_detour' || wp.id === 'vancouver_flight' || wp.id === 'london_flight';
       
       const getCategoryEmoji = (cat?: string) => {
+        if (isFlight) return '✈️';
         switch (cat) {
+          case 'flight_detour': return '✈️';
           case 'arctic_apex': return '❄️';
           case 'baby_milestone': return '👶';
           case 'physician_resource': return '🩺';
@@ -393,6 +524,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       };
 
       const getStatusColor = (status: string) => {
+        if (isFlight) return 'bg-fuchsia-600 text-white border-fuchsia-300 ring-2 ring-fuchsia-400/50';
         switch (status) {
           case 'completed': return 'bg-emerald-500 text-slate-950 border-emerald-300';
           case 'in_progress': return 'bg-amber-500 text-slate-950 border-amber-300 ring-2 ring-amber-400/50';
@@ -404,15 +536,15 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
         className: 'custom-waypoint-marker',
         html: `
           <div class="group relative cursor-pointer transform -translate-x-1/2 -translate-y-1/2 transition duration-200 ${isSelected ? 'scale-125 z-50' : 'hover:scale-110'}">
-            <div class="flex items-center gap-1 px-2 py-1 rounded-full text-[11px] font-extrabold shadow-xl border-2 ${getStatusColor(wp.status)}">
+            <div class="flex items-center gap-1 px-2.5 py-1 rounded-full text-[11px] font-extrabold shadow-xl border-2 ${getStatusColor(wp.status)}">
               <span>${getCategoryEmoji(wp.category)}</span>
-              <span class="max-w-[100px] truncate hidden sm:inline">${wp.name}</span>
+              <span class="max-w-[120px] truncate ${isFlight ? 'inline' : 'hidden sm:inline'}">${wp.name}</span>
             </div>
-            ${wp.status === 'in_progress' ? '<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-amber-400 rounded-full animate-ping"></span>' : ''}
+            ${wp.status === 'in_progress' || isFlight ? '<span class="absolute -top-1 -right-1 w-2.5 h-2.5 bg-fuchsia-400 rounded-full animate-ping"></span>' : ''}
           </div>
         `,
-        iconSize: [40, 24],
-        iconAnchor: [20, 12],
+        iconSize: [120, 26],
+        iconAnchor: [60, 13],
       });
 
       const marker = L.marker([wp.lat, wp.lng], { icon: customIcon })
@@ -435,6 +567,24 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
     } else if (googleMapRef.current) {
       googleMapRef.current.panTo({ lat: wp.lat, lng: wp.lng });
       googleMapRef.current.setZoom(8);
+    }
+  };
+
+  // View entire flight route (Whitehorse ➔ Vancouver ➔ London)
+  const handleViewFlightRoute = () => {
+    if (leafletMapRef.current) {
+      leafletMapRef.current.flyToBounds([[45, -138], [63, 2]], { duration: 1.5, padding: [40, 40] });
+    } else if (googleMapRef.current) {
+      const bounds = new (window as any).google.maps.LatLngBounds(
+        { lat: 45, lng: -138 },
+        { lat: 63, lng: 2 }
+      );
+      googleMapRef.current.fitBounds(bounds);
+    }
+    const londonWp = waypoints.find(w => w.id === 'london_flight');
+    if (londonWp) {
+      setSelectedWaypoint(londonWp);
+      onSelectWaypoint(londonWp);
     }
   };
 
@@ -490,6 +640,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             className="bg-slate-950/80 border border-slate-800 rounded-xl px-2.5 py-1.5 text-xs font-semibold text-slate-200 focus:outline-none focus:border-amber-400 hidden sm:block"
           >
             <option value="all">🏷️ All Tags</option>
+            <option value="flight_detour">✈️ European Flight Detour</option>
             <option value="overland_camp">🏕️ Campsites</option>
             <option value="baby_milestone">👶 Baby Henri</option>
             <option value="physician_resource">🩺 Medical Resources</option>
@@ -498,9 +649,19 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </select>
         </div>
 
-        {/* Right: Expedition Location Pin Pill */}
+        {/* Right: Expedition Location Pin Pill & Flight Detour Button */}
         <div className="flex items-center gap-2 pointer-events-auto">
           
+          {/* Quick View Flight Path Button */}
+          <button
+            onClick={handleViewFlightRoute}
+            className="bg-fuchsia-950/80 hover:bg-fuchsia-900 border border-fuchsia-600/70 text-fuchsia-200 font-bold px-3 py-2 rounded-2xl shadow-xl flex items-center gap-1.5 text-xs transition active:scale-95"
+            title="View Whitehorse ➔ Vancouver ➔ London transatlantic flight detour"
+          >
+            <Plane className="w-3.5 h-3.5 text-fuchsia-400" />
+            <span className="hidden sm:inline">Flight to London</span>
+          </button>
+
           {/* Current Location Pin Button */}
           <button
             id="current-location-pin-btn"
@@ -623,6 +784,18 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
               <span>{showElevationDrawer ? 'Hide Elevation Profile' : 'View Andean Elevation'}</span>
             </button>
           </div>
+
+          {/* Route Legend */}
+          <div className="flex flex-wrap items-center gap-x-4 gap-y-1 pt-1.5 border-t border-slate-800/80 text-[10px] text-slate-300">
+            <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-1 bg-amber-500 rounded-full inline-block"></span>
+              <span>Overland Rig (5,500 km)</span>
+            </div>
+            <div className="flex items-center gap-1.5">
+              <span className="w-3.5 h-1 border-b-2 border-dotted border-fuchsia-400 inline-block"></span>
+              <span>Pointed Flight (YXY ➔ YVR ➔ LHR)</span>
+            </div>
+          </div>
         </div>
 
         {/* Right: Quick Action Buttons (Admin only) */}
@@ -680,6 +853,19 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </div>
           )}
 
+          {/* Sabbatical flight detour banner if selected waypoint is a flight waypoint */}
+          {(selectedWaypoint.category === 'flight_detour' || selectedWaypoint.id === 'vancouver_flight' || selectedWaypoint.id === 'london_flight') && (
+            <div className="bg-fuchsia-950/40 border border-fuchsia-700/60 rounded-2xl p-3 text-fuchsia-200 text-xs space-y-1">
+              <div className="flex items-center gap-1.5 font-extrabold text-fuchsia-300">
+                <Plane className="w-4 h-4 text-fuchsia-400" />
+                <span>European Sabbatical Detour</span>
+              </div>
+              <p className="text-[11px] text-fuchsia-200/90 leading-snug">
+                Flight detour: Whitehorse ➔ Vancouver (YVR) ➔ London (UK). A temporary European break during the sabbatical before resuming the Pan-American highway!
+              </p>
+            </div>
+          )}
+
           <p className="text-xs text-slate-300 leading-relaxed font-sans">
             {selectedWaypoint.description || selectedWaypoint.summary}
           </p>
@@ -701,14 +887,25 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </div>
 
           {/* Drawer Footer Actions */}
-          <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs">
-            <button
-              onClick={() => handleFlyTo(selectedWaypoint)}
-              className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1"
-            >
-              <Navigation className="w-3.5 h-3.5" />
-              <span>Center Camera</span>
-            </button>
+          <div className="flex items-center justify-between pt-3 border-t border-slate-800 text-xs gap-2">
+            <div className="flex items-center gap-2">
+              <button
+                onClick={() => handleFlyTo(selectedWaypoint)}
+                className="text-amber-400 hover:text-amber-300 font-semibold flex items-center gap-1"
+              >
+                <Navigation className="w-3.5 h-3.5" />
+                <span>Center</span>
+              </button>
+
+              {selectedWaypoint.relatedLogId && onOpenLog && (
+                <button
+                  onClick={() => onOpenLog(selectedWaypoint.relatedLogId!)}
+                  className="bg-fuchsia-600 hover:bg-fuchsia-500 text-white font-bold px-2.5 py-1.5 rounded-xl transition flex items-center gap-1 text-xs"
+                >
+                  <span>📖 Read Log</span>
+                </button>
+              )}
+            </div>
 
             {isAdmin && (
               <button

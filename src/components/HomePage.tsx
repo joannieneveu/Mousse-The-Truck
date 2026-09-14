@@ -38,7 +38,7 @@ interface HomePageProps {
   liveLocation: LiveLocation;
   recentLogs: TravelLog[];
   waypoints: Waypoint[];
-  onOpenSubscribeModal: () => void;
+  onOpenSubscribeModal?: () => void;
   isAdmin?: boolean;
   onOpenAdminSubscribersModal?: () => void;
   subscribersCount?: number;
@@ -51,10 +51,7 @@ export const HomePage: React.FC<HomePageProps> = ({
   liveLocation,
   recentLogs,
   waypoints,
-  onOpenSubscribeModal,
   isAdmin = false,
-  onOpenAdminSubscribersModal,
-  subscribersCount = 0,
   onCreateLog
 }) => {
   const { language, t } = useLanguage();
@@ -187,21 +184,11 @@ export const HomePage: React.FC<HomePageProps> = ({
                 </span>
               </div>
               <p className="text-xs text-blue-200/80 mt-0.5">
-                Manage expedition subscribers, write new journal chronicles, and broadcast updates to your followers.
+                Write new journal chronicles, upload expedition photos, and update your route milestones.
               </p>
             </div>
           </div>
           <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {onOpenAdminSubscribersModal && (
-              <button
-                id="home-manage-subscribers-btn"
-                onClick={onOpenAdminSubscribersModal}
-                className="bg-blue-600 hover:bg-blue-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-2 shadow-xs transition"
-              >
-                <Users className="w-3.5 h-3.5" />
-                <span>Manage Subscribers ({subscribersCount || 0})</span>
-              </button>
-            )}
             {onCreateLog && (
               <button
                 id="home-create-log-btn"
@@ -329,14 +316,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                 <Instagram className="w-4 h-4 text-orange-700" />
                 <span>{isFr ? 'Suivre @moussethetruck' : 'Follow @moussethetruck'}</span>
               </a>
-
-              <button
-                onClick={onOpenSubscribeModal}
-                className="px-4 py-3 text-stone-600 hover:text-blue-900 text-xs font-semibold flex items-center gap-1.5 transition"
-              >
-                <Sparkles className="w-4 h-4 text-amber-600" />
-                <span>{isFr ? 'S\'abonner aux nouvelles' : 'Subscribe for Updates'}</span>
-              </button>
             </div>
 
           </div>
