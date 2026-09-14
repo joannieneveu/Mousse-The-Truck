@@ -133,6 +133,63 @@ export const INITIAL_SUBSCRIBERS: Subscriber[] = [
 
 export const INITIAL_TRAVEL_LOGS: TravelLog[] = [
   {
+    "id": "log-4-small-european-detour",
+    "title": "A small European Detour",
+    "slug": "a-small-european-detour",
+    "date": "September 8, 2026",
+    "locationName": "Five Finger Rapids, Yukon",
+    "country": "Canada",
+    "coordinates": {
+      "lat": 62.2694,
+      "lng": -136.3508
+    },
+    "author": "Dr. Joannie Neveu & Barton Thiessen",
+    "readingTime": "4 min read",
+    "category": "adventures_mba",
+    "journeyLeg": "arctic_yukon",
+    "status": "published",
+    "excerpt": "A small European detour along our journey southbound from the Arctic — taking in the spectacular panoramic bluffs at Five Finger Rapids on the Yukon River.",
+    "content": "### **Five Finger Rapids & Southbound Along the Klondike**\n\n*September 8, 2026 — Five Finger Rapids, Yukon*\n\nAfter turning south from Tuktoyaktuk and the Arctic Ocean, our journey continues down the Dempster and Klondike Highways.\n\nTaking in the panoramic views at **Five Finger Rapids** (*Tthe Zhendlät*) on the Yukon River — where four massive rocky basalt islands split the river into five distinct channels, once one of the most perilous navigation points during the Klondike Gold Rush.\n\nBaby Henri is taking in the crisp Yukon breeze and fresh mountain air, while we balance remote MBA coursework and map out our route.\n\n*(Chapter notes and full journal story in progress — stay tuned!)*",
+    "coverImage": "/5 Fingers.jpg",
+    "gallery": [
+      {
+        "url": "/5 Fingers.jpg",
+        "caption": "Five Finger Rapids (5 Fingers) on the Yukon River along the Klondike Highway",
+        "type": "image"
+      }
+    ],
+    "metrics": {
+      "elevationM": 540,
+      "tempC": 12,
+      "kmTraveled": 4650,
+      "odometerKm": 4650,
+      "henriAge": "2.5 months",
+      "activityType": "Five Finger Rapids Scenic Bluffs & Yukon River Viewpoint"
+    },
+    "locationInsights": {
+      "population": "Five Finger Rapids Recreation Site (Klondike Highway)",
+      "culturalContext": "Traditional territory of the Little Salmon/Carmacks First Nation (Tthe Zhendlät)",
+      "interestingFacts": [
+        "Five Finger Rapids features four towering basalt pillars that divide the mighty Yukon River into five narrow channels.",
+        "During the 1898 Klondike Gold Rush, riverboat sternwheelers had to be winched up the rapids using massive steel cables anchored to the rock walls.",
+        "A 219-step wooden staircase leads down from the highway lookout deck right to the water's edge."
+      ],
+      "activityTips": "Walking the wooden stairs down to the shoreline lookout deck, admiring the rapids, and spotting nesting raptors on the rock pillars."
+    },
+    "henriHighlight": "Watching the Yukon River rushing through Five Finger Rapids from his carrier",
+    "tags": [
+      "Yukon",
+      "Five Finger Rapids",
+      "Klondike Highway",
+      "European Detour",
+      "Mousse On The Loose",
+      "Yukon River",
+      "5 Fingers"
+    ],
+    "likesCount": 0,
+    "commentsCount": 0
+  },
+  {
     "id": "log-3-arctic-ocean-tuktoyaktuk",
     "title": "North to the Arctic Ocean",
     "slug": "north-to-the-arctic-ocean",
@@ -547,6 +604,32 @@ export const INITIAL_WAYPOINTS: Waypoint[] = [
 ];
 
 export const INITIAL_MEDIA: MediaItem[] = [
+  {
+    "id": "media-5-fingers-rapids",
+    "title": "Five Finger Rapids (5 Fingers)",
+    "type": "image",
+    "url": "/5 Fingers.jpg",
+    "caption": "Panoramic view of Five Finger Rapids on the Yukon River along the Klondike Highway.",
+    "locationName": "Five Finger Rapids, Yukon",
+    "coordinates": {
+      "lat": 62.2694,
+      "lng": -136.3508
+    },
+    "date": "September 8, 2026",
+    "tags": [
+      "Yukon",
+      "Five Finger Rapids",
+      "5 Fingers",
+      "Klondike Highway",
+      "Yukon River",
+      "Mousse"
+    ],
+    "author": "Joannie & Barton",
+    "featured": true,
+    "journeyLeg": "arctic_yukon",
+    "likesCount": 0,
+    "commentsCount": 0
+  },
   {
     "id": "media-tuk-arctic-ocean",
     "title": "North to the Arctic Ocean at Tuktoyaktuk",

@@ -98,7 +98,10 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
   const [status, setStatus] = useState<'draft' | 'published'>(initialLog?.status || 'published');
   const [fontFamily, setFontFamily] = useState<'serif' | 'sans' | 'mono' | 'handwriting'>(initialLog?.fontFamily || 'serif');
   const [content, setContent] = useState<string>(initialLog?.content || '');
-  const [coverImage, setCoverImage] = useState<string>(initialLog?.coverImage || '/hot spring.jpeg');
+  const [coverImage, setCoverImage] = useState<string>(
+    initialLog?.coverImage || 
+    (initialLog?.title?.toLowerCase().includes('european') ? '/5 Fingers.jpg' : '/hot spring.jpeg')
+  );
   const [activity, setActivity] = useState<string>(initialLog?.metrics?.activityType || '');
   
   // Specific Highlights
@@ -1142,9 +1145,57 @@ export const JournalEditorModal: React.FC<JournalEditorModalProps> = ({
                   type="text"
                   value={coverImage}
                   onChange={(e) => setCoverImage(e.target.value)}
-                  placeholder="/hot spring.jpeg or https://..."
-                  className="w-full bg-white border border-stone-300 rounded-lg px-2.5 py-1 text-stone-900 text-xs focus:outline-none focus:border-blue-900"
+                  placeholder="/5 Fingers.jpg or https://..."
+                  className="w-full bg-white border border-stone-300 rounded-lg px-2.5 py-1 text-stone-900 text-xs focus:outline-none focus:border-blue-900 font-mono"
                 />
+              </div>
+
+              <div className="flex flex-wrap items-center gap-1.5 mt-2">
+                <span className="text-[10px] text-stone-400 font-medium">Quick presets:</span>
+                <button
+                  type="button"
+                  onClick={() => setCoverImage('/5 Fingers.jpg')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium border transition flex items-center gap-1 ${
+                    coverImage === '/5 Fingers.jpg'
+                      ? 'bg-blue-100 text-blue-900 border-blue-300 font-bold'
+                      : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border-stone-200'
+                  }`}
+                >
+                  <span>🖐️ 5 Fingers.jpg</span>
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCoverImage('/IMG_3785.jpeg')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium border transition ${
+                    coverImage === '/IMG_3785.jpeg'
+                      ? 'bg-blue-100 text-blue-900 border-blue-300 font-bold'
+                      : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border-stone-200'
+                  }`}
+                >
+                  IMG_3785.jpeg (Tuktoyaktuk)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCoverImage('/hot spring.jpeg')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium border transition ${
+                    coverImage === '/hot spring.jpeg'
+                      ? 'bg-blue-100 text-blue-900 border-blue-300 font-bold'
+                      : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border-stone-200'
+                  }`}
+                >
+                  hot spring.jpeg (Liard River)
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setCoverImage('/departure.jpeg')}
+                  className={`px-2 py-0.5 rounded-md text-[10px] font-medium border transition ${
+                    coverImage === '/departure.jpeg'
+                      ? 'bg-blue-100 text-blue-900 border-blue-300 font-bold'
+                      : 'bg-stone-100 hover:bg-stone-200 text-stone-700 border-stone-200'
+                  }`}
+                >
+                  departure.jpeg (Lethbridge)
+                </button>
               </div>
             </div>
 

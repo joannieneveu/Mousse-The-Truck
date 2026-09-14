@@ -79,20 +79,50 @@ function AppContent() {
     try {
       const saved = localStorage.getItem('mousse_travel_logs');
       if (saved) {
-        const parsed = JSON.parse(saved);
+        let parsed = JSON.parse(saved);
         if (Array.isArray(parsed)) {
-          return parsed.map((log: TravelLog) => 
-            log.id === 'log-3-arctic-ocean-tuktoyaktuk' && log.metrics?.kmTraveled === 3850
-              ? {
-                  ...log,
-                  metrics: {
-                    ...log.metrics,
-                    kmTraveled: 4110,
-                    odometerKm: 4110
-                  }
+          // Normalize existing logs
+          parsed = parsed.map((log: TravelLog) => {
+            if (log.id === 'log-3-arctic-ocean-tuktoyaktuk' && log.metrics?.kmTraveled === 3850) {
+              return {
+                ...log,
+                metrics: {
+                  ...log.metrics,
+                  kmTraveled: 4110,
+                  odometerKm: 4110
                 }
-              : log
+              };
+            }
+            if (
+              log.id === 'log-4-small-european-detour' ||
+              log.title?.toLowerCase().includes('european') ||
+              log.slug?.toLowerCase().includes('european')
+            ) {
+              return {
+                ...log,
+                coverImage: '/5 Fingers.jpg',
+                gallery: Array.isArray(log.gallery) && log.gallery.some(g => g.url === '/5 Fingers.jpg')
+                  ? log.gallery
+                  : [{ url: '/5 Fingers.jpg', caption: 'Five Finger Rapids (5 Fingers) on the Yukon River', type: 'image' }, ...(log.gallery || [])]
+              };
+            }
+            return log;
+          });
+
+          // If European Detour was not yet in local storage, ensure INITIAL_TRAVEL_LOGS European entry is included
+          const hasEuropean = parsed.some((l: TravelLog) => 
+            l.id === 'log-4-small-european-detour' || 
+            l.title?.toLowerCase().includes('european') ||
+            l.slug?.toLowerCase().includes('european')
           );
+          if (!hasEuropean) {
+            const euroLog = INITIAL_TRAVEL_LOGS.find(l => l.id === 'log-4-small-european-detour');
+            if (euroLog) {
+              parsed = [euroLog, ...parsed];
+            }
+          }
+
+          return parsed;
         }
       }
     } catch {}
@@ -322,18 +352,46 @@ function AppContent() {
       .then(data => {
         const list = Array.isArray(data) ? data : Array.isArray(data?.travelLogs) ? data.travelLogs : Array.isArray(data?.logs) ? data.logs : null;
         if (list) {
-          setTravelLogs(list.map((log: TravelLog) =>
-            log.id === 'log-3-arctic-ocean-tuktoyaktuk' && log.metrics?.kmTraveled !== 4110
-              ? {
-                  ...log,
-                  metrics: {
-                    ...log.metrics,
-                    kmTraveled: 4110,
-                    odometerKm: 4110
-                  }
+          const updatedList = list.map((log: TravelLog) => {
+            if (log.id === 'log-3-arctic-ocean-tuktoyaktuk' && log.metrics?.kmTraveled !== 4110) {
+              return {
+                ...log,
+                metrics: {
+                  ...log.metrics,
+                  kmTraveled: 4110,
+                  odometerKm: 4110
                 }
-              : log
-          ));
+              };
+            }
+            if (
+              log.id === 'log-4-small-european-detour' ||
+              log.title?.toLowerCase().includes('european') ||
+              log.slug?.toLowerCase().includes('european')
+            ) {
+              return {
+                ...log,
+                coverImage: '/5 Fingers.jpg',
+                gallery: Array.isArray(log.gallery) && log.gallery.some(g => g.url === '/5 Fingers.jpg')
+                  ? log.gallery
+                  : [{ url: '/5 Fingers.jpg', caption: 'Five Finger Rapids (5 Fingers) on the Yukon River', type: 'image' }, ...(log.gallery || [])]
+              };
+            }
+            return log;
+          });
+          setTravelLogs(updatedList);
+          setSelectedLog((prev: TravelLog | null) => {
+            if (!prev) return prev;
+            if (prev.id === 'log-4-small-european-detour' || prev.title?.toLowerCase().includes('european') || prev.slug?.toLowerCase().includes('european')) {
+              return {
+                ...prev,
+                coverImage: '/5 Fingers.jpg',
+                gallery: Array.isArray(prev.gallery) && prev.gallery.some(g => g.url === '/5 Fingers.jpg')
+                  ? prev.gallery
+                  : [{ url: '/5 Fingers.jpg', caption: 'Five Finger Rapids (5 Fingers) on the Yukon River', type: 'image' }, ...(prev.gallery || [])]
+              };
+            }
+            return prev;
+          });
         }
       })
       .catch(err => console.log('Using initial travel logs:', err));
