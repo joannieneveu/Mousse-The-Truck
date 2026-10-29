@@ -60,7 +60,6 @@ export const HomePage: React.FC<HomePageProps> = ({
   
   // Family state (merged into Home)
   const [familyMembers, setFamilyMembers] = useState<FamilyMember[]>(INITIAL_FAMILY_MEMBERS);
-  const [editingMember, setEditingMember] = useState<FamilyMember | null>(null);
   const [heroPhoto, setHeroPhoto] = useState<string>(() => {
     try {
       return localStorage.getItem('mousse_homepage_hero_photo') || '/moussesunset.jpeg';
@@ -75,8 +74,6 @@ export const HomePage: React.FC<HomePageProps> = ({
       return '/Family.jpeg';
     }
   });
-  const [newPhotoUrl, setNewPhotoUrl] = useState<string>('');
-  const [isEditingHeroPhoto, setIsEditingHeroPhoto] = useState<boolean>(false);
 
   // Load persistent family members & site settings from API
   useEffect(() => {
@@ -101,107 +98,8 @@ export const HomePage: React.FC<HomePageProps> = ({
   const onTripMembers = familyMembers.filter(m => m.onTripWithUs);
   const atHomeMembers = familyMembers.filter(m => !m.onTripWithUs);
 
-  const handleUpdateAvatar = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!isAdmin || !editingMember || !newPhotoUrl.trim()) return;
-
-    const updatedAvatar = newPhotoUrl.trim();
-    setFamilyMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, avatar: updatedAvatar } : m));
-
-    try {
-      await fetch(`/api/family/${editingMember.id}`, {
-        method: 'PUT',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ avatar: updatedAvatar })
-      });
-    } catch (err) {
-      console.error('Failed to persist profile picture:', err);
-    }
-
-    setEditingMember(null);
-    setNewPhotoUrl('');
-  };
-
-  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>, target: 'member' | 'hero') => {
-    if (!isAdmin) return;
-    const file = e.target.files?.[0];
-    if (!file) return;
-
-    const reader = new FileReader();
-    reader.onload = async (event) => {
-      const dataUrl = event.target?.result as string;
-      if (dataUrl) {
-        if (target === 'hero') {
-          setFamilyHeroPhoto(dataUrl);
-          try {
-            localStorage.setItem('mousse_family_hero_photo', dataUrl);
-          } catch {
-            // ignore quota
-          }
-          try {
-            await fetch('/api/site-settings', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ familyHeroPhoto: dataUrl })
-            });
-          } catch (err) {
-            console.error('Failed to persist family hero photo:', err);
-          }
-          setIsEditingHeroPhoto(false);
-        } else if (editingMember) {
-          setFamilyMembers(prev => prev.map(m => m.id === editingMember.id ? { ...m, avatar: dataUrl } : m));
-          try {
-            await fetch(`/api/family/${editingMember.id}`, {
-              method: 'PUT',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({ avatar: dataUrl })
-            });
-          } catch (err) {
-            console.error('Failed to persist profile photo:', err);
-          }
-          setEditingMember(null);
-        }
-      }
-    };
-    reader.readAsDataURL(file);
-  };
-
   return (
     <div id="home-page" className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 space-y-16 animate-in fade-in duration-300 font-sans">
-      
-      {/* ADMIN EXPEDITION COMMAND BAR */}
-      {isAdmin && (
-        <div className="bg-gradient-to-r from-slate-900 via-blue-950 to-slate-900 text-white rounded-3xl p-4 sm:p-5 shadow-md border border-blue-800/40 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-2xl bg-blue-600/30 border border-blue-400/30 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-5 h-5 text-blue-300" />
-            </div>
-            <div>
-              <div className="flex items-center gap-2">
-                <span className="font-bold text-white text-sm">Expedition Command: Dr. Joannie Neveu</span>
-                <span className="text-[10px] bg-emerald-500/20 text-emerald-300 border border-emerald-500/30 px-2 py-0.5 rounded-full font-semibold">
-                  Administrator Active
-                </span>
-              </div>
-              <p className="text-xs text-blue-200/80 mt-0.5">
-                Write new journal chronicles, upload expedition photos, and update your route milestones.
-              </p>
-            </div>
-          </div>
-          <div className="flex flex-wrap items-center gap-2.5 shrink-0">
-            {onCreateLog && (
-              <button
-                id="home-create-log-btn"
-                onClick={onCreateLog}
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>+ Write Journal Entry</span>
-              </button>
-            )}
-          </div>
-        </div>
-      )}
 
       {/* HERO SECTION WITH CUSTOM "MOUSSE ON THE LOOSE" GRAPHIC EMBLEM */}
       <section className="relative rounded-3xl overflow-hidden border border-stone-200/90 bg-[#FAF8F5] shadow-xs">
@@ -474,15 +372,6 @@ export const HomePage: React.FC<HomePageProps> = ({
             </p>
           </div>
           <div className="flex items-center gap-3">
-            {isAdmin && onCreateLog && (
-              <button
-                onClick={onCreateLog}
-                className="bg-blue-900 hover:bg-blue-950 text-white px-3.5 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
-              >
-                <Plus className="w-3.5 h-3.5" />
-                <span>{isFr ? '+ Nouvelle entrée' : '+ Write Entry'}</span>
-              </button>
-            )}
             <button
               onClick={() => onNavigateTab('journal')}
               className="text-xs font-semibold text-blue-900 hover:text-blue-950 flex items-center gap-1"
@@ -651,16 +540,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                       <div className="text-white text-sm font-bold">Joannie, Barton & Baby Henri</div>
                       <div className="text-stone-300 text-[11px]">{isFr ? 'Plage de galets de Terre-Neuve, août 2026' : 'Newfoundland pebble coast, August 2026'}</div>
                     </div>
-                    {isAdmin && (
-                      <button
-                        onClick={() => setIsEditingHeroPhoto(true)}
-                        className="px-2.5 py-1.5 bg-white/20 backdrop-blur-md hover:bg-blue-900 text-white rounded-xl text-xs flex items-center gap-1 shadow transition cursor-pointer"
-                        title="Change or upload family photo"
-                      >
-                        <Upload className="w-3.5 h-3.5" />
-                        <span className="hidden sm:inline">{isFr ? 'Changer la photo' : 'Change Photo'}</span>
-                      </button>
-                    )}
                   </div>
                 </div>
               </div>
@@ -715,17 +594,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                         {member.relation}
                       </p>
                     </div>
-
-                    {isAdmin && (
-                      <button
-                        onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
-                        title="Update portrait photo"
-                        className="absolute top-3 right-3 px-3 py-1.5 bg-black/60 hover:bg-blue-900 text-white rounded-xl backdrop-blur-md text-xs font-medium flex items-center gap-1.5 shadow-md transition cursor-pointer"
-                      >
-                        <Camera className="w-3.5 h-3.5" />
-                        <span>{isFr ? 'Changer' : 'Change Photo'}</span>
-                      </button>
-                    )}
                   </div>
 
                   {/* Bio & Details */}
@@ -746,19 +614,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                     )}
                   </div>
                 </div>
-
-                {isAdmin && (
-                  <div className="pt-3 mt-4 border-t border-stone-100 flex items-center justify-between text-[11px] px-1">
-                    <button
-                      onClick={() => { setEditingMember(member); setNewPhotoUrl(''); }}
-                      className="text-blue-900 hover:text-blue-950 font-semibold flex items-center gap-1 cursor-pointer"
-                    >
-                      <Upload className="w-3.5 h-3.5" />
-                      <span>{isFr ? 'Mettre à jour la photo' : 'Upload New Portrait'}</span>
-                    </button>
-                    <span className="text-[10px] text-stone-400">Admin Control</span>
-                  </div>
-                )}
               </div>
             ))}
           </div>
@@ -932,128 +787,6 @@ export const HomePage: React.FC<HomePageProps> = ({
                 className="max-h-[70vh] w-auto max-w-full object-contain rounded-xl"
                 referrerPolicy="no-referrer"
               />
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Photo update modal for Joannie, Barton & Henri */}
-      {editingMember && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-              <h3 className="font-serif font-bold text-lg text-stone-900">
-                Update Profile Picture for {editingMember.name}
-              </h3>
-              <button
-                onClick={() => setEditingMember(null)}
-                className="w-7 h-7 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center justify-center text-xs cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs font-sans">
-              {/* Option A: Select file from device */}
-              <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-2">
-                <label className="block font-semibold text-stone-800">
-                  Select Real Photo from Device
-                </label>
-                <p className="text-[11px] text-stone-500">
-                  Choose your exact original photo file (JPG, PNG).
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, 'member')}
-                  className="w-full text-xs text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-900 file:text-white hover:file:bg-blue-950 cursor-pointer"
-                />
-              </div>
-
-              <div className="flex items-center gap-2 text-stone-400 text-center">
-                <div className="h-[1px] bg-stone-300 flex-1"></div>
-                <span>OR PASTE URL</span>
-                <div className="h-[1px] bg-stone-300 flex-1"></div>
-              </div>
-
-              {/* Option B: Enter URL */}
-              <form onSubmit={handleUpdateAvatar} className="space-y-4">
-                <div>
-                  <label className="block font-semibold text-stone-700 mb-1">
-                    Image Web Link / URL
-                  </label>
-                  <input
-                    type="url"
-                    value={newPhotoUrl}
-                    onChange={(e) => setNewPhotoUrl(e.target.value)}
-                    placeholder="https://... or photo link"
-                    className="w-full bg-white border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
-                  />
-                </div>
-
-                <div className="flex items-center justify-end gap-2 pt-2">
-                  <button
-                    type="button"
-                    onClick={() => setEditingMember(null)}
-                    className="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 font-medium cursor-pointer"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    disabled={!newPhotoUrl.trim()}
-                    className="px-5 py-2 rounded-xl bg-blue-900 hover:bg-blue-950 text-white font-semibold disabled:opacity-50 cursor-pointer"
-                  >
-                    Save Photo URL
-                  </button>
-                </div>
-              </form>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Hero Photo update modal */}
-      {isEditingHeroPhoto && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm animate-in fade-in duration-200">
-          <div className="bg-[#FAF8F5] border border-stone-300 rounded-3xl max-w-md w-full p-6 shadow-2xl space-y-4">
-            <div className="flex items-center justify-between border-b border-stone-200 pb-3">
-              <h3 className="font-serif font-bold text-lg text-stone-900">
-                Upload Real Family Photo
-              </h3>
-              <button
-                onClick={() => setIsEditingHeroPhoto(false)}
-                className="w-7 h-7 rounded-full bg-stone-200 hover:bg-stone-300 text-stone-700 flex items-center justify-center text-xs cursor-pointer"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4 text-xs font-sans">
-              <div className="bg-white border border-stone-200 rounded-2xl p-4 space-y-2">
-                <label className="block font-semibold text-stone-800">
-                  Select Family Photo File from Your Device
-                </label>
-                <p className="text-[11px] text-stone-500">
-                  Select your original family photo.
-                </p>
-                <input
-                  type="file"
-                  accept="image/*"
-                  onChange={(e) => handleFileUpload(e, 'hero')}
-                  className="w-full text-xs text-stone-600 file:mr-3 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-semibold file:bg-blue-900 file:text-white hover:file:bg-blue-950 cursor-pointer"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setIsEditingHeroPhoto(false)}
-                  className="px-4 py-2 rounded-xl bg-stone-200 text-stone-700 font-medium cursor-pointer"
-                >
-                  Close
-                </button>
-              </div>
             </div>
           </div>
         </div>

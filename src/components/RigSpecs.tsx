@@ -431,17 +431,6 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
               <ExternalLink className="w-3.5 h-3.5 text-blue-900" />
               <span>Wilderness Vans Album</span>
             </a>
-
-            {/* Upload Button (Admin Only) */}
-            {isAdmin && (
-              <button
-                onClick={() => setIsUploadOpen(true)}
-                className="bg-blue-900 hover:bg-blue-950 text-white px-5 py-2.5 rounded-2xl text-xs font-semibold flex items-center gap-2 shadow-sm transition"
-              >
-                <Upload className="w-4 h-4" />
-                <span>Upload Rig Photo</span>
-              </button>
-            )}
           </div>
         </div>
 
@@ -488,18 +477,6 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
                 <span className="absolute top-3 left-3 px-2.5 py-1 rounded-full bg-slate-950/80 backdrop-blur-sm text-[10px] font-semibold text-white uppercase tracking-wider">
                   {photo.category.replace('_', ' ')}
                 </span>
-                
-                {/* Admin Quick Action Button on Photo */}
-                {isAdmin && (
-                  <button
-                    onClick={(e) => openEditModal(photo, e)}
-                    className="absolute top-3 right-3 px-2.5 py-1 rounded-full bg-amber-500/90 hover:bg-amber-600 text-white backdrop-blur-sm text-[11px] font-semibold flex items-center gap-1 shadow-sm transition"
-                    title="Edit caption and details"
-                  >
-                    <Edit3 className="w-3 h-3" />
-                    <span>Edit</span>
-                  </button>
-                )}
               </div>
 
               <div className="p-5 space-y-2">
@@ -516,15 +493,6 @@ export const RigSpecs: React.FC<RigSpecsProps> = ({
                 
                 <div className="flex items-center justify-between pt-2 border-t border-stone-100 text-[10px] text-stone-400 font-mono">
                   <span>Added: {photo.uploadedAt}</span>
-                  {isAdmin && (
-                    <button
-                      onClick={(e) => openEditModal(photo, e)}
-                      className="text-blue-900 hover:text-blue-950 font-sans font-semibold text-[11px] flex items-center gap-1 hover:underline"
-                    >
-                      <Edit3 className="w-3 h-3" />
-                      Edit Caption
-                    </button>
-                  )}
                 </div>
               </div>
             </div>

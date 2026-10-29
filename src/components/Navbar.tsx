@@ -19,26 +19,15 @@ interface NavbarProps {
   activeTab: 'home' | 'map' | 'journal' | 'gallery' | 'rig';
   setActiveTab: (tab: 'home' | 'map' | 'journal' | 'gallery' | 'rig') => void;
   liveLocation: LiveLocation;
-  currentUser: UserProfile | null;
-  pendingSubscribersCount?: number;
-  totalSubscribersCount?: number;
-  onOpenAuthModal: () => void;
-  onOpenPinModal: () => void;
-  onOpenSubscribeModal?: () => void;
-  onOpenAdminSubscribersModal?: () => void;
-  onOpenChangePassword?: () => void;
+  currentUser?: UserProfile | null;
+  onOpenAuthModal?: () => void;
 }
 
 export const Navbar: React.FC<NavbarProps> = ({
   activeTab,
   setActiveTab,
   liveLocation,
-  currentUser,
-  onOpenAuthModal,
-  onOpenPinModal,
-  onOpenChangePassword,
 }) => {
-  const isAdmin = currentUser?.isAdmin;
   const { language, setLanguage, t } = useLanguage();
 
   return (
@@ -103,26 +92,14 @@ export const Navbar: React.FC<NavbarProps> = ({
 
             <span className="text-slate-700 hidden sm:inline">|</span>
 
-            {isAdmin ? (
-              <button
-                id="update-pin-nav-btn"
-                onClick={onOpenPinModal}
-                className="text-amber-400 hover:text-amber-300 font-semibold text-[11px] flex items-center gap-1 transition"
-                title="Send a pin of where we are"
-              >
-                <MapPin className="w-3 h-3 text-amber-400" />
-                <span>{t('nav.updatePin')}</span>
-              </button>
-            ) : (
-              <button
-                onClick={() => setActiveTab('map')}
-                className="text-blue-400 hover:text-blue-300 font-semibold text-[11px] flex items-center gap-1 transition"
-                title="View current location on Route Map"
-              >
-                <Compass className="w-3 h-3 text-blue-400" />
-                <span>{language === 'fr' ? "Voir l'étape sur la carte" : "View on Route Map"}</span>
-              </button>
-            )}
+            <button
+              onClick={() => setActiveTab('map')}
+              className="text-blue-400 hover:text-blue-300 font-semibold text-[11px] flex items-center gap-1 transition"
+              title="View current location on Route Map"
+            >
+              <Compass className="w-3 h-3 text-blue-400" />
+              <span>{language === 'fr' ? "Voir l'étape sur la carte" : "View on Route Map"}</span>
+            </button>
           </div>
 
         </div>
@@ -157,7 +134,7 @@ export const Navbar: React.FC<NavbarProps> = ({
             </div>
           </div>
 
-          {/* Action Buttons & Profile */}
+          {/* Action Buttons & Social */}
           <div className="flex items-center gap-2 sm:gap-2.5">
             
             {/* Language Switcher Button in Header */}
@@ -194,52 +171,12 @@ export const Navbar: React.FC<NavbarProps> = ({
               href="https://www.instagram.com/moussethetruck/"
               target="_blank"
               rel="noopener noreferrer"
-              className="bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200/90 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
+              className="bg-orange-50 hover:bg-orange-100 text-orange-800 border border-orange-200/90 px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition"
               title="Follow @moussethetruck on Instagram"
             >
               <Instagram className="w-3.5 h-3.5 text-orange-700" />
-              <span className="hidden md:inline">Instagram</span>
+              <span>Instagram</span>
             </a>
-
-            {/* Log In / User Button */}
-            {!currentUser?.isAdmin && (
-              <button
-                id="admin-login-nav-btn"
-                onClick={onOpenAuthModal}
-                className="hidden xl:flex items-center gap-1.5 bg-amber-50 hover:bg-amber-100 border border-amber-300 text-amber-950 px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition text-xs font-semibold shadow-2xs"
-                title="Expedition Administrator Sign In (Joannie & Barton)"
-              >
-                <ShieldCheck className="w-3.5 h-3.5 text-amber-800" />
-                <span>Admin Login</span>
-              </button>
-            )}
-
-            <button
-              id="auth-persona-btn"
-              onClick={onOpenAuthModal}
-              className={`flex items-center gap-2 border px-2.5 py-1.5 sm:px-3 sm:py-2 rounded-xl transition text-xs ${
-                currentUser?.isAdmin
-                  ? 'bg-emerald-50 hover:bg-emerald-100 border-emerald-300 text-emerald-950 font-bold shadow-2xs'
-                  : 'bg-stone-100 hover:bg-stone-200/80 border-stone-200 text-stone-800'
-              }`}
-              title={currentUser ? `${t('nav.signedInAs')} ${currentUser.name}` : t('nav.signIn')}
-            >
-              {currentUser?.avatar ? (
-                <img
-                  src={currentUser.avatar}
-                  alt={currentUser.name}
-                  className="w-5 h-5 sm:w-6 sm:h-6 rounded-full object-cover border border-stone-300"
-                />
-              ) : (
-                <User className={`w-4 h-4 ${currentUser?.isAdmin ? 'text-emerald-700' : 'text-stone-600'}`} />
-              )}
-              <span className="font-bold hidden md:inline truncate max-w-[120px]">
-                {currentUser?.isAdmin ? `Admin: ${currentUser.name.split(' ')[0]}` : (currentUser?.name || t('nav.signIn'))}
-              </span>
-              {currentUser?.isAdmin && (
-                <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Administrator Session Active" />
-              )}
-            </button>
 
           </div>
 

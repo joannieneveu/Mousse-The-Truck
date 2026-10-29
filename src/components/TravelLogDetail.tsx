@@ -47,38 +47,25 @@ import {
 } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { RichTextRenderer } from '../utils/richTextRenderer';
-import { JournalEditorModal } from './JournalEditorModal';
 import { readFileAsOptimizedDataUrl } from '../utils/photoDropHelper';
 
 interface TravelLogDetailProps {
   log: TravelLog;
-  currentUser: UserProfile | null;
+  currentUser?: UserProfile | null;
   onBack: () => void;
-  onOpenAuthModal: () => void;
+  onOpenAuthModal?: () => void;
   onViewLocationOnMap?: (lat: number, lng: number) => void;
-  onTogglePublish?: (logId: string) => Promise<void>;
-  onDeleteLog?: (logId: string) => Promise<void>;
-  onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<any>;
-  onUploadMedia?: (newMedia: Partial<MediaItem>) => Promise<void>;
-  onUploadBatchMedia?: (items: Partial<MediaItem>[]) => Promise<void>;
   onOpenMediaGallery?: () => void;
   liveLocation?: any;
+  subscribers?: any;
 }
 
 export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   log: initialLogProp,
   currentUser,
   onBack,
-  onOpenAuthModal,
   onViewLocationOnMap,
-  onTogglePublish,
-  onDeleteLog,
-  onUpdateLog,
-  onUploadMedia,
-  onUploadBatchMedia,
   onOpenMediaGallery,
-  liveLocation,
-  subscribers
 }) => {
   const [log, setLog] = useState<TravelLog>(initialLogProp);
 
@@ -89,86 +76,20 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
   const [likes, setLikes] = useState<number>(typeof log.likesCount === 'number' ? log.likesCount : 0);
   const [hasLiked, setHasLiked] = useState<boolean>(false);
   const [copied, setCopied] = useState<boolean>(false);
-  const [isEditorOpen, setIsEditorOpen] = useState<boolean>(false);
   
   const [comments, setComments] = useState<CommentItem[]>([]);
   const [commentText, setCommentText] = useState<string>('');
   const [authorName, setAuthorName] = useState<string>(currentUser?.name || '');
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
-  const [isTogglingStatus, setIsTogglingStatus] = useState<boolean>(false);
 
-  // Bottom Journal Photos State
-  const [isAddPhotoModalOpen, setIsAddPhotoModalOpen] = useState<boolean>(false);
-  const [uploadPhotoUrl, setUploadPhotoUrl] = useState<string>('');
-  const [uploadPhotoTitle, setUploadPhotoTitle] = useState<string>('');
-  const [uploadPhotoCaption, setUploadPhotoCaption] = useState<string>('');
-  const [isUploadingPhoto, setIsUploadingPhoto] = useState<boolean>(false);
-  const [isDraggingPhoto, setIsDraggingPhoto] = useState<boolean>(false);
-  const [successToast, setSuccessToast] = useState<string | null>(null);
-
-  // Lightbox & Edit Caption State for Journal Photos
+  // Lightbox State for Journal Photos
   const [activeLightboxIdx, setActiveLightboxIdx] = useState<number | null>(null);
-  const [editingPhotoIdx, setEditingPhotoIdx] = useState<number | null>(null);
-  const [editingCaptionText, setEditingCaptionText] = useState<string>('');
-  const [isSavingCaption, setIsSavingCaption] = useState<boolean>(false);
 
   // Photo comments in lightbox
   const [photoComments, setPhotoComments] = useState<CommentItem[]>([]);
   const [photoCommentText, setPhotoCommentText] = useState<string>('');
   const [photoGuestName, setPhotoGuestName] = useState<string>(currentUser?.name || '');
   const [isPostingPhotoComment, setIsPostingPhotoComment] = useState<boolean>(false);
-
-  // Odometer editing state
-  const [isOdometerModalOpen, setIsOdometerModalOpen] = useState<boolean>(false);
-  const [odometerInput, setOdometerInput] = useState<string>(
-    log.metrics?.kmTraveled !== undefined 
-      ? String(log.metrics.kmTraveled) 
-      : (log.metrics?.odometerKm !== undefined ? String(log.metrics.odometerKm) : '')
-  );
-  const [isSavingOdometer, setIsSavingOdometer] = useState<boolean>(false);
-
-  useEffect(() => {
-    if (log.metrics?.kmTraveled !== undefined) {
-      setOdometerInput(String(log.metrics.kmTraveled));
-    } else if (log.metrics?.odometerKm !== undefined) {
-      setOdometerInput(String(log.metrics.odometerKm));
-    }
-  }, [log.id, log.metrics?.kmTraveled, log.metrics?.odometerKm]);
-
-  const handleSaveOdometer = async () => {
-    const val = Number(odometerInput);
-    if (isNaN(val) || val < 0) {
-      alert('Please enter a valid number of kilometers.');
-      return;
-    }
-    setIsSavingOdometer(true);
-    try {
-      setLog(prev => ({
-        ...prev,
-        metrics: {
-          ...prev.metrics,
-          kmTraveled: val,
-          odometerKm: val
-        }
-      }));
-      if (onUpdateLog) {
-        await onUpdateLog(log.id, {
-          metrics: {
-            ...log.metrics,
-            kmTraveled: val,
-            odometerKm: val
-          }
-        });
-      }
-      setSuccessToast(`Odometer updated to ${val.toLocaleString()} km from start!`);
-      setIsOdometerModalOpen(false);
-      setTimeout(() => setSuccessToast(null), 4000);
-    } catch (err) {
-      console.error('Failed to update odometer:', err);
-    } finally {
-      setIsSavingOdometer(false);
-    }
-  };
 
   const galleryList = log.gallery || [];
 
@@ -373,221 +294,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
     setTimeout(() => setCopied(false), 3000);
   };
 
-  const handleStatusToggle = async () => {
-    if (onTogglePublish) {
-      setIsTogglingStatus(true);
-      await onTogglePublish(log.id);
-      setIsTogglingStatus(false);
-    }
-  };
-
-  const handleDelete = async () => {
-    if (window.confirm('Are you sure you want to delete this journal entry?')) {
-      if (onDeleteLog) {
-        await onDeleteLog(log.id);
-        onBack();
-      }
-    }
-  };
-
-  const showToast = (msg: string) => {
-    setSuccessToast(msg);
-    setTimeout(() => setSuccessToast(null), 4500);
-  };
-
-  const uploadPhotoToServer = async (dataUrl: string, filename?: string): Promise<string> => {
-    if (!dataUrl || !dataUrl.startsWith('data:')) return dataUrl;
-    try {
-      const adminToken = localStorage.getItem('mousse_admin_token');
-      const headers: Record<string, string> = { 'Content-Type': 'application/json' };
-      if (adminToken) {
-        headers['x-admin-token'] = adminToken;
-        headers['Authorization'] = `Bearer ${adminToken}`;
-      }
-      if (currentUser?.email) {
-        headers['x-user-email'] = currentUser.email;
-        headers['x-user-role'] = currentUser.isAdmin ? 'admin' : 'guest';
-      }
-      const res = await fetch('/api/upload', {
-        method: 'POST',
-        headers,
-        body: JSON.stringify({ dataUrl, filename: filename || `entry-photo-${Date.now()}` })
-      });
-      const contentType = (res.headers.get('content-type') || '').toLowerCase();
-      if (contentType.includes('application/json')) {
-        const data = await res.json();
-        if (data?.url) return data.url;
-      }
-    } catch (err) {
-      console.warn('Server upload fallback:', err);
-    }
-    return dataUrl;
-  };
-
-  // Upload Photo File(s) from computer / iPhoto (via file input or drag-and-drop)
-  const handleUploadFilesToEntry = async (files: FileList | File[]) => {
-    if (!files || files.length === 0) return;
-
-    setIsUploadingPhoto(true);
-    const newItems: { url: string; caption: string; type: 'image' | 'video' }[] = [];
-    const mediaItemsToAdd: Partial<MediaItem>[] = [];
-
-    for (let i = 0; i < files.length; i++) {
-      const file = files[i];
-      if (!file.type.startsWith('image/') && !file.type.startsWith('video/')) continue;
-
-      const rawDataUrl = await readFileAsOptimizedDataUrl(file);
-      const permanentUrl = await uploadPhotoToServer(rawDataUrl, file.name);
-
-      const cleanFileName = file.name.replace(/\.[^/.]+$/, '').replace(/[-_]/g, ' ');
-      const caption = `Expedition photo at ${log.locationName}: ${cleanFileName}`;
-      const title = `${log.title} - ${cleanFileName}`;
-
-      newItems.push({
-        url: permanentUrl,
-        caption,
-        type: file.type.startsWith('video/') ? 'video' : 'image'
-      });
-
-      mediaItemsToAdd.push({
-        title,
-        caption,
-        url: permanentUrl,
-        locationName: log.locationName,
-        coordinates: log.coordinates,
-        journeyLeg: log.journeyLeg || 'arctic_yukon',
-        tags: Array.from(new Set([...(log.tags || []), 'Journal', log.category])),
-        author: currentUser?.name || log.author || 'Dr. Joannie Neveu',
-        date: log.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        type: file.type.startsWith('video/') ? 'video' : 'image'
-      });
-    }
-
-    if (newItems.length > 0) {
-      const updatedGallery = [...(log.gallery || []), ...newItems];
-      setLog(prev => ({ ...prev, gallery: updatedGallery }));
-      if (onUpdateLog) {
-        await onUpdateLog(log.id, { gallery: updatedGallery });
-      }
-
-      if (onUploadBatchMedia && mediaItemsToAdd.length > 1) {
-        await onUploadBatchMedia(mediaItemsToAdd);
-      } else if (onUploadMedia) {
-        for (const item of mediaItemsToAdd) {
-          await onUploadMedia(item);
-        }
-      }
-
-      confetti({ particleCount: 40, spread: 60, origin: { y: 0.8 } });
-      showToast(`✨ ${newItems.length} ${newItems.length === 1 ? 'photo' : 'photos'} added to journal entry & synced to Gallery!`);
-    }
-
-    setIsUploadingPhoto(false);
-    setIsAddPhotoModalOpen(false);
-  };
-
-  // Upload single photo via URL / Modal
-  const handleAddSinglePhotoSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!uploadPhotoUrl.trim()) return;
-
-    setIsUploadingPhoto(true);
-    const caption = uploadPhotoCaption.trim() || `Expedition moment at ${log.locationName}`;
-    const title = uploadPhotoTitle.trim() || `${log.title} Photo`;
-
-    let finalUrl = uploadPhotoUrl.trim();
-    if (finalUrl.startsWith('data:')) {
-      finalUrl = await uploadPhotoToServer(finalUrl, `photo-${Date.now()}`);
-    }
-
-    const newPhotoItem = {
-      url: finalUrl,
-      caption,
-      type: 'image' as const
-    };
-
-    const updatedGallery = [...(log.gallery || []), newPhotoItem];
-    setLog(prev => ({ ...prev, gallery: updatedGallery }));
-    if (onUpdateLog) {
-      await onUpdateLog(log.id, { gallery: updatedGallery });
-    }
-
-    if (onUploadMedia) {
-      await onUploadMedia({
-        title,
-        caption,
-        url: finalUrl,
-        locationName: log.locationName,
-        coordinates: log.coordinates,
-        journeyLeg: log.journeyLeg || 'arctic_yukon',
-        tags: Array.from(new Set([...(log.tags || []), 'Journal', log.category])),
-        author: currentUser?.name || log.author || 'Dr. Joannie Neveu',
-        date: log.date || new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }),
-        type: 'image'
-      });
-    }
-
-    confetti({ particleCount: 35, spread: 55, origin: { y: 0.8 } });
-    showToast('✨ Photo added to journal entry & synced to Photo Gallery!');
-
-    setUploadPhotoUrl('');
-    setUploadPhotoTitle('');
-    setUploadPhotoCaption('');
-    setIsUploadingPhoto(false);
-    setIsAddPhotoModalOpen(false);
-  };
-
-  // Edit Caption for existing photo in entry
-  const handleSavePhotoCaption = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (editingPhotoIdx === null || !currentUser?.isAdmin) return;
-
-    setIsSavingCaption(true);
-    const updatedGallery = [...(log.gallery || [])];
-    if (updatedGallery[editingPhotoIdx]) {
-      updatedGallery[editingPhotoIdx] = {
-        ...updatedGallery[editingPhotoIdx],
-        caption: editingCaptionText.trim()
-      };
-      setLog(prev => ({ ...prev, gallery: updatedGallery }));
-
-      if (onUpdateLog) {
-        const res: any = await onUpdateLog(log.id, { gallery: updatedGallery });
-        if (res && res.success === false) {
-          showToast(`⚠️ ${res.error || 'Failed to save caption'}`);
-          setLog(initialLogProp);
-          setIsSavingCaption(false);
-          return;
-        }
-      }
-      showToast('Caption updated and saved to website.');
-    }
-
-    setIsSavingCaption(false);
-    setEditingPhotoIdx(null);
-    setEditingCaptionText('');
-  };
-
-  // Delete photo from entry
-  const handleDeletePhotoFromEntry = async (idx: number, e?: React.MouseEvent) => {
-    e?.stopPropagation();
-    if (!currentUser?.isAdmin) return;
-    if (window.confirm('Remove this photo from this journal entry?')) {
-      const updatedGallery = (log.gallery || []).filter((_, i) => i !== idx);
-      setLog(prev => ({ ...prev, gallery: updatedGallery }));
-      if (onUpdateLog) {
-        const res: any = await onUpdateLog(log.id, { gallery: updatedGallery });
-        if (res && res.success === false) {
-          showToast(`⚠️ ${res.error || 'Failed to remove photo'}`);
-          setLog(initialLogProp);
-          return;
-        }
-      }
-      showToast('Photo removed from this entry.');
-      if (activeLightboxIdx !== null) setActiveLightboxIdx(null);
-    }
-  };
-
   const getCategoryBadge = (_cat?: JournalCategory) => {
     return { label: 'Expedition Journal', bg: 'bg-blue-100 text-blue-950 border-blue-200' };
   };
@@ -608,57 +314,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </button>
 
         <div className="flex items-center gap-2">
-          {/* Admin Edit, Publish Toggle, Email Newsletter & Delete */}
-          {currentUser?.isAdmin && (
-            <div className="flex items-center gap-1.5 mr-2">
-              <button
-                onClick={() => setIsEditorOpen(true)}
-                className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
-                title="Edit Journal Entry & Text"
-              >
-                <Edit3 className="w-3.5 h-3.5" />
-                <span>Edit Entry</span>
-              </button>
-
-              <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs transition" title="Upload photos directly to this journal entry">
-                <FolderOpen className="w-3.5 h-3.5" />
-                <span>Upload Photos</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={(e) => {
-                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                  }}
-                  className="hidden"
-                />
-              </label>
-
-              <button
-                onClick={handleStatusToggle}
-                disabled={isTogglingStatus}
-                className={`inline-flex items-center gap-1 text-xs font-semibold px-3 py-1.5 rounded-xl border transition ${
-                  log.status === 'published'
-                    ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                    : 'bg-amber-50 text-amber-900 border-amber-300 hover:bg-amber-100'
-                }`}
-              >
-                {log.status === 'published' ? <Eye className="w-3.5 h-3.5 text-emerald-700" /> : <EyeOff className="w-3.5 h-3.5 text-amber-700" />}
-                <span>{log.status === 'published' ? 'Published Live' : 'Draft (Private)'}</span>
-              </button>
-
-              {onDeleteLog && (
-                <button
-                  onClick={handleDelete}
-                  className="p-1.5 text-stone-400 hover:text-rose-600 rounded-lg hover:bg-stone-100 transition"
-                  title="Delete Entry"
-                >
-                  <Trash2 className="w-4 h-4" />
-                </button>
-              )}
-            </div>
-          )}
-
           {onViewLocationOnMap && (
             <button
               onClick={() => onViewLocationOnMap(log.coordinates.lat, log.coordinates.lng)}
@@ -678,72 +333,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           </button>
         </div>
       </div>
-
-      {/* Administrator Direct Edit Banner */}
-      {!currentUser?.isAdmin ? (
-        <div className="bg-stone-50 border border-stone-200/90 rounded-2xl p-3.5 sm:px-4 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 shadow-2xs font-sans">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-amber-100 text-amber-900 flex items-center justify-center shrink-0">
-              <ShieldCheck className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-slate-900">Administrator Direct Editing</div>
-              <p className="text-[11px] text-stone-600">
-                Are you an administrator (Joannie or Barton)? Sign in to edit captions, update journal text, or upload photos directly to the website.
-              </p>
-            </div>
-          </div>
-          {onOpenAuthModal && (
-            <button
-              type="button"
-              onClick={onOpenAuthModal}
-              className="shrink-0 px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold shadow-xs transition"
-            >
-              Sign In as Administrator
-            </button>
-          )}
-        </div>
-      ) : (
-        <div className="bg-blue-50/90 border border-blue-200 rounded-2xl p-3.5 sm:px-4 flex flex-wrap items-center justify-between gap-3 shadow-2xs font-sans">
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-xl bg-blue-900 text-white flex items-center justify-center text-xs font-bold shrink-0">
-              <Check className="w-4 h-4" />
-            </div>
-            <div>
-              <div className="text-xs font-bold text-blue-950">
-                Administrator Mode Active ({currentUser.name})
-              </div>
-              <p className="text-[11px] text-blue-800">
-                You can edit this journal entry, upload photos, and update photo captions directly on the website.
-              </p>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => setIsEditorOpen(true)}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
-            >
-              <Edit3 className="w-3.5 h-3.5" />
-              <span>Edit Journal Entry</span>
-            </button>
-
-            <label className="cursor-pointer inline-flex items-center gap-1.5 text-xs font-semibold px-3.5 py-1.5 rounded-xl bg-emerald-800 hover:bg-emerald-900 text-white shadow-xs transition">
-              <FolderOpen className="w-3.5 h-3.5" />
-              <span>Upload Photos</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={(e) => {
-                  if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                }}
-                className="hidden"
-              />
-            </label>
-          </div>
-        </div>
-      )}
 
       {/* Header Metadata */}
       <header className="space-y-4">
@@ -817,22 +406,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           </div>
         </div>
         <div className="relative group">
-          <div className="flex items-center justify-between">
-            <span className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Distance From Start</span>
-            {currentUser?.isAdmin && (
-              <button 
-                onClick={() => {
-                  setOdometerInput(log.metrics.kmTraveled !== undefined ? String(log.metrics.kmTraveled) : '');
-                  setIsOdometerModalOpen(true);
-                }}
-                className="text-[10px] text-blue-900 hover:text-blue-950 font-semibold underline decoration-dotted inline-flex items-center gap-0.5 ml-1 transition"
-                title="Enter reading from odometer"
-              >
-                <Gauge className="w-3 h-3 text-blue-900" />
-                <span>Enter Odometer</span>
-              </button>
-            )}
-          </div>
+          <div className="text-[10px] text-stone-400 font-medium uppercase tracking-wider">Distance From Start</div>
           <div className="font-bold text-stone-800 text-[11px] mt-0.5 flex items-center gap-1.5 flex-wrap">
             <span>{log.metrics.kmTraveled ? `${log.metrics.kmTraveled.toLocaleString()} km` : '0 km'}</span>
             {log.id === 'log-2-alberta-to-yukon' && (
@@ -1007,33 +581,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                 <span className="sm:hidden">Gallery</span>
               </button>
             )}
-
-            {currentUser?.isAdmin && (
-              <>
-                <label className="cursor-pointer bg-blue-900 hover:bg-blue-950 text-white text-xs font-semibold px-4 py-2 rounded-xl flex items-center gap-1.5 shadow-xs transition">
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Upload Photos to This Entry</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={(e) => {
-                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                    }}
-                    className="hidden"
-                  />
-                </label>
-
-                <button
-                  type="button"
-                  onClick={() => setIsAddPhotoModalOpen(true)}
-                  className="bg-white hover:bg-stone-100 text-stone-800 border border-stone-300 text-xs font-medium px-3.5 py-2 rounded-xl flex items-center gap-1.5 shadow-2xs transition"
-                >
-                  <Plus className="w-3.5 h-3.5" />
-                  <span>Add Photo</span>
-                </button>
-              </>
-            )}
           </div>
         </div>
 
@@ -1080,18 +627,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
                 {/* Caption & Controls */}
                 <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2.5 bg-white">
-                  <p 
-                    onClick={() => {
-                      if (currentUser?.isAdmin) {
-                        setEditingPhotoIdx(idx);
-                        setEditingCaptionText(item.caption || '');
-                      }
-                    }}
-                    className={`text-xs text-stone-700 font-serif italic leading-relaxed ${
-                      currentUser?.isAdmin ? 'cursor-pointer hover:text-blue-900 transition underline-offset-2 hover:underline' : ''
-                    }`}
-                    title={currentUser?.isAdmin ? 'Click to edit caption directly' : undefined}
-                  >
+                  <p className="text-xs text-stone-700 font-serif italic leading-relaxed">
                     {item.caption || 'Expedition memory'}
                   </p>
 
@@ -1103,30 +639,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                       <MessageSquare className="w-3.5 h-3.5" />
                       <span>Leave a comment</span>
                     </button>
-
-                    {currentUser?.isAdmin && (
-                      <div className="flex items-center gap-1.5">
-                        <button
-                          onClick={() => {
-                            setEditingPhotoIdx(idx);
-                            setEditingCaptionText(item.caption || '');
-                          }}
-                          className="px-2 py-0.5 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition"
-                          title="Edit photo description & caption"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Edit Caption</span>
-                        </button>
-
-                        <button
-                          onClick={(e) => handleDeletePhotoFromEntry(idx, e)}
-                          className="p-1 rounded-lg text-stone-400 hover:text-rose-600 hover:bg-rose-50 transition"
-                          title="Remove photo from this entry"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </div>
-                    )}
                   </div>
                 </div>
               </div>
@@ -1134,108 +646,14 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           </div>
         ) : (
           /* Empty State */
-          currentUser?.isAdmin ? (
-            <div 
-              onDragOver={(e) => {
-                e.preventDefault();
-                setIsDraggingPhoto(true);
-              }}
-              onDragLeave={() => setIsDraggingPhoto(false)}
-              onDrop={(e) => {
-                e.preventDefault();
-                setIsDraggingPhoto(false);
-                if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
-              }}
-              className={`p-8 text-center rounded-3xl border-2 border-dashed transition space-y-3 ${
-                isDraggingPhoto 
-                  ? 'border-blue-900 bg-blue-50/90' 
-                  : 'border-stone-300 bg-white/70 hover:bg-white hover:border-stone-400'
-              }`}
-            >
-              <div className="w-12 h-12 rounded-2xl bg-blue-100 text-blue-900 mx-auto flex items-center justify-center">
-                <Upload className="w-6 h-6" />
-              </div>
-              <div className="space-y-1">
-                <h4 className="font-serif font-bold text-stone-900 text-base">
-                  No photos added to this journal entry yet
-                </h4>
-                <p className="text-xs text-stone-500 max-w-md mx-auto">
-                  Drag and drop photos directly from your <strong>iPhoto / Photos library</strong> or computer files here. They will appear right at the bottom of this journal entry and automatically be published in the <strong>Photo & Video Gallery tab</strong>!
-                </p>
-              </div>
-              <div className="pt-2 flex flex-wrap items-center justify-center gap-3">
-                <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold flex items-center gap-1.5 shadow-xs transition">
-                  <FolderOpen className="w-3.5 h-3.5" />
-                  <span>Choose Photos from Computer</span>
-                  <input
-                    type="file"
-                    multiple
-                    accept="image/*,video/*"
-                    onChange={(e) => {
-                      if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                    }}
-                    className="hidden"
-                  />
-                </label>
-                <button
-                  type="button"
-                  onClick={() => setIsAddPhotoModalOpen(true)}
-                  className="px-4 py-2 bg-stone-100 hover:bg-stone-200 text-stone-700 rounded-xl text-xs font-medium border border-stone-200 transition"
-                >
-                  Enter Photo URL / Preset
-                </button>
-              </div>
-            </div>
-          ) : (
-            <div className="p-8 text-center rounded-3xl border border-stone-200 bg-stone-50/70 space-y-2">
-              <Camera className="w-8 h-8 text-stone-400 mx-auto" />
-              <p className="font-serif font-bold text-stone-800 text-sm">
-                No dedicated photo collection for this entry yet
-              </p>
-              <p className="text-xs text-stone-500 max-w-md mx-auto">
-                Explore our full collection of pictures and drone videos in the Photo & Video Gallery tab!
-              </p>
-            </div>
-          )
-        )}
-
-        {/* Drag & Drop Quick Dropzone Bar when photos already exist (Admin Only) */}
-        {currentUser?.isAdmin && galleryList.length > 0 && (
-          <div
-            onDragOver={(e) => {
-              e.preventDefault();
-              setIsDraggingPhoto(true);
-            }}
-            onDragLeave={() => setIsDraggingPhoto(false)}
-            onDrop={(e) => {
-              e.preventDefault();
-              setIsDraggingPhoto(false);
-              if (e.dataTransfer.files) handleUploadFilesToEntry(e.dataTransfer.files);
-            }}
-            className={`p-4 rounded-2xl border-2 border-dashed transition flex flex-wrap items-center justify-between gap-3 text-xs ${
-              isDraggingPhoto
-                ? 'border-blue-900 bg-blue-50 text-blue-950'
-                : 'border-stone-200 bg-[#FAF8F5] text-stone-600'
-            }`}
-          >
-            <div className="flex items-center gap-2">
-              <Upload className="w-4 h-4 text-blue-900" />
-              <span>
-                <strong>Add more photos to this entry:</strong> Drag photos here directly from iPhoto or computer files.
-              </span>
-            </div>
-            <label className="cursor-pointer text-blue-900 hover:text-blue-950 font-semibold underline">
-              <span>Browse files</span>
-              <input
-                type="file"
-                multiple
-                accept="image/*,video/*"
-                onChange={(e) => {
-                  if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                }}
-                className="hidden"
-              />
-            </label>
+          <div className="p-8 text-center rounded-3xl border border-stone-200 bg-stone-50/70 space-y-2">
+            <Camera className="w-8 h-8 text-stone-400 mx-auto" />
+            <p className="font-serif font-bold text-stone-800 text-sm">
+              No dedicated photo collection for this entry yet
+            </p>
+            <p className="text-xs text-stone-500 max-w-md mx-auto">
+              Explore our full collection of pictures and drone videos in the Photo & Video Gallery tab!
+            </p>
           </div>
         )}
 
@@ -1407,16 +825,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
 
                 <div className="flex items-center justify-between pt-1 border-t border-stone-100/80">
                   <div className="text-[11px] text-stone-400 font-sans">
-                    {currentUser?.isAdmin && (
-                      <button
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="text-stone-400 hover:text-rose-600 inline-flex items-center gap-1 transition text-[11px] font-medium"
-                        title="Remove inappropriate comment"
-                      >
-                        <Trash2 className="w-3 h-3" />
-                        <span>Remove (Admin)</span>
-                      </button>
-                    )}
                   </div>
 
                   <button
@@ -1432,33 +840,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
           )}
         </div>
       </section>
-
-      {/* Admin Edit Modal */}
-      {isEditorOpen && (
-        <JournalEditorModal
-          initialLog={log}
-          isOpen={isEditorOpen}
-          onClose={() => setIsEditorOpen(false)}
-          onSave={async (data) => {
-            if (onUpdateLog) {
-              const res = await onUpdateLog(log.id, data);
-              if (res && res.success === false && !res.error?.includes('405')) {
-                throw new Error(res.error || 'Failed to save modifications to the journal entry.');
-              }
-              if (res && res.log) {
-                setLog(res.log);
-              } else {
-                setLog(prev => ({ ...prev, ...data }));
-              }
-            } else {
-              setLog(prev => ({ ...prev, ...data }));
-            }
-            showToast('✨ Journal entry modifications saved and updated on website.');
-            setIsEditorOpen(false);
-          }}
-          authorName={currentUser?.name || log.author}
-        />
-      )}
 
       {/* 1. PHOTO LIGHTBOX MODAL WITH BOTTOM COMMENTS */}
       {activeLightboxIdx !== null && galleryList[activeLightboxIdx] && (
@@ -1481,19 +862,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
             </div>
 
             <div className="flex items-center gap-2">
-              {currentUser?.isAdmin && (
-                <button
-                  onClick={() => {
-                    setEditingPhotoIdx(activeLightboxIdx);
-                    setEditingCaptionText(galleryList[activeLightboxIdx].caption || '');
-                  }}
-                  className="px-3 py-1.5 rounded-xl bg-white/20 hover:bg-white/30 text-white text-xs font-medium flex items-center gap-1.5 transition"
-                >
-                  <Edit3 className="w-3.5 h-3.5" />
-                  <span>Edit Caption</span>
-                </button>
-              )}
-
               <button
                 onClick={() => setActiveLightboxIdx(null)}
                 className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 text-white flex items-center justify-center transition"
@@ -1603,15 +971,6 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
                         <span className="font-semibold text-stone-200">{c.authorName}</span>
                         <div className="flex items-center gap-2">
                           <span>{c.createdAt}</span>
-                          {currentUser?.isAdmin && (
-                            <button
-                              onClick={() => handleDeletePhotoComment(c.id)}
-                              className="text-stone-400 hover:text-rose-400"
-                              title="Delete comment (Admin)"
-                            >
-                              <Trash2 className="w-3 h-3" />
-                            </button>
-                          )}
                         </div>
                       </div>
                       <p className="text-stone-300 text-xs font-sans">{c.content}</p>
@@ -1624,330 +983,7 @@ export const TravelLogDetail: React.FC<TravelLogDetailProps> = ({
         </div>
       )}
 
-      {/* 2. EDIT CAPTION MODAL (ADMIN) */}
-      {editingPhotoIdx !== null && galleryList[editingPhotoIdx] && (
-        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-4 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Edit3 className="w-4 h-4 text-blue-900" />
-                <h3 className="font-serif font-bold text-stone-900 text-base">Edit Photo Caption</h3>
-              </div>
-              <button
-                onClick={() => setEditingPhotoIdx(null)}
-                className="text-stone-400 hover:text-stone-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Thumbnail */}
-            <div className="h-36 rounded-xl overflow-hidden bg-stone-900 border border-stone-200">
-              <img
-                src={galleryList[editingPhotoIdx].url}
-                alt="Thumbnail"
-                className="w-full h-full object-cover"
-                referrerPolicy="no-referrer"
-              />
-            </div>
-
-            <form onSubmit={handleSavePhotoCaption} className="space-y-4">
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1.5">
-                  Caption / Description:
-                </label>
-                <textarea
-                  value={editingCaptionText}
-                  onChange={(e) => setEditingCaptionText(e.target.value)}
-                  placeholder="Describe this expedition photo moment..."
-                  rows={3}
-                  className="w-full px-3.5 py-2.5 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
-                  required
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2">
-                <button
-                  type="button"
-                  onClick={() => setEditingPhotoIdx(null)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-stone-600 hover:bg-stone-100 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSavingCaption}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition"
-                >
-                  {isSavingCaption ? 'Saving directly...' : 'Save Caption'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* 3. ADD / UPLOAD PHOTO MODAL (ADMIN) */}
-      {isAddPhotoModalOpen && (
-        <div className="fixed inset-0 z-[70] bg-black/60 backdrop-blur-xs flex items-center justify-center p-4">
-          <div className="bg-white rounded-3xl max-w-lg w-full p-6 shadow-2xl border border-stone-200 space-y-5 animate-in zoom-in-95 duration-200">
-            <div className="flex items-center justify-between border-b border-stone-100 pb-3">
-              <div className="flex items-center gap-2">
-                <Camera className="w-5 h-5 text-blue-900" />
-                <div>
-                  <h3 className="font-serif font-bold text-stone-900 text-base">Add Photo to Journal Entry</h3>
-                  <p className="text-[11px] text-stone-500">Photo will also be saved to the Photo & Video Gallery tab</p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsAddPhotoModalOpen(false)}
-                className="text-stone-400 hover:text-stone-700"
-              >
-                <X className="w-4 h-4" />
-              </button>
-            </div>
-
-            {/* Quick Upload from Files Button */}
-            <div className="p-4 bg-blue-50/70 border border-blue-200/80 rounded-2xl flex items-center justify-between gap-3">
-              <div className="space-y-0.5">
-                <div className="text-xs font-bold text-blue-950 flex items-center gap-1.5">
-                  <FolderOpen className="w-4 h-4 text-blue-900" />
-                  <span>Choose file from Computer / iPhoto</span>
-                </div>
-                <p className="text-[11px] text-blue-800">Directly selects from your photo library or disk</p>
-              </div>
-
-              <label className="cursor-pointer px-4 py-2 bg-blue-900 hover:bg-blue-950 text-white rounded-xl text-xs font-semibold shadow-xs transition">
-                <span>Browse...</span>
-                <input
-                  type="file"
-                  multiple
-                  accept="image/*,video/*"
-                  onChange={(e) => {
-                    if (e.target.files) handleUploadFilesToEntry(e.target.files);
-                  }}
-                  className="hidden"
-                />
-              </label>
-            </div>
-
-            <div className="relative flex py-1 items-center">
-              <div className="grow border-t border-stone-200"></div>
-              <span className="shrink mx-3 text-stone-400 text-xs">or paste image URL / pick preset</span>
-              <div className="grow border-t border-stone-200"></div>
-            </div>
-
-            {/* Preset quick pills */}
-            <div className="space-y-1.5">
-              <span className="text-[11px] font-semibold text-stone-600">Quick Expedition Presets:</span>
-              <div className="flex flex-wrap gap-1.5">
-                {[
-                  { label: '🏔️ Coast Departure', url: '/departure.jpeg' },
-                  { label: '⚡ 1100W Solar Rig', url: '/solar panel.jpeg' },
-                  { label: '🛋️ Birch Interior', url: '/interior1.jpeg' },
-                  { label: '🌅 Mousse Sunset', url: '/moussesunset.jpeg' }
-                ].map((preset, pIdx) => (
-                  <button
-                    key={pIdx}
-                    type="button"
-                    onClick={() => {
-                      setUploadPhotoUrl(preset.url);
-                      setUploadPhotoCaption(`Expedition view during ${log.title}`);
-                    }}
-                    className="text-[11px] px-2.5 py-1 rounded-lg bg-stone-100 hover:bg-stone-200 text-stone-700 font-medium transition"
-                  >
-                    {preset.label}
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <form onSubmit={handleAddSinglePhotoSubmit} className="space-y-3.5">
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Photo URL:
-                </label>
-                <input
-                  type="text"
-                  value={uploadPhotoUrl}
-                  onChange={(e) => setUploadPhotoUrl(e.target.value)}
-                  placeholder="https://... or /departure.jpeg"
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
-                  required
-                />
-              </div>
-
-              {uploadPhotoUrl && (
-                <div className="h-32 rounded-xl overflow-hidden bg-stone-900 border border-stone-200">
-                  <img
-                    src={uploadPhotoUrl}
-                    alt="Preview"
-                    className="w-full h-full object-cover"
-                    referrerPolicy="no-referrer"
-                  />
-                </div>
-              )}
-
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Photo Title (optional):
-                </label>
-                <input
-                  type="text"
-                  value={uploadPhotoTitle}
-                  onChange={(e) => setUploadPhotoTitle(e.target.value)}
-                  placeholder={`${log.title} Photo`}
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
-                />
-              </div>
-
-              <div>
-                <label className="block text-xs font-semibold text-stone-700 mb-1">
-                  Caption / Description:
-                </label>
-                <textarea
-                  value={uploadPhotoCaption}
-                  onChange={(e) => setUploadPhotoCaption(e.target.value)}
-                  placeholder={`Expedition moment in ${log.locationName}...`}
-                  rows={2}
-                  className="w-full px-3.5 py-2 rounded-xl border border-stone-300 text-xs text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900"
-                />
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
-                <button
-                  type="button"
-                  onClick={() => setIsAddPhotoModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-stone-600 hover:bg-stone-100 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isUploadingPhoto || !uploadPhotoUrl.trim()}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition disabled:opacity-50"
-                >
-                  {isUploadingPhoto ? 'Uploading & Syncing...' : 'Add to Journal & Gallery'}
-                </button>
-              </div>
-            </form>
-          </div>
-        </div>
-      )}
-
-      {/* --- ODOMETER / KM FROM START MODAL --- */}
-      {isOdometerModalOpen && (
-        <div 
-          className="fixed inset-0 z-50 bg-stone-950/70 backdrop-blur-xs flex items-center justify-center p-4 animate-in fade-in duration-200"
-          onClick={() => setIsOdometerModalOpen(false)}
-        >
-          <div 
-            className="bg-white rounded-3xl max-w-md w-full p-6 shadow-2xl border border-stone-200 space-y-5 text-stone-800"
-            onClick={(e) => e.stopPropagation()}
-          >
-            <div className="flex items-start justify-between">
-              <div className="flex items-center gap-2.5">
-                <div className="w-9 h-9 rounded-2xl bg-blue-100 text-blue-900 flex items-center justify-center">
-                  <Gauge className="w-5 h-5 text-blue-900" />
-                </div>
-                <div>
-                  <h3 className="font-serif font-bold text-base text-stone-900">
-                    Odometer / Distance from Start
-                  </h3>
-                  <p className="text-[11px] text-stone-500 font-sans">
-                    {log.title}
-                  </p>
-                </div>
-              </div>
-              <button
-                onClick={() => setIsOdometerModalOpen(false)}
-                className="w-8 h-8 rounded-full bg-stone-100 hover:bg-stone-200 text-stone-500 flex items-center justify-center transition"
-              >
-                ✕
-              </button>
-            </div>
-
-            <div className="space-y-4">
-              <div>
-                <label className="block text-xs font-bold text-stone-700 mb-1">
-                  Kilometers from Start (Odometer Reading)
-                </label>
-                <p className="text-[11px] text-stone-500 mb-2">
-                  Enter the exact number shown on Mousse’s odometer or trip meter.
-                </p>
-                <div className="relative">
-                  <input
-                    type="number"
-                    value={odometerInput}
-                    onChange={(e) => setOdometerInput(e.target.value)}
-                    placeholder="e.g. 4110"
-                    autoFocus
-                    className="w-full px-4 py-2.5 rounded-2xl border border-stone-300 text-base font-mono font-bold text-stone-900 focus:outline-hidden focus:ring-2 focus:ring-blue-900 pr-12"
-                  />
-                  <span className="absolute right-4 top-1/2 -translate-y-1/2 text-stone-400 font-sans text-xs font-semibold">
-                    km
-                  </span>
-                </div>
-              </div>
-
-              {/* Quick Distance Presets */}
-              <div className="bg-stone-50 rounded-2xl p-3 border border-stone-200/80 space-y-2">
-                <div className="text-[10px] uppercase font-bold tracking-wider text-stone-400">
-                  Quick Expedition Distance Helpers
-                </div>
-                <div className="flex flex-wrap gap-1.5">
-                  <button
-                    type="button"
-                    onClick={() => setOdometerInput('4110')}
-                    className="px-2.5 py-1 rounded-xl bg-blue-50 hover:bg-blue-100 text-blue-900 border border-blue-200 text-[11px] font-semibold transition"
-                  >
-                    Lethbridge → Tuktoyaktuk (4,110 km)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOdometerInput('3670')}
-                    className="px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 text-[11px] font-medium transition"
-                  >
-                    Inuvik (3,670 km)
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setOdometerInput('2150')}
-                    className="px-2.5 py-1 rounded-xl bg-stone-100 hover:bg-stone-200 text-stone-700 border border-stone-300 text-[11px] font-medium transition"
-                  >
-                    Whitehorse (2,150 km)
-                  </button>
-                </div>
-              </div>
-
-              <div className="flex items-center justify-end gap-2 pt-2 border-t border-stone-100">
-                <button
-                  type="button"
-                  onClick={() => setIsOdometerModalOpen(false)}
-                  className="px-4 py-2 rounded-xl text-xs font-medium text-stone-600 hover:bg-stone-100 transition"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="button"
-                  onClick={handleSaveOdometer}
-                  disabled={isSavingOdometer || !odometerInput.trim()}
-                  className="px-5 py-2 rounded-xl text-xs font-semibold bg-blue-900 hover:bg-blue-950 text-white shadow-xs transition disabled:opacity-50 flex items-center gap-1.5"
-                >
-                  {isSavingOdometer ? (
-                    <span>Saving...</span>
-                  ) : (
-                    <>
-                      <Check className="w-3.5 h-3.5" />
-                      <span>Save Odometer</span>
-                    </>
-                  )}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
-      )}
+      {/* 2. End of Modals */}
 
     </article>
   );

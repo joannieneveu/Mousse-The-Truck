@@ -36,38 +36,16 @@ import confetti from 'canvas-confetti';
 interface LiveLocationTrackerProps {
   liveLocation: LiveLocation;
   currentUser?: UserProfile | null;
-  onUpdateLocation: (newLocation: Partial<LiveLocation>) => Promise<void>;
+  onUpdateLocation?: (newLocation: Partial<LiveLocation>) => Promise<void>;
   onClose?: () => void;
 }
 
 export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
   liveLocation,
   currentUser,
-  onUpdateLocation,
   onClose,
 }) => {
-  const [isBroadcasting, setIsBroadcasting] = useState<boolean>(false);
-  const [watchId, setWatchId] = useState<number | null>(null);
   const [copiedLink, setCopiedLink] = useState<boolean>(false);
-  const [checkinMessage, setCheckinMessage] = useState<string>('');
-  const [checkinCity, setCheckinCity] = useState<string>(liveLocation.lastCity);
-  const [checkinLat, setCheckinLat] = useState<number>(liveLocation.lat);
-  const [checkinLng, setCheckinLng] = useState<number>(liveLocation.lng);
-  const [checkinAltitude, setCheckinAltitude] = useState<number>(liveLocation.altitudeM || 68);
-  const [checkinSpeed, setCheckinSpeed] = useState<number>(liveLocation.speedKmh || 0);
-  const [checkinBattery, setCheckinBattery] = useState<number>(liveLocation.batteryPercent || 94);
-  const [isSaving, setIsSaving] = useState<boolean>(false);
-  const [isLocatingDevice, setIsLocatingDevice] = useState<boolean>(false);
-
-  // Sync state if liveLocation prop updates
-  useEffect(() => {
-    setCheckinCity(liveLocation.lastCity);
-    setCheckinLat(liveLocation.lat);
-    setCheckinLng(liveLocation.lng);
-    if (liveLocation.altitudeM) setCheckinAltitude(liveLocation.altitudeM);
-    if (liveLocation.speedKmh !== undefined) setCheckinSpeed(liveLocation.speedKmh);
-    if (liveLocation.batteryPercent) setCheckinBattery(liveLocation.batteryPercent);
-  }, [liveLocation]);
   
   // Campfire Cheers State
   const [cheerSent, setCheerSent] = useState<string | null>(null);
@@ -75,7 +53,6 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
   const [smoresCount, setSmoresCount] = useState<number>(0);
   const [drinksCount, setDrinksCount] = useState<number>(0);
   const [firesCount, setFiresCount] = useState<number>(0);
-  const [gpsError, setGpsError] = useState<string | null>(null);
 
   // Live guest comments/messages for the rig
   const [radarComments, setRadarComments] = useState<CommentItem[]>([]);
@@ -91,135 +68,6 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
       })
       .catch(() => {});
   }, []);
-
-  // Toggle Live Browser GPS tracking
-  const toggleBroadcasting = () => {
-    if (isBroadcasting) {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-        setWatchId(null);
-      }
-      setIsBroadcasting(false);
-    } else {
-      if (!('geolocation' in navigator)) {
-        setGpsError('Geolocation is not supported on this browser.');
-        return;
-      }
-
-      setGpsError(null);
-      setIsBroadcasting(true);
-
-      const id = navigator.geolocation.watchPosition(
-        (position) => {
-          const { latitude, longitude, altitude, speed, heading, accuracy } = position.coords;
-
-          onUpdateLocation({
-            lat: latitude,
-            lng: longitude,
-            altitudeM: altitude ? Math.round(altitude) : liveLocation.altitudeM,
-            speedKmh: speed ? Math.round(speed * 3.6) : 0,
-            heading: heading || 0,
-            accuracyM: accuracy ? Math.round(accuracy) : 5,
-            timestamp: new Date().toISOString(),
-            trackingMode: 'live_browser_gps',
-          });
-        },
-        (error) => {
-          console.warn('Geolocation error:', error.message);
-          setGpsError(`GPS Notice: ${error.message} (Maintaining last satellite coordinates)`);
-        },
-        {
-          enableHighAccuracy: true,
-          timeout: 15000,
-          maximumAge: 10000,
-        }
-      );
-
-      setWatchId(id);
-    }
-  };
-
-  // Cleanup watch on unmount
-  useEffect(() => {
-    return () => {
-      if (watchId !== null) {
-        navigator.geolocation.clearWatch(watchId);
-      }
-    };
-  }, [watchId]);
-
-  // Detect current phone/laptop GPS coordinates on demand
-  const handleFetchCurrentGps = () => {
-    if (!('geolocation' in navigator)) {
-      setGpsError('Geolocation is not supported on this browser.');
-      return;
-    }
-
-    setIsLocatingDevice(true);
-    setGpsError(null);
-
-    navigator.geolocation.getCurrentPosition(
-      (position) => {
-        const { latitude, longitude, altitude, speed } = position.coords;
-        setCheckinLat(Number(latitude.toFixed(5)));
-        setCheckinLng(Number(longitude.toFixed(5)));
-        if (altitude) setCheckinAltitude(Math.round(altitude));
-        if (speed) setCheckinSpeed(Math.round(speed * 3.6));
-        setIsLocatingDevice(false);
-      },
-      (error) => {
-        setGpsError(`Could not fetch device GPS: ${error.message}`);
-        setIsLocatingDevice(false);
-      },
-      { enableHighAccuracy: true, timeout: 10000 }
-    );
-  };
-
-  // Quick jump presets
-  const applyPresetLocation = (preset: { city: string; lat: number; lng: number; alt: number; milestone?: string }) => {
-    setCheckinCity(preset.city);
-    setCheckinLat(preset.lat);
-    setCheckinLng(preset.lng);
-    setCheckinAltitude(preset.alt);
-    if (preset.milestone) {
-      onUpdateLocation({ nextMilestone: preset.milestone });
-    }
-  };
-
-  // Handle manual checkin
-  const handleCheckinSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setIsSaving(true);
-    try {
-      await onUpdateLocation({
-        statusMessage: checkinMessage || liveLocation.statusMessage,
-        lastCity: checkinCity || liveLocation.lastCity,
-        lat: Number(checkinLat),
-        lng: Number(checkinLng),
-        altitudeM: Number(checkinAltitude),
-        speedKmh: Number(checkinSpeed),
-        batteryPercent: Number(checkinBattery),
-        timestamp: new Date().toISOString(),
-        trackingMode: 'manual_checkin',
-      });
-      setCheckinMessage('');
-      confetti({
-        particleCount: 35,
-        spread: 60,
-        origin: { y: 0.7 }
-      });
-    } catch (err) {
-      console.error(err);
-    } finally {
-      setIsSaving(false);
-    }
-  };
-
-  // Toggle privacy / location sharing globally
-  const handleToggleSharing = async () => {
-    const nextState = !liveLocation.isSharing;
-    await onUpdateLocation({ isSharing: nextState });
-  };
 
   // Copy live share link
   const handleCopyLink = () => {
@@ -366,28 +214,14 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
           </div>
 
           <div className="flex items-center gap-2 shrink-0">
-            {currentUser?.isAdmin ? (
-              <button
-                onClick={handleToggleSharing}
-                className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition ${
-                  liveLocation.isSharing 
-                    ? 'bg-blue-950 text-blue-300 border border-blue-800 hover:bg-blue-900' 
-                    : 'bg-slate-800 text-slate-300 border border-slate-700 hover:bg-slate-700'
-                }`}
-              >
-                {liveLocation.isSharing ? <Eye className="w-3.5 h-3.5 text-blue-400" /> : <EyeOff className="w-3.5 h-3.5 text-slate-400" />}
-                <span>{liveLocation.isSharing ? 'Sharing On' : 'Sharing Paused'}</span>
-              </button>
-            ) : (
-              <div className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${
-                liveLocation.isSharing 
-                  ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800' 
-                  : 'bg-slate-800 text-slate-400 border border-slate-700'
-              }`}>
-                <span className={`w-2 h-2 rounded-full ${liveLocation.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></span>
-                <span>{liveLocation.isSharing ? 'Live GPS Active' : 'GPS Standby'}</span>
-              </div>
-            )}
+            <div className={`px-3 py-2 rounded-xl text-xs font-semibold flex items-center gap-1.5 ${
+              liveLocation.isSharing 
+                ? 'bg-emerald-950/80 text-emerald-300 border border-emerald-800' 
+                : 'bg-slate-800 text-slate-400 border border-slate-700'
+            }`}>
+              <span className={`w-2 h-2 rounded-full ${liveLocation.isSharing ? 'bg-emerald-400 animate-pulse' : 'bg-slate-500'}`}></span>
+              <span>{liveLocation.isSharing ? 'Live GPS Active' : 'GPS Standby'}</span>
+            </div>
 
             <button
               onClick={handleCopyLink}
@@ -618,15 +452,6 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
                   </div>
                   <div className="flex items-center gap-2 text-stone-400 text-[10px]">
                     <span>{comment.createdAt}</span>
-                    {currentUser?.isAdmin && (
-                      <button
-                        onClick={() => handleDeleteComment(comment.id)}
-                        className="text-stone-400 hover:text-rose-600 ml-1 p-1"
-                        title="Remove inappropriate comment (Admin)"
-                      >
-                        <Trash2 className="w-3.5 h-3.5" />
-                      </button>
-                    )}
                   </div>
                 </div>
                 <p className="text-stone-700 pl-8 leading-relaxed font-sans">{comment.content}</p>
@@ -636,217 +461,16 @@ export const LiveLocationTracker: React.FC<LiveLocationTrackerProps> = ({
         </div>
       </div>
 
-      {/* Driver & Expedition Admin Check-in Controls (Joannie & Barton Only) */}
-      {currentUser?.isAdmin ? (
-        <div className="bg-white border border-stone-200/90 rounded-3xl p-6 sm:p-8 shadow-sm space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 border-b border-stone-200 pb-4">
-            <div>
-              <h2 className="text-lg font-serif font-bold text-stone-900 flex items-center gap-2">
-                <ShieldCheck className="w-5 h-5 text-blue-900" />
-                Expedition Broadcast & GPS Telemetry Controls
-              </h2>
-              <p className="text-xs text-stone-500 font-sans mt-0.5">
-                For Joannie & Barton: Broadcast live coordinates via device GPS, enter coordinates manually, or publish a field note.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap items-center gap-2">
-              <button
-                type="button"
-                onClick={handleFetchCurrentGps}
-                disabled={isLocatingDevice}
-                className="bg-emerald-800 hover:bg-emerald-900 text-white px-3.5 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-1.5 transition shadow-sm disabled:opacity-50"
-              >
-                {isLocatingDevice ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Navigation className="w-3.5 h-3.5" />}
-                <span>{isLocatingDevice ? 'Detecting Fix...' : 'Detect Device GPS'}</span>
-              </button>
-
-              <button
-                onClick={toggleBroadcasting}
-                className={`px-4 py-2.5 rounded-xl text-xs font-semibold flex items-center gap-2 transition shadow-sm ${
-                  isBroadcasting
-                    ? 'bg-rose-700 hover:bg-rose-800 text-white animate-pulse'
-                    : 'bg-blue-900 hover:bg-blue-950 text-white'
-                }`}
-              >
-                <Radio className="w-4 h-4" />
-                <span>{isBroadcasting ? 'Stop Live GPS Stream' : 'Start Continuous Stream'}</span>
-              </button>
-            </div>
-          </div>
-
-          {gpsError && (
-            <div className="bg-amber-50 border border-amber-200 p-3 rounded-xl text-amber-900 text-xs flex items-center gap-2">
-              <AlertCircle className="w-4 h-4 text-amber-700 shrink-0" />
-              <span>{gpsError}</span>
-            </div>
-          )}
-
-          {/* Quick Location Jump Presets */}
-          <div className="space-y-2">
-            <div className="text-[11px] font-bold text-stone-500 uppercase tracking-wider">
-              Quick Route Jump Presets
-            </div>
-            <div className="flex flex-wrap gap-2 text-xs">
-              {[
-                { city: 'Lethbridge, AB', lat: 49.6956, lng: -112.8451, alt: 910, milestone: 'Banff National Park' },
-                { city: 'Banff National Park, AB', lat: 51.1784, lng: -115.5708, alt: 1383, milestone: 'Jasper / Icefields' },
-                { city: 'Jasper, AB', lat: 52.8737, lng: -118.0814, alt: 1062, milestone: 'Alaska Highway' },
-                { city: 'Whitehorse, Yukon', lat: 60.7212, lng: -135.0568, alt: 670, milestone: 'Dawson City & Dempster' },
-                { city: 'Dawson City, YT', lat: 64.0601, lng: -139.4320, alt: 320, milestone: 'Arctic Circle Sign' },
-                { city: 'Tuktoyaktuk, NWT (Arctic Ocean)', lat: 69.4454, lng: -133.0342, alt: 5, milestone: 'Southbound to Alaska' },
-                { city: 'San Ignacio, Baja California', lat: 27.2842, lng: -112.8970, alt: 120, milestone: 'Central America' },
-                { city: 'Ushuaia, Argentina', lat: -54.8019, lng: -68.3030, alt: 6, milestone: 'Expedition Complete!' }
-              ].map(preset => (
-                <button
-                  key={preset.city}
-                  type="button"
-                  onClick={() => applyPresetLocation(preset)}
-                  className="bg-stone-100 hover:bg-stone-200 text-stone-800 border border-stone-200 px-2.5 py-1 rounded-lg text-[11px] transition"
-                >
-                  📍 {preset.city}
-                </button>
-              ))}
-            </div>
-          </div>
-
-          {/* Manual Check-in Form with Coordinates */}
-          <form onSubmit={handleCheckinSubmit} className="space-y-4 text-xs font-sans">
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Current Landmark / City
-                </label>
-                <input
-                  type="text"
-                  value={checkinCity}
-                  onChange={(e) => setCheckinCity(e.target.value)}
-                  placeholder="e.g. Whitehorse, YT / Dempster Highway"
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1">
-                  Next Destination Target
-                </label>
-                <input
-                  type="text"
-                  defaultValue={liveLocation.nextMilestone}
-                  onChange={(e) => onUpdateLocation({ nextMilestone: e.target.value })}
-                  placeholder="e.g. Tuktoyaktuk, NWT"
-                  className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl px-3.5 py-2.5 text-stone-900 focus:outline-none focus:border-blue-900"
-                />
-              </div>
-            </div>
-
-            {/* Coordinate Precision Inputs */}
-            <div className="grid grid-cols-2 sm:grid-cols-5 gap-3 p-3.5 bg-stone-50 rounded-2xl border border-stone-200">
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1 text-[11px]">
-                  Latitude (°N)
-                </label>
-                <input
-                  type="number"
-                  step="0.0001"
-                  value={checkinLat}
-                  onChange={(e) => setCheckinLat(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-stone-900 font-mono text-xs focus:outline-none focus:border-blue-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1 text-[11px]">
-                  Longitude (°W)
-                </label>
-                <input
-                  type="number"
-                  step="0.0001"
-                  value={checkinLng}
-                  onChange={(e) => setCheckinLng(parseFloat(e.target.value) || 0)}
-                  className="w-full bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-stone-900 font-mono text-xs focus:outline-none focus:border-blue-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1 text-[11px]">
-                  Altitude (m)
-                </label>
-                <input
-                  type="number"
-                  value={checkinAltitude}
-                  onChange={(e) => setCheckinAltitude(parseInt(e.target.value) || 0)}
-                  className="w-full bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-stone-900 font-mono text-xs focus:outline-none focus:border-blue-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1 text-[11px]">
-                  Speed (km/h)
-                </label>
-                <input
-                  type="number"
-                  value={checkinSpeed}
-                  onChange={(e) => setCheckinSpeed(parseInt(e.target.value) || 0)}
-                  className="w-full bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-stone-900 font-mono text-xs focus:outline-none focus:border-blue-900"
-                />
-              </div>
-
-              <div>
-                <label className="block font-semibold text-stone-700 mb-1 text-[11px]">
-                  Battery (%)
-                </label>
-                <input
-                  type="number"
-                  min="0"
-                  max="100"
-                  value={checkinBattery}
-                  onChange={(e) => setCheckinBattery(parseInt(e.target.value) || 0)}
-                  className="w-full bg-white border border-stone-300 rounded-lg px-2.5 py-1.5 text-stone-900 font-mono text-xs focus:outline-none focus:border-blue-900"
-                />
-              </div>
-            </div>
-
-            <div>
-              <label className="block font-semibold text-stone-700 mb-1">
-                Field Status Note for Followers & Family
-              </label>
-              <textarea
-                rows={2}
-                value={checkinMessage}
-                onChange={(e) => setCheckinMessage(e.target.value)}
-                placeholder="e.g. Starlink connected under midnight sun, baby Henri napping peacefully after gravel drive..."
-                className="w-full bg-[#FAF8F5] border border-stone-300 rounded-xl p-3 text-stone-900 focus:outline-none focus:border-blue-900"
-              />
-            </div>
-
-            <div className="flex items-center justify-between pt-2">
-              <div className="text-[11px] text-stone-500">
-                Updates immediately sync to the interactive map & notify family in NL, BC, and QC.
-              </div>
-
-              <button
-                type="submit"
-                disabled={isSaving}
-                className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-xl text-xs transition flex items-center gap-2 shadow-sm disabled:opacity-50"
-              >
-                {isSaving ? <RefreshCw className="w-3.5 h-3.5 animate-spin" /> : <Send className="w-3.5 h-3.5" />}
-                <span>Publish Coordinates & Field Check-In</span>
-              </button>
-            </div>
-          </form>
+      {/* Expedition GPS Feed Informational Card */}
+      <div className="bg-stone-50 border border-stone-200/90 rounded-3xl p-6 text-center space-y-2 shadow-xs">
+        <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-900 mx-auto flex items-center justify-center">
+          <Satellite className="w-5 h-5" />
         </div>
-      ) : (
-        <div className="bg-stone-50 border border-stone-200/90 rounded-3xl p-6 text-center space-y-2 shadow-xs">
-          <div className="w-10 h-10 rounded-2xl bg-blue-50 text-blue-900 mx-auto flex items-center justify-center">
-            <Satellite className="w-5 h-5" />
-          </div>
-          <h3 className="text-sm font-bold text-stone-900">Expedition GPS Feed</h3>
-          <p className="text-xs text-stone-600 max-w-md mx-auto leading-relaxed">
-            Live GPS telemetry and status notes are broadcast directly by Joannie & Barton from the Mousse overland truck. Follow along on the interactive route map above.
-          </p>
-        </div>
-      )}
+        <h3 className="text-sm font-bold text-stone-900">Expedition GPS Feed</h3>
+        <p className="text-xs text-stone-600 max-w-md mx-auto leading-relaxed">
+          Live GPS telemetry and status notes are broadcast directly by Joannie & Barton from the Mousse overland truck. Follow along on the interactive route map above.
+        </p>
+      </div>
 
     </div>
   );

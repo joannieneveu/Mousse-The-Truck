@@ -8,7 +8,6 @@ import {
 } from '../types';
 import { 
   BookOpen, 
-  Plus, 
   Search, 
   Clock, 
   MapPin, 
@@ -16,56 +15,29 @@ import {
   GraduationCap, 
   Users, 
   ArrowRight,
-  ShieldCheck,
   Globe2,
-  Edit3,
-  Mail,
   Check
 } from 'lucide-react';
-import { JournalEditorModal } from './JournalEditorModal';
 
 interface TravelLogListProps {
   logs: TravelLog[];
   onSelectLog: (log: TravelLog) => void;
-  onCreateLog: (newLog: any) => Promise<void>;
-  onUpdateLog?: (logId: string, updatedLog: Partial<TravelLog>) => Promise<void>;
   onViewLocationOnMap?: (lat?: number, lng?: number) => void;
-  onTogglePublish?: (logId: string) => Promise<void>;
-  onDeleteLog?: (logId: string) => Promise<void>;
   currentUser?: UserProfile | null;
   liveLocation?: LiveLocation;
-  isAdmin?: boolean;
-  onOpenSubscribeModal?: () => void;
 }
 
 export const TravelLogList: React.FC<TravelLogListProps> = ({
   logs,
   onSelectLog,
-  onCreateLog,
-  onUpdateLog,
-  onViewLocationOnMap,
-  onTogglePublish,
-  onDeleteLog,
   currentUser,
   liveLocation,
-  isAdmin: propAdmin
 }) => {
-  const isUserAdmin = Boolean(currentUser?.isAdmin);
   const [selectedCategory, setSelectedCategory] = useState<string>('all');
   const [searchQuery, setSearchQuery] = useState<string>('');
-  const [statusFilter, setStatusFilter] = useState<'all' | 'published' | 'draft'>('all');
-  const [isCreateModalOpen, setIsCreateModalOpen] = useState<boolean>(false);
-  const [editingLog, setEditingLog] = useState<TravelLog | null>(null);
 
-  // Filter logs: public users only see published entries, admin sees all
-  const visibleLogs = logs.filter(log => {
-    if (isUserAdmin) {
-      if (statusFilter === 'published') return log.status === 'published';
-      if (statusFilter === 'draft') return log.status === 'draft';
-      return true;
-    }
-    return log.status === 'published';
-  });
+  // Public logs (exclude drafts)
+  const visibleLogs = logs.filter(log => log.status !== 'draft');
 
   const filteredLogs = visibleLogs.filter(log => {
     const matchCategory = selectedCategory === 'all' || log.category === selectedCategory;
@@ -104,62 +76,7 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
             Written on the road by Joannie & Barton as we travel 35,000 km across the Americas with baby Henri.
           </p>
         </div>
-
-        <div className="flex items-center gap-3">
-          {isUserAdmin && (
-            <button
-              id="write-new-log-btn"
-              onClick={() => {
-                setEditingLog(null);
-                setIsCreateModalOpen(true);
-              }}
-              className="bg-blue-900 hover:bg-blue-950 text-white font-medium px-5 py-2.5 rounded-2xl text-xs flex items-center gap-2 shadow-sm transition font-sans"
-            >
-              <Plus className="w-4 h-4" />
-              <span>Write Journal Entry</span>
-            </button>
-          )}
-        </div>
       </div>
-
-      {/* Admin Status Switcher (If logged in as Joannie/Barton) */}
-      {isUserAdmin && (
-        <div className="bg-amber-50/80 border border-amber-200/90 rounded-2xl p-3.5 flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-xs font-sans">
-          <div className="flex items-center gap-2 text-amber-950">
-            <ShieldCheck className="w-4 h-4 text-amber-800 shrink-0" />
-            <span>
-              <strong>Expedition Admin View:</strong> You have <strong>{draftCount} draft(s)</strong> queued for the Arctic and <strong>{publishedCount} published</strong> live entry.
-            </span>
-          </div>
-
-          <div className="flex items-center gap-1.5 bg-white border border-amber-200 p-1 rounded-xl shrink-0">
-            <button
-              onClick={() => setStatusFilter('all')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                statusFilter === 'all' ? 'bg-amber-900 text-white' : 'text-stone-600 hover:bg-stone-100'
-              }`}
-            >
-              All ({logs.length})
-            </button>
-            <button
-              onClick={() => setStatusFilter('published')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                statusFilter === 'published' ? 'bg-emerald-700 text-white' : 'text-stone-600 hover:bg-stone-100'
-              }`}
-            >
-              Published ({publishedCount})
-            </button>
-            <button
-              onClick={() => setStatusFilter('draft')}
-              className={`px-3 py-1 rounded-lg text-xs font-semibold transition ${
-                statusFilter === 'draft' ? 'bg-amber-600 text-white' : 'text-stone-600 hover:bg-stone-100'
-              }`}
-            >
-              Drafts ({draftCount})
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* Search Bar & Entry Counter */}
       <div className="flex flex-col sm:flex-row gap-4 justify-between items-stretch sm:items-center font-sans">
@@ -263,35 +180,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
               </span>
 
               <div className="flex items-center gap-2">
-                {isUserAdmin && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setEditingLog(featuredLog);
-                    }}
-                    className="px-2.5 py-1 rounded-lg text-xs font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition"
-                  >
-                    <Edit3 className="w-3.5 h-3.5" />
-                    <span>Edit</span>
-                  </button>
-                )}
-
-                {isUserAdmin && onTogglePublish && (
-                  <button
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      onTogglePublish(featuredLog.id);
-                    }}
-                    className={`px-2.5 py-1 rounded-lg text-xs font-semibold border transition ${
-                      featuredLog.status === 'published'
-                        ? 'bg-emerald-50 text-emerald-800 border-emerald-300 hover:bg-emerald-100'
-                        : 'bg-amber-50 text-amber-800 border-amber-300 hover:bg-amber-100'
-                    }`}
-                  >
-                    {featuredLog.status === 'published' ? 'Published' : 'Publish to Public'}
-                  </button>
-                )}
-
                 <span className="text-xs font-bold text-blue-900 flex items-center gap-1 group-hover:translate-x-1 transition">
                   Read Full Entry <ArrowRight className="w-3.5 h-3.5" />
                 </span>
@@ -398,35 +286,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
                     </div>
 
                     <div className="flex items-center gap-2">
-                      {isUserAdmin && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setEditingLog(log);
-                          }}
-                          className="px-2 py-0.5 rounded-md text-[10px] font-semibold bg-blue-50 text-blue-900 hover:bg-blue-100 border border-blue-200 inline-flex items-center gap-1 transition"
-                        >
-                          <Edit3 className="w-3 h-3" />
-                          <span>Edit</span>
-                        </button>
-                      )}
-
-                      {isUserAdmin && onTogglePublish && (
-                        <button
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onTogglePublish(log.id);
-                          }}
-                          className={`px-2 py-0.5 rounded-md text-[10px] font-semibold border transition ${
-                            log.status === 'published'
-                              ? 'bg-emerald-50 text-emerald-800 border-emerald-300'
-                              : 'bg-amber-50 text-amber-800 border-amber-300'
-                          }`}
-                        >
-                          {log.status === 'published' ? 'Published' : 'Publish'}
-                        </button>
-                      )}
-
                       <span className="font-bold text-blue-900 flex items-center gap-0.5 group-hover:translate-x-0.5 transition text-xs">
                         Read <ArrowRight className="w-3 h-3" />
                       </span>
@@ -438,32 +297,6 @@ export const TravelLogList: React.FC<TravelLogListProps> = ({
           </div>
         )}
       </div>
-
-      {/* --- WRITE / EDIT JOURNAL ENTRY MODAL --- */}
-      {(isCreateModalOpen || editingLog !== null) && (
-        <JournalEditorModal
-          initialLog={editingLog}
-          isOpen={isCreateModalOpen || editingLog !== null}
-          onClose={() => {
-            setIsCreateModalOpen(false);
-            setEditingLog(null);
-          }}
-          onSave={async (logData) => {
-            if (editingLog && onUpdateLog) {
-              const res = await onUpdateLog(editingLog.id, logData);
-              if (res && res.success === false && !res.error?.includes('405')) {
-                throw new Error(res.error || 'Failed to update journal entry');
-              }
-            } else {
-              await onCreateLog(logData);
-            }
-            setIsCreateModalOpen(false);
-            setEditingLog(null);
-          }}
-          liveLocation={liveLocation}
-          authorName={currentUser?.name || 'Joannie & Barton'}
-        />
-      )}
 
     </div>
   );

@@ -45,10 +45,7 @@ import L from 'leaflet';
 interface InteractiveMapProps {
   waypoints: Waypoint[];
   liveLocation: LiveLocation;
-  isAdmin?: boolean;
   onSelectWaypoint: (waypoint: Waypoint) => void;
-  onOpenPinModal?: () => void;
-  onOpenNewLog: (coordinates?: { lat: number; lng: number }, locationName?: string) => void;
   onSimulateLeg?: (leg: string) => void;
   onOpenLog?: (logId: string) => void;
 }
@@ -56,10 +53,7 @@ interface InteractiveMapProps {
 export const InteractiveMap: React.FC<InteractiveMapProps> = ({
   waypoints,
   liveLocation,
-  isAdmin = false,
   onSelectWaypoint,
-  onOpenPinModal,
-  onOpenNewLog,
   onSimulateLeg,
   onOpenLog,
 }) => {
@@ -377,11 +371,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       content: locationPin,
     });
     liveMarker.addListener('click', () => {
-      if (isAdmin && onOpenPinModal) {
-        onOpenPinModal();
-      } else {
-        handleCenterLiveLocation();
-      }
+      handleCenterLiveLocation();
     });
     googleMarkersRef.current.push(liveMarker);
   };
@@ -498,11 +488,7 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
       .addTo(leafletMarkersGroupRef.current);
 
     pinMarker.on('click', () => {
-      if (isAdmin && onOpenPinModal) {
-        onOpenPinModal();
-      } else {
-        handleCenterLiveLocation();
-      }
+      handleCenterLiveLocation();
     });
 
     // Render Waypoint Markers
@@ -676,18 +662,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
             </div>
           </button>
 
-          {/* Admin: Update Pin Button */}
-          {isAdmin && onOpenPinModal && (
-            <button
-              onClick={onOpenPinModal}
-              title="Pin where Mousse is currently located"
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-3 py-2 rounded-2xl shadow-xl transition flex items-center gap-1.5 text-xs active:scale-95"
-            >
-              <MapPin className="w-3.5 h-3.5" />
-              <span className="hidden sm:inline">Update Pin</span>
-            </button>
-          )}
-
           {/* Map Layer Selector Button */}
           <div className="relative group">
             <button
@@ -798,19 +772,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
           </div>
         </div>
 
-        {/* Right: Quick Action Buttons (Admin only) */}
-        {isAdmin && (
-          <div className="flex items-center gap-2 pointer-events-auto">
-            <button
-              onClick={() => onOpenNewLog(selectedWaypoint ? { lat: selectedWaypoint.lat, lng: selectedWaypoint.lng } : undefined, selectedWaypoint?.name)}
-              className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold px-4 py-2 rounded-2xl text-xs shadow-xl flex items-center gap-1.5 transition transform active:scale-95"
-            >
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Drop Field Dispatch Here</span>
-            </button>
-          </div>
-        )}
-
       </div>
 
       {/* Selected Waypoint Modal / Drawer */}
@@ -906,15 +867,6 @@ export const InteractiveMap: React.FC<InteractiveMapProps> = ({
                 </button>
               )}
             </div>
-
-            {isAdmin && (
-              <button
-                onClick={() => onOpenNewLog({ lat: selectedWaypoint.lat, lng: selectedWaypoint.lng }, selectedWaypoint.name)}
-                className="bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold px-3 py-1.5 rounded-xl transition"
-              >
-                Write Dispatch
-              </button>
-            )}
           </div>
 
         </div>
